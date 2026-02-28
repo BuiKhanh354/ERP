@@ -1,0 +1,276 @@
+{% extends 'base_sidebar.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - ERP System{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  {% if back_url %}
+  <a href="{{ back_url }}" class="btn btn-outline-secondary btn-sm" style="border-radius: 8px; padding: 0.5rem 0.75rem;">
+    <i class="bi bi-arrow-left me-1"></i>Quay lại
+  </a>
+  {% else %}
+  <a href="{% url 'projects:tasks' %}?project={{ selected_project }}" class="btn btn-outline-secondary btn-sm" style="border-radius: 8px; padding: 0.5rem 0.75rem;">
+    <i class="bi bi-arrow-left me-1"></i>Quay lại
+  </a>
+  {% endif %}
+  <span>{{ page_title }}</span>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/custom.css' %}">
+<style>
+  .form-card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    padding: 2.5rem;
+    border: 1px solid #e2e8f0;
+  }
+
+  .form-label {
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-control,
+  .form-select {
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    padding: 0.75rem 1rem;
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    border-color: #0000cd;
+    box-shadow: 0 0 0 0.2rem rgba(0, 0, 205, 0.15);
+  }
+
+  .btn-primary {
+    background-color: #0000cd;
+    border-color: #0000cd;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+  }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Disable tất cả các field nếu ở chế độ read-only
+  {% if is_readonly %}
+  const form = document.querySelector('form');
+  if (form) {
+    const inputs = form.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+      input.disabled = true;
+      input.readOnly = true;
+      input.style.backgroundColor = '#f8f9fa';
+      input.style.cursor = 'not-allowed';
+    });
+  }
+  {% endif %}
+  
+  const departmentSelect = document.getElementById('id_department');
+  const assignedToSelect = document.getElementById('id_assigned_to');
+  
+  // Lưu danh sách nhân viên ban đầu (tất cả)
+  const allEmployees = Array.from(assignedToSelect.options).map(opt => ({
+    value: opt.value,
+    text: opt.text,
+    selected: opt.selected
+  }));
+  
+  // Hàm filter nhân viên theo phòng ban
+  function filterEmployeesByDepartment(departmentId) {
+    // Xóa tất cả options hiện tại (trừ option đầu tiên nếu là "-- Chọn --")
+    const firstOption = assignedToSelect.options[0];
+    assignedToSelect.innerHTML = '';
+    if (firstOption && firstOption.value === '') {
+      assignedToSelect.appendChild(firstOption);
+    }
+    
+    if (!departmentId || departmentId === '') {
+      // Nếu không chọn phòng ban, hiển thị tất cả nhân viên
+      allEmployees.forEach(emp => {
+        const option = document.createElement('option');
+        option.value = emp.value;
+        option.text = emp.text;
+        option.selected = emp.selected;
+        assignedToSelect.appendChild(option);
+      });
+      return;
+    }
+    
+    // Gọi API để lấy nhân viên theo phòng ban
+    fetch(`{% url 'projects:get_employees_by_department' %}?department_id=${departmentId}`)
+      .then(response => response.json())
+      .then(data => {
+        // Thêm option "-- Chọn nhân viên --" nếu chưa có
+        if (assignedToSelect.options.length === 0 || assignedToSelect.options[0].value !== '') {
+          const emptyOption = document.createElement('option');
+          emptyOption.value = '';
+          emptyOption.text = '-- Chọn nhân viên --';
+          assignedToSelect.appendChild(emptyOption);
+        }
+        
+        // Thêm các nhân viên từ API
+        data.employees.forEach(emp => {
+          const option = document.createElement('option');
+          option.value = emp.id;
+          option.text = emp.name;
+          assignedToSelect.appendChild(option);
+        });
+        
+        // Giữ lại giá trị đã chọn nếu có (nếu nhân viên đó thuộc phòng ban mới)
+        const previouslySelected = allEmployees.find(e => e.selected);
+        if (previouslySelected) {
+          const found = data.employees.find(e => e.id == previouslySelected.value);
+          if (found) {
+            assignedToSelect.value = previouslySelected.value;
+          }
+        }
+      })
+      .catch(error => {
+        console.error('Error loading employees:', error);
+      });
+  }
+  
+  // Lắng nghe sự kiện thay đổi phòng ban
+  if (departmentSelect) {
+    departmentSelect.addEventListener('change', function() {
+      filterEmployeesByDepartment(this.value);
+    });
+    
+    // Load nhân viên theo phòng ban ban đầu (nếu đã có giá trị)
+    if (departmentSelect.value) {
+      filterEmployeesByDepartment(departmentSelect.value);
+    }
+  }
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="form-card">
+      <form method="post" novalidate {% if is_readonly %}onsubmit="return false;"{% endif %}>
+        {% csrf_token %}
+
+        <div class="row mb-3">
+          <div class="col-md-12">
+            <label for="{{ form.project.id_for_label }}" class="form-label">Dự án <span class="text-danger">*</span></label>
+            {% if is_readonly %}
+            {% if form.instance.project %}
+            <input type="text" class="form-control" value="{{ form.instance.project.name }}" readonly disabled>
+            {% else %}
+            <input type="text" class="form-control" value="{{ form.project.value|default:'' }}" readonly disabled>
+            {% endif %}
+            {% else %}
+            {{ form.project }}
+            {% endif %}
+            {% if form.project.errors %}
+            <span class="text-danger small">{{ form.project.errors.0 }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-12">
+            <label for="{{ form.name.id_for_label }}" class="form-label">Tên công việc <span class="text-danger">*</span></label>
+            {{ form.name }}
+            {% if form.name.errors %}
+            <span class="text-danger small">{{ form.name.errors.0 }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-12">
+            <label for="{{ form.description.id_for_label }}" class="form-label">Mô tả</label>
+            {{ form.description }}
+            {% if form.description.errors %}
+            <span class="text-danger small">{{ form.description.errors.0 }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label for="{{ form.status.id_for_label }}" class="form-label">Trạng thái</label>
+            {{ form.status }}
+            {% if form.status.errors %}
+            <span class="text-danger small">{{ form.status.errors.0 }}</span>
+            {% endif %}
+          </div>
+          <div class="col-md-4">
+            <label for="{{ form.department.id_for_label }}" class="form-label">Phòng ban phụ trách</label>
+            {{ form.department }}
+            {% if form.department.errors %}
+            <span class="text-danger small">{{ form.department.errors.0 }}</span>
+            {% endif %}
+          </div>
+          <div class="col-md-4">
+            <label for="{{ form.due_date.id_for_label }}" class="form-label">Hạn chót</label>
+            {{ form.due_date }}
+            {% if form.due_date.errors %}
+            <span class="text-danger small">{{ form.due_date.errors.0 }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label for="{{ form.assigned_to.id_for_label }}" class="form-label">Nhân viên thực hiện</label>
+            {{ form.assigned_to }}
+            {% if form.assigned_to.errors %}
+            <span class="text-danger small">{{ form.assigned_to.errors.0 }}</span>
+            {% endif %}
+            <small class="text-muted">Danh sách nhân viên sẽ được lọc theo phòng ban đã chọn</small>
+          </div>
+          <div class="col-md-6">
+            <label for="{{ form.assignment_status.id_for_label }}" class="form-label">Trạng thái giao/nhận</label>
+            {{ form.assignment_status }}
+            {% if form.assignment_status.errors %}
+            <span class="text-danger small">{{ form.assignment_status.errors.0 }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label for="{{ form.estimated_hours.id_for_label }}" class="form-label">Giờ ước tính</label>
+            {{ form.estimated_hours }}
+            {% if form.estimated_hours.errors %}
+            <span class="text-danger small">{{ form.estimated_hours.errors.0 }}</span>
+            {% endif %}
+            <small class="text-muted">Nhập linh hoạt: <strong>7:30</strong>, <strong>10:00h</strong>, <strong>30p</strong> (phút), hoặc <strong>2.5</strong> (giờ).</small>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          {% if back_url %}
+          <a href="{{ back_url }}" class="btn btn-outline-secondary">
+            <i class="bi bi-x-circle me-1"></i>Hủy
+          </a>
+          {% else %}
+          <a href="{% url 'projects:tasks' %}?project={{ selected_project }}" class="btn btn-outline-secondary">
+            <i class="bi bi-x-circle me-1"></i>Hủy
+          </a>
+          {% endif %}
+          {% if not is_readonly %}
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle me-1"></i>{{ submit_text }}
+          </button>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

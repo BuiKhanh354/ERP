@@ -1,0 +1,561 @@
+{% extends 'base_sidebar.html' %}
+{% load static %}
+{% load humanize %}
+{% load custom_filters %}
+
+{% block title %}Phân tích - ERP System{% endblock %}
+
+{% block page_title %}
+<div class="d-flex justify-content-between align-items-center">
+  <span>Phân tích & Báo cáo</span>
+  <div>
+    <a href="{% url 'core:ai-sales-analysis' %}" class="btn btn-outline-info btn-sm me-2">
+      <i class="bi bi-lightbulb me-1"></i>AI Phân tích Bán hàng
+    </a>
+    <a href="{% url 'core:ai-purchasing-analysis' %}" class="btn btn-outline-info btn-sm">
+      <i class="bi bi-lightbulb me-1"></i>AI Phân tích Mua hàng
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .chart-container {
+    position: relative;
+    height: 300px;
+    margin-top: 1rem;
+  }
+
+  .stat-card {
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    padding: 1.5rem;
+    background: #ffffff;
+    transition: all 0.3s ease;
+  }
+
+  .stat-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+  }
+
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0.5rem 0;
+  }
+
+  .stat-label {
+    font-size: 0.9rem;
+    color: #64748b;
+    font-weight: 500;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Stats Overview -->
+<div class="row mb-4">
+  <div class="col-md-3 mb-3">
+    <div class="stat-card">
+      <div class="stat-value" style="color: #3b82f6;">{{ total_projects }}</div>
+      <div class="stat-label">Tổng dự án</div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="stat-card">
+      <div class="stat-value" style="color: #22c55e;">{{ active_projects }}</div>
+      <div class="stat-label">Dự án đang chạy</div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="stat-card">
+          <div class="stat-value" style="color: #f59e0b;">{{ budget_utilization|floatformat:1 }}%</div>
+      <div class="stat-label">Sử dụng ngân sách</div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="stat-card">
+      <div class="stat-value" style="color: #ef4444;">{{ task_completion_rate|floatformat:1 }}%</div>
+      <div class="stat-label">Hoàn thành công việc</div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row 1 -->
+<div class="row mb-4">
+  <div class="col-md-6 mb-3">
+    <div class="card">
+      <div class="card-header bg-white border-bottom">
+        <h5 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Trạng thái Dự án</h5>
+      </div>
+      <div class="card-body">
+        <div class="chart-container">
+          <canvas id="projectStatusChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 mb-3">
+    <div class="card">
+      <div class="card-header bg-white border-bottom">
+        <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Chi phí theo Loại</h5>
+      </div>
+      <div class="card-body">
+        <div class="chart-container">
+          <canvas id="expenseTypeChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row 2 -->
+<div class="row mb-4">
+  <div class="col-md-6 mb-3">
+    <div class="card">
+      <div class="card-header bg-white border-bottom">
+        <h5 class="mb-0"><i class="bi bi-bar-chart-fill me-2"></i>Ngân sách vs Chi tiêu theo Dự án</h5>
+      </div>
+      <div class="card-body">
+        <div class="chart-container">
+          <canvas id="budgetVsSpentChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 mb-3">
+    <div class="card">
+      <div class="card-header bg-white border-bottom">
+        <h5 class="mb-0"><i class="bi bi-graph-up-arrow me-2"></i>Tỷ lệ Hoàn thành Dự án</h5>
+      </div>
+      <div class="card-body">
+        <div class="chart-container">
+          <canvas id="projectCompletionChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row 3 -->
+<div class="row mb-4">
+  <div class="col-md-6 mb-3">
+    <div class="card">
+      <div class="card-header bg-white border-bottom">
+        <h5 class="mb-0"><i class="bi bi-pie-chart-fill me-2"></i>Chi tiêu theo Danh mục</h5>
+      </div>
+      <div class="card-body">
+        <div class="chart-container">
+          <canvas id="expenseByCategoryChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 mb-3">
+    <div class="card">
+      <div class="card-header bg-white border-bottom">
+        <h5 class="mb-0"><i class="bi bi-star-fill me-2"></i>Top 10 Nhân sự Hiệu suất Cao</h5>
+      </div>
+      <div class="card-body">
+        <div class="chart-container">
+          <canvas id="topEmployeesChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row 4 -->
+<div class="row mb-4">
+  <div class="col-md-12 mb-3">
+    <div class="card">
+      <div class="card-header bg-white border-bottom">
+        <h5 class="mb-0"><i class="bi bi-line-chart me-2"></i>Chi tiêu theo Tháng (6 tháng gần nhất)</h5>
+      </div>
+      <div class="card-body">
+        <div class="chart-container" style="height: 350px;">
+          <canvas id="monthlyExpenseChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Budget Summary -->
+<div class="row mb-4">
+  <div class="col-md-6 mb-3">
+    <div class="card">
+      <div class="card-header bg-white border-bottom">
+        <h5 class="mb-0"><i class="bi bi-cash-stack me-2"></i>Tổng quan Ngân sách</h5>
+      </div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-2">
+          <span>Tổng phân bổ:</span>
+          <strong class="text-primary">{{ total_allocated|add_thousand_sep }} VNĐ</strong>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span>Đã chi tiêu:</span>
+          <strong class="text-danger">{{ total_spent|add_thousand_sep }} VNĐ</strong>
+        </div>
+        <div class="d-flex justify-content-between mb-3">
+          <span>Còn lại:</span>
+          <strong class="text-success">{{ total_remaining|add_thousand_sep }} VNĐ</strong>
+        </div>
+        <div class="progress" style="height: 10px;">
+          <div class="progress-bar" role="progressbar" style="width: {{ budget_utilization }}%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 mb-3">
+    <div class="card">
+      <div class="card-header bg-white border-bottom">
+        <h5 class="mb-0"><i class="bi bi-people me-2"></i>Hiệu suất Nhân sự</h5>
+      </div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-2">
+          <span>Tổng nhân sự:</span>
+          <strong>{{ total_employees }}</strong>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span>Điểm trung bình:</span>
+          <strong class="text-primary">{{ avg_performance|floatformat:1 }}/100</strong>
+        </div>
+        <div class="d-flex justify-content-between">
+          <span>Tổng công việc:</span>
+          <strong>{{ total_tasks }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ project_status_labels|json_script:"project_status_labels" }}
+{{ project_status_data|json_script:"project_status_data" }}
+{{ expense_by_type_labels|json_script:"expense_by_type_labels" }}
+{{ expense_by_type_data|json_script:"expense_by_type_data" }}
+{{ monthly_expenses_labels|json_script:"monthly_expenses_labels" }}
+{{ monthly_expenses_data|json_script:"monthly_expenses_data" }}
+{{ budget_vs_spent_projects|json_script:"budget_vs_spent_projects" }}
+{{ budget_vs_spent_allocated|json_script:"budget_vs_spent_allocated" }}
+{{ budget_vs_spent_spent|json_script:"budget_vs_spent_spent" }}
+{{ project_completion_names|json_script:"project_completion_names" }}
+{{ project_completion_rates|json_script:"project_completion_rates" }}
+{{ expense_by_category_labels|json_script:"expense_by_category_labels" }}
+{{ expense_by_category_data|json_script:"expense_by_category_data" }}
+{{ top_employees_names|json_script:"top_employees_names" }}
+{{ top_employees_scores|json_script:"top_employees_scores" }}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2/dist/chartjs-plugin-datalabels.min.js"></script>
+<script>
+  if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
+    Chart.register(ChartDataLabels);
+  }
+
+  function safeJsonParse(id, fallback = []) {
+    const el = document.getElementById(id);
+    if (!el) return fallback;
+    try {
+      const raw = (el.textContent || '').trim();
+      if (!raw) return fallback;
+      if (!(raw.startsWith('[') || raw.startsWith('{'))) return fallback;
+      const parsed = JSON.parse(raw);
+      return normalizeArray(parsed);
+    } catch (err) {
+      console.error('JSON parse error', id, err);
+      return fallback;
+    }
+  }
+
+  function normalizeArray(val) {
+    if (Array.isArray(val)) return val;
+    if (val && typeof val === 'object') return Object.values(val);
+    return [];
+  }
+
+  function toNumberArray(arr) {
+    return normalizeArray(arr).map(v => {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : 0;
+    });
+  }
+
+  function buildChart(buildFn) {
+    try {
+      buildFn();
+    } catch (err) {
+      console.error('Chart build error', err);
+    }
+  }
+
+  // Project Status Chart
+  buildChart(function () {
+    const ctx = document.getElementById('projectStatusChart');
+    if (!ctx) return;
+    const labels = safeJsonParse('project_status_labels');
+    const data = toNumberArray(safeJsonParse('project_status_data'));
+    if (!labels.length || !data.length) return;
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          backgroundColor: ['#0000cd', '#3b82f6', '#22c55e', '#f59e0b', '#ef4444']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom' },
+          datalabels: {
+            color: '#ffffff',
+            font: { weight: 'bold', size: 12 },
+            formatter: function(value, context) {
+              const total = (context.dataset.data || []).reduce((a, b) => a + (Number(b) || 0), 0);
+              const pct = total > 0 ? Math.round((Number(value) / total) * 100) : 0;
+              return pct >= 5 ? pct + '%' : '';
+            }
+          }
+        }
+      }
+    });
+  });
+
+  // Expense Type Chart
+  buildChart(function () {
+    const ctx = document.getElementById('expenseTypeChart');
+    if (!ctx) return;
+    const labels = safeJsonParse('expense_by_type_labels');
+    const data = toNumberArray(safeJsonParse('expense_by_type_data'));
+    if (!labels.length || !data.length) return;
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{ label: 'Chi phí (VNĐ)', data, backgroundColor: '#0000cd' }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          datalabels: {
+            anchor: 'end',
+            align: 'top',
+            color: '#0f172a',
+            font: { weight: 'bold', size: 10 },
+            formatter: function(value) {
+              const v = Number(value) || 0;
+              if (v >= 1000000) return (v / 1000000).toFixed(1) + 'M';
+              if (v >= 1000) return (v / 1000).toFixed(0) + 'K';
+              return v.toLocaleString('vi-VN');
+            }
+          },
+          tooltip: { callbacks: { label: c => (c.parsed.y || 0).toLocaleString('vi-VN') + ' VNĐ' } }
+        },
+        scales: { y: { beginAtZero: true, ticks: { callback: v => (v || 0).toLocaleString('vi-VN') + ' VNĐ' } } }
+      }
+    });
+  });
+
+  // Monthly Expense Chart
+  buildChart(function () {
+    const ctx = document.getElementById('monthlyExpenseChart');
+    if (!ctx) return;
+    const labels = safeJsonParse('monthly_expenses_labels');
+    const data = toNumberArray(safeJsonParse('monthly_expenses_data'));
+    if (!labels.length || !data.length) return;
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Chi tiêu (VNĐ)',
+          data,
+          borderColor: '#0000cd',
+          backgroundColor: 'rgba(0, 0, 205, 0.1)',
+          tension: 0.4,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom' },
+          datalabels: {
+            anchor: 'end',
+            align: 'top',
+            color: '#0f172a',
+            font: { weight: 'bold', size: 10 },
+            formatter: function(value) {
+              const v = Number(value) || 0;
+              if (v >= 1000000) return (v / 1000000).toFixed(1) + 'M';
+              if (v >= 1000) return (v / 1000).toFixed(0) + 'K';
+              return v.toLocaleString('vi-VN');
+            }
+          },
+          tooltip: { callbacks: { label: c => (c.parsed.y || 0).toLocaleString('vi-VN') + ' VNĐ' } }
+        },
+        scales: { y: { beginAtZero: true, ticks: { callback: v => (v || 0).toLocaleString('vi-VN') + ' VNĐ' } } }
+      }
+    });
+  });
+
+  // Budget vs Spent Chart
+  buildChart(function () {
+    const ctx = document.getElementById('budgetVsSpentChart');
+    if (!ctx) return;
+    const labels = safeJsonParse('budget_vs_spent_projects');
+    const allocated = toNumberArray(safeJsonParse('budget_vs_spent_allocated'));
+    const spent = toNumberArray(safeJsonParse('budget_vs_spent_spent'));
+    if (!labels.length || !allocated.length || !spent.length) return;
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Phân bổ (VNĐ)', data: allocated, backgroundColor: '#3b82f6' },
+          { label: 'Chi tiêu (VNĐ)', data: spent, backgroundColor: '#ef4444' }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom' },
+          datalabels: {
+            anchor: 'end',
+            align: 'top',
+            color: '#0f172a',
+            font: { weight: 'bold', size: 10 },
+            formatter: function(value) {
+              const v = Number(value) || 0;
+              if (v >= 1000000) return (v / 1000000).toFixed(1) + 'M';
+              if (v >= 1000) return (v / 1000).toFixed(0) + 'K';
+              return v.toLocaleString('vi-VN');
+            }
+          },
+          tooltip: { callbacks: { label: c => `${c.dataset.label}: ${(c.parsed.y || 0).toLocaleString('vi-VN')} VNĐ` } }
+        },
+        scales: { y: { beginAtZero: true, ticks: { callback: v => (v || 0).toLocaleString('vi-VN') + ' VNĐ' } } }
+      }
+    });
+  });
+
+  // Project Completion Chart
+  buildChart(function () {
+    const ctx = document.getElementById('projectCompletionChart');
+    if (!ctx) return;
+    const labels = safeJsonParse('project_completion_names');
+    const data = toNumberArray(safeJsonParse('project_completion_rates'));
+    if (!labels.length || !data.length) return;
+    const colors = data.map(rate => rate >= 80 ? '#22c55e' : rate >= 50 ? '#f59e0b' : '#ef4444');
+    new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: [{ label: 'Tỷ lệ hoàn thành (%)', data, backgroundColor: colors }] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          datalabels: {
+            anchor: 'end',
+            align: 'top',
+            color: '#0f172a',
+            font: { weight: 'bold', size: 10 },
+            formatter: function(value) {
+              const v = Number(value) || 0;
+              return v.toFixed(1) + '%';
+            }
+          },
+          tooltip: { callbacks: { label: c => (c.parsed.y || 0).toFixed(1) + '%' } }
+        },
+        scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => (v || 0) + '%' } } }
+      }
+    });
+  });
+
+  // Expense by Category Chart
+  buildChart(function () {
+    const ctx = document.getElementById('expenseByCategoryChart');
+    if (!ctx) return;
+    const labels = safeJsonParse('expense_by_category_labels');
+    const data = toNumberArray(safeJsonParse('expense_by_category_data'));
+    if (!labels.length || !data.length) return;
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          backgroundColor: ['#0000cd', '#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom' },
+          datalabels: {
+            color: '#ffffff',
+            font: { weight: 'bold', size: 12 },
+            formatter: function(value, context) {
+              const total = (context.dataset.data || []).reduce((a, b) => a + (Number(b) || 0), 0);
+              const pct = total > 0 ? Math.round((Number(value) / total) * 100) : 0;
+              return pct >= 5 ? pct + '%' : '';
+            }
+          },
+          tooltip: { callbacks: { label: c => `${c.label}: ${(c.parsed || 0).toLocaleString('vi-VN')} VNĐ` } }
+        }
+      }
+    });
+  });
+
+  // Top Employees Chart
+  buildChart(function () {
+    const ctx = document.getElementById('topEmployeesChart');
+    if (!ctx) return;
+    const labels = safeJsonParse('top_employees_names');
+    const data = toNumberArray(safeJsonParse('top_employees_scores'));
+    if (!labels.length || !data.length) return;
+    new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: [{ label: 'Điểm hiệu suất', data, backgroundColor: '#0000cd' }] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: {
+          legend: { display: false },
+          datalabels: {
+            anchor: 'end',
+            align: 'right',
+            color: '#0f172a',
+            font: { weight: 'bold', size: 10 },
+            formatter: function(value) {
+              const v = Number(value) || 0;
+              return v.toFixed(1);
+            }
+          },
+          tooltip: { callbacks: { label: c => (c.parsed.x || 0).toFixed(1) + '/100' } }
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            max: 100,
+            ticks: { callback: v => (v || 0) + '/100' }
+          }
+        }
+      }
+    });
+  });
+</script>
+{% endblock %}

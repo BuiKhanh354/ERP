@@ -1,0 +1,15 @@
+Collecting Django
+  Using cached django-6.0.1-py3-none-any.whl.metadata (3.9 kB)
+Collecting asgiref>=3.9.1 (from Django)
+  Using cached asgiref-3.11.0-py3-none-any.whl.metadata (9.3 kB)
+Collecting sqlparse>=0.5.0 (from Django)
+  Using cached sqlparse-0.5.5-py3-none-any.whl.metadata (4.7 kB)
+Collecting tzdata (from Django)
+  Using cached tzdata-2025.3-py2.py3-none-any.whl.metadata (1.4 kB)
+Using cached django-6.0.1-py3-none-any.whl (8.3 MB)
+Using cached asgiref-3.11.0-py3-none-any.whl (24 kB)
+Using cached sqlparse-0.5.5-py3-none-any.whl (46 kB)
+Using cached tzdata-2025.3-py2.py3-none-any.whl (348 kB)
+Installing collected packages: tzdata, sqlparse, asgiref, Django
+
+Successfully installed Django-6.0.1 asgiref-3.11.0 sqlparse-0.5.5 tzdata-2025.3

@@ -1,0 +1,144 @@
+{% extends 'base_sidebar.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - ERP System{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center">
+    <a href="{% url 'clients:detail' client.pk %}" class="btn btn-outline-secondary me-3">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    {{ page_title }}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background-color: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        padding: 2rem;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #0f172a;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #0000cd;
+        box-shadow: 0 0 0 0.2rem rgba(0, 0, 205, 0.15);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="form-card">
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label for="{{ form.client.id_for_label }}" class="form-label">Khách hàng</label>
+                        <input type="text" class="form-control" value="{{ client.name }}" disabled>
+                        {{ form.client.as_hidden }}
+                        {% if form.client.errors %}
+                        <div class="text-danger small mt-1">{{ form.client.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.contact.id_for_label }}" class="form-label">Liên hệ</label>
+                        {{ form.contact }}
+                        {% if form.contact.errors %}
+                        <div class="text-danger small mt-1">{{ form.contact.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.interaction_type.id_for_label }}" class="form-label">
+                            Loại tương tác <span class="text-danger">*</span>
+                        </label>
+                        {{ form.interaction_type }}
+                        {% if form.interaction_type.errors %}
+                        <div class="text-danger small mt-1">{{ form.interaction_type.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.date.id_for_label }}" class="form-label">
+                            Ngày giờ <span class="text-danger">*</span>
+                        </label>
+                        {{ form.date }}
+                        {% if form.date.errors %}
+                        <div class="text-danger small mt-1">{{ form.date.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.subject.id_for_label }}" class="form-label">
+                            Tiêu đề <span class="text-danger">*</span>
+                        </label>
+                        {{ form.subject }}
+                        {% if form.subject.errors %}
+                        <div class="text-danger small mt-1">{{ form.subject.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">
+                            Mô tả <span class="text-danger">*</span>
+                        </label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                        <div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="form-check form-switch mt-4">
+                            {{ form.follow_up_required }}
+                            <label class="form-check-label" for="{{ form.follow_up_required.id_for_label }}">
+                                Cần theo dõi
+                            </label>
+                        </div>
+                        {% if form.follow_up_required.errors %}
+                        <div class="text-danger small mt-1">{{ form.follow_up_required.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.follow_up_date.id_for_label }}" class="form-label">Ngày theo dõi</label>
+                        {{ form.follow_up_date }}
+                        {% if form.follow_up_date.errors %}
+                        <div class="text-danger small mt-1">{{ form.follow_up_date.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {{ form.non_field_errors.0 }}
+                </div>
+                {% endif %}
+
+                <div class="d-flex justify-content-end mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-1"></i>{{ submit_text }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,300 @@
+{% extends 'base_sidebar.html' %}
+{% load static %}
+
+{% block title %}Đề xuất Lương & Thưởng - ERP System{% endblock %}
+
+{% block page_title %}Đề xuất Lương & Thưởng{% endblock %}
+
+{% block extra_css %}
+<style>
+  .recommendation-card {
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .recommendation-badge {
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 600;
+  }
+
+  .recommendation-increase {
+    background-color: #d1fae5;
+    color: #065f46;
+  }
+
+  .recommendation-maintain {
+    background-color: #e0e7ff;
+    color: #3730a3;
+  }
+
+  .recommendation-review {
+    background-color: #fef3c7;
+    color: #92400e;
+  }
+
+  .metric-item {
+    padding: 0.75rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+  }
+
+  .metric-label {
+    font-size: 0.85rem;
+    color: #64748b;
+    font-weight: 500;
+  }
+
+  .metric-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #0f172a;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col-md-12">
+    <div class="recommendation-card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0"><i class="bi bi-cash-stack me-2"></i>Phân tích Nhân sự</h5>
+        <div>
+          <select id="employeeSelect" class="form-select form-select-sm" style="width: 250px;">
+            <option value="">Chọn nhân sự để phân tích</option>
+            {% for employee in employees %}
+            <option value="{{ employee.id }}" {% if selected_employee and selected_employee.id == employee.id %}selected{% endif %}>
+              {{ employee.full_name }} - {{ employee.position }}
+            </option>
+            {% endfor %}
+          </select>
+          <button id="analyzeBtn" class="btn btn-primary btn-sm ms-2">
+            <i class="bi bi-graph-up me-1"></i>Phân tích
+          </button>
+        </div>
+      </div>
+      
+      <div id="loadingIndicator" class="text-center py-4" style="display: none;">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Đang phân tích...</span>
+        </div>
+        <p class="mt-2 text-muted">AI đang phân tích hiệu suất và đưa ra đề xuất...</p>
+      </div>
+
+      <div id="resultsContainer" style="display: none;">
+        <!-- Employee Info -->
+        <div class="recommendation-card mb-3">
+          <h6 class="mb-3">Thông tin Nhân sự</h6>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="metric-item">
+                <div class="metric-label">Tên nhân sự</div>
+                <div class="metric-value" id="employeeName"></div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="metric-item">
+                <div class="metric-label">Mức lương hiện tại</div>
+                <div class="metric-value" id="currentRate"></div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="metric-item">
+                <div class="metric-label">Điểm hiệu suất trung bình</div>
+                <div class="metric-value" id="avgScore"></div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="metric-item">
+                <div class="metric-label">Tổng giờ làm việc (3 tháng)</div>
+                <div class="metric-value" id="totalHours"></div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="metric-item">
+                <div class="metric-label">Số dự án đã tham gia</div>
+                <div class="metric-value" id="projectsWorked"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recommendation -->
+        <div class="recommendation-card mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0">Đề xuất</h6>
+            <span id="recommendationBadge" class="recommendation-badge"></span>
+          </div>
+          <div id="recommendationContent"></div>
+        </div>
+
+        <!-- AI Insights -->
+        <div class="recommendation-card mb-3">
+          <h6 class="mb-3"><i class="bi bi-info-circle me-2"></i>Nhận định từ AI</h6>
+          <div id="aiInsightsContent"></div>
+        </div>
+
+        <!-- AI Recommendations -->
+        <div class="recommendation-card">
+          <h6 class="mb-3"><i class="bi bi-check-circle me-2"></i>Khuyến nghị từ AI</h6>
+          <div id="aiRecommendationsContent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Polyfill showNotification/showConfirm để tránh lỗi JS khi global modal chưa sẵn sàng
+  (function ensureModalHelpers() {
+    const hasConfirm = typeof window.showConfirm === 'function';
+    const hasNotify = typeof window.showNotification === 'function';
+    if (hasConfirm && hasNotify) return;
+
+    const modalContainerId = 'global-modal-container';
+    function getContainer() {
+      let el = document.getElementById(modalContainerId);
+      if (!el) {
+        el = document.createElement('div');
+        el.id = modalContainerId;
+        document.body.appendChild(el);
+      }
+      return el;
+    }
+
+    window.showNotification = function(type, message) {
+      const container = getContainer();
+      const color = type === 'error' ? '#dc2626' : type === 'success' ? '#16a34a' : '#2563eb';
+      const box = document.createElement('div');
+      box.style.cssText = `
+        position: fixed; top: 20px; right: 20px; z-index: 2050;
+        background: #fff; border: 1px solid #e2e8f0; border-left: 4px solid ${color};
+        padding: 12px 16px; border-radius: 8px; box-shadow: 0 10px 30px rgba(15,23,42,0.12);
+        min-width: 260px; font-size: 14px; color: #0f172a;
+      `;
+      box.innerHTML = `
+        <div style="font-weight: 600; margin-bottom: 4px; text-transform: uppercase; color: ${color};">${type || 'info'}</div>
+        <div>${message || ''}</div>
+      `;
+      container.appendChild(box);
+      setTimeout(() => box.remove(), 3200);
+    };
+
+    window.showConfirm = function(message, onConfirm) {
+      const confirmed = window.confirm(message || 'Bạn có chắc chắn?');
+      if (confirmed && typeof onConfirm === 'function') onConfirm();
+      return confirmed;
+    };
+  })();
+
+  // Auto-analyze if employee is pre-selected
+  {% if selected_employee %}
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+      document.getElementById('analyzeBtn').click();
+    }, 500);
+  });
+  {% endif %}
+
+  document.getElementById('analyzeBtn').addEventListener('click', async function() {
+    const employeeId = document.getElementById('employeeSelect').value;
+    if (!employeeId) {
+      showNotification('warning', 'Vui lòng chọn nhân sự để phân tích');
+      return;
+    }
+    
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const resultsContainer = document.getElementById('resultsContainer');
+    
+    loadingIndicator.style.display = 'block';
+    resultsContainer.style.display = 'none';
+    
+    try {
+      const response = await fetch('{% url "core:ai-salary-recommendation-api" %}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ employee_id: parseInt(employeeId) })
+      });
+      
+      const data = await response.json();
+      loadingIndicator.style.display = 'none';
+      
+      if (data.error) {
+        showNotification('error', 'Lỗi: ' + data.error);
+        return;
+      }
+      
+      // Kiểm tra xem có data không
+      if (data.no_data) {
+        showNotification('warning', data.summary || data.message || 'Nhân viên chưa có đủ dữ liệu để phân tích. Vui lòng thêm dữ liệu ghi chép thời gian hoặc điểm hiệu suất trước.');
+        return;
+      }
+      
+      // Display employee info
+      document.getElementById('employeeName').textContent = data.employee_name;
+      document.getElementById('currentRate').textContent = data.current_hourly_rate.toLocaleString('vi-VN') + ' VNĐ/tháng';
+      document.getElementById('avgScore').textContent = data.average_score.toFixed(1) + '/100';
+      document.getElementById('totalHours').textContent = data.total_hours.toFixed(1) + ' giờ';
+      document.getElementById('projectsWorked').textContent = data.projects_worked + ' dự án';
+      
+      // Display recommendation
+      const recommendationText = {
+        'increase': 'Tăng lương',
+        'maintain': 'Giữ nguyên',
+        'review': 'Cần đánh giá lại'
+      };
+      
+      const badgeClass = {
+        'increase': 'recommendation-increase',
+        'maintain': 'recommendation-maintain',
+        'review': 'recommendation-review'
+      };
+      
+      document.getElementById('recommendationBadge').textContent = recommendationText[data.recommendation] || data.recommendation;
+      document.getElementById('recommendationBadge').className = 'recommendation-badge ' + badgeClass[data.recommendation] || 'recommendation-maintain';
+      
+      let recommendationHtml = '<p><strong>Lý do:</strong> ' + data.reasoning + '</p>';
+      
+      if (data.recommendation === 'increase') {
+        const newRate = data.current_hourly_rate * (1 + data.suggested_adjustment_percentage / 100);
+        recommendationHtml += `
+          <div class="alert alert-success mt-3">
+            <strong>Đề xuất tăng lương:</strong> ${data.suggested_adjustment_percentage}%<br>
+            <strong>Mức lương mới đề xuất:</strong> ${newRate.toLocaleString('vi-VN')} VNĐ/tháng<br>
+            <strong>Thưởng đề xuất:</strong> ${data.bonus_recommendation.toLocaleString('vi-VN')} VNĐ
+          </div>
+        `;
+      }
+      
+      document.getElementById('recommendationContent').innerHTML = recommendationHtml;
+      
+      // Display AI insights
+      const insightsHtml = data.ai_insights.map(insight => 
+        `<div class="metric-item"><p class="mb-0">${insight}</p></div>`
+      ).join('');
+      document.getElementById('aiInsightsContent').innerHTML = insightsHtml || '<p class="text-muted">Không có nhận định nào.</p>';
+      
+      // Display AI recommendations
+      const recommendationsHtml = data.ai_recommendations.map(rec => 
+        `<div class="metric-item"><p class="mb-0">${rec}</p></div>`
+      ).join('');
+      document.getElementById('aiRecommendationsContent').innerHTML = recommendationsHtml || '<p class="text-muted">Không có khuyến nghị nào.</p>';
+      
+      resultsContainer.style.display = 'block';
+    } catch (error) {
+      loadingIndicator.style.display = 'none';
+      showNotification('error', 'Lỗi khi phân tích: ' + error.message);
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,318 @@
+{% extends 'base_sidebar.html' %}
+{% load static %}
+
+{% block title %}{% if object %}Chỉnh sửa Đánh giá Hiệu suất{% else %}Tạo Đánh giá Hiệu suất{% endif %} - ERP System{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  {% if back_url %}
+  <a href="{{ back_url }}" class="btn btn-outline-secondary btn-sm" style="border-radius: 8px; padding: 0.5rem 0.75rem;">
+    <i class="bi bi-arrow-left me-1"></i>Quay lại
+  </a>
+  {% elif employee %}
+  <a href="{% url 'resources:detail' employee.pk %}" class="btn btn-outline-secondary btn-sm" style="border-radius: 8px; padding: 0.5rem 0.75rem;">
+    <i class="bi bi-arrow-left me-1"></i>Quay lại
+  </a>
+  {% elif form.employee.value %}
+  <a href="{% url 'resources:detail' form.employee.value %}" class="btn btn-outline-secondary btn-sm" style="border-radius: 8px; padding: 0.5rem 0.75rem;">
+    <i class="bi bi-arrow-left me-1"></i>Quay lại
+  </a>
+  {% else %}
+  <a href="{% url 'resources:list' %}" class="btn btn-outline-secondary btn-sm" style="border-radius: 8px; padding: 0.5rem 0.75rem;">
+    <i class="bi bi-arrow-left me-1"></i>Quay lại
+  </a>
+  {% endif %}
+  <span>{% if object %}Chỉnh sửa Đánh giá Hiệu suất{% else %}Tạo Đánh giá Hiệu suất{% endif %}</span>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/custom.css' %}">
+<style>
+  .form-card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    padding: 2.5rem;
+    border: 1px solid #e2e8f0;
+  }
+
+  .form-label {
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-control,
+  .form-select {
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    padding: 0.75rem 1rem;
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    border-color: #0000cd;
+    box-shadow: 0 0 0 0.2rem rgba(0, 0, 205, 0.15);
+  }
+
+  .form-section {
+    margin-bottom: 2rem;
+  }
+
+  .form-section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-primary {
+    background-color: #0000cd;
+    border-color: #0000cd;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    border-radius: 8px;
+  }
+
+  .btn-primary:hover {
+    background-color: #0000aa;
+    border-color: #0000aa;
+  }
+
+  .btn-secondary {
+    background-color: #64748b;
+    border-color: #64748b;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    border-radius: 8px;
+  }
+
+  .alert-danger {
+    background-color: #fee2e2;
+    border-color: #fecaca;
+    color: #991b1b;
+    border-radius: 8px;
+    padding: 1rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="form-card">
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger mb-4">
+          <ul class="mb-0">
+            {% for error in form.non_field_errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
+        <form method="post" id="performanceScoreForm">
+          {% csrf_token %}
+
+          <!-- Thông tin cơ bản -->
+          <div class="form-section">
+            <div class="form-section-title">
+              <i class="bi bi-info-circle"></i>
+              Thông tin cơ bản
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.employee.id_for_label }}" class="form-label">
+                  Nhân sự <span class="text-danger">*</span>
+                </label>
+                {{ form.employee }}
+                {% if form.employee.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.employee.errors %}{{ error }}{% endfor %}
+                </div>
+                {% endif %}
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.project.id_for_label }}" class="form-label">
+                  Dự án (tùy chọn)
+                </label>
+                {{ form.project }}
+                {% if form.project.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.project.errors %}{{ error }}{% endfor %}
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.period_start.id_for_label }}" class="form-label">
+                  Ngày bắt đầu <span class="text-danger">*</span>
+                </label>
+                {{ form.period_start }}
+                {% if form.period_start.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.period_start.errors %}{{ error }}{% endfor %}
+                </div>
+                {% endif %}
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.period_end.id_for_label }}" class="form-label">
+                  Ngày kết thúc <span class="text-danger">*</span>
+                </label>
+                {{ form.period_end }}
+                {% if form.period_end.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.period_end.errors %}{{ error }}{% endfor %}
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Điểm đánh giá -->
+          <div class="form-section">
+            <div class="form-section-title">
+              <i class="bi bi-star"></i>
+              Điểm đánh giá (0-100)
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.efficiency_score.id_for_label }}" class="form-label">
+                  Điểm hiệu quả
+                </label>
+                {{ form.efficiency_score }}
+                {% if form.efficiency_score.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.efficiency_score.errors %}{{ error }}{% endfor %}
+                </div>
+                {% endif %}
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.quality_score.id_for_label }}" class="form-label">
+                  Điểm chất lượng
+                </label>
+                {{ form.quality_score }}
+                {% if form.quality_score.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.quality_score.errors %}{{ error }}{% endfor %}
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.productivity_score.id_for_label }}" class="form-label">
+                  Điểm năng suất
+                </label>
+                {{ form.productivity_score }}
+                {% if form.productivity_score.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.productivity_score.errors %}{{ error }}{% endfor %}
+                </div>
+                {% endif %}
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.overall_score.id_for_label }}" class="form-label">
+                  Điểm tổng thể <span class="text-danger">*</span>
+                  <small class="text-muted d-block">(Sẽ tự động tính nếu để trống)</small>
+                </label>
+                {{ form.overall_score }}
+                {% if form.overall_score.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.overall_score.errors %}{{ error }}{% endfor %}
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Ghi chú -->
+          <div class="form-section">
+            <div class="form-section-title">
+              <i class="bi bi-file-text"></i>
+              Ghi chú
+            </div>
+            <div class="mb-3">
+              <label for="{{ form.notes.id_for_label }}" class="form-label">
+                Ghi chú
+              </label>
+              {{ form.notes }}
+              {% if form.notes.errors %}
+              <div class="text-danger small mt-1">
+                {% for error in form.notes.errors %}{{ error }}{% endfor %}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Buttons -->
+          <div class="d-flex justify-content-between align-items-center mt-4 pt-4 border-top">
+            <div>
+              {% if back_url %}
+              <a href="{{ back_url }}" class="btn btn-secondary">
+                <i class="bi bi-x-circle me-1"></i>Hủy
+              </a>
+              {% elif employee %}
+              <a href="{% url 'resources:detail' employee.pk %}" class="btn btn-secondary">
+                <i class="bi bi-x-circle me-1"></i>Hủy
+              </a>
+              {% elif form.employee.value %}
+              <a href="{% url 'resources:detail' form.employee.value %}" class="btn btn-secondary">
+                <i class="bi bi-x-circle me-1"></i>Hủy
+              </a>
+              {% else %}
+              <a href="{% url 'resources:list' %}" class="btn btn-secondary">
+                <i class="bi bi-x-circle me-1"></i>Hủy
+              </a>
+              {% endif %}
+            </div>
+            <div>
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle me-1"></i>Lưu
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Tự động tính overall_score nếu để trống
+    const form = document.getElementById('performanceScoreForm');
+    const efficiencyInput = document.getElementById('id_efficiency_score');
+    const qualityInput = document.getElementById('id_quality_score');
+    const productivityInput = document.getElementById('id_productivity_score');
+    const overallInput = document.getElementById('id_overall_score');
+
+    function calculateOverall() {
+      if (overallInput.value && overallInput.value.trim() !== '') {
+        return; // Nếu đã có giá trị, không tự động tính
+      }
+      const efficiency = parseFloat(efficiencyInput.value) || 0;
+      const quality = parseFloat(qualityInput.value) || 0;
+      const productivity = parseFloat(productivityInput.value) || 0;
+      if (efficiency > 0 || quality > 0 || productivity > 0) {
+        const avg = (efficiency + quality + productivity) / 3;
+        overallInput.value = avg.toFixed(2);
+      }
+    }
+
+    if (efficiencyInput) efficiencyInput.addEventListener('blur', calculateOverall);
+    if (qualityInput) qualityInput.addEventListener('blur', calculateOverall);
+    if (productivityInput) productivityInput.addEventListener('blur', calculateOverall);
+  });
+</script>
+{% endblock %}

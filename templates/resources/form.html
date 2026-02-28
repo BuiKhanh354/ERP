@@ -1,0 +1,371 @@
+{% extends 'base_sidebar.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - ERP System{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center">
+    <a href="{% url 'resources:list' %}" class="btn btn-outline-secondary me-3">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    {{ page_title }}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background-color: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        padding: 2rem;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #0f172a;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #0000cd;
+        box-shadow: 0 0 0 0.2rem rgba(0, 0, 205, 0.15);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="form-card">
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.employee_id.id_for_label }}" class="form-label">
+                            Mã nhân viên <span class="text-danger">*</span>
+                        </label>
+                        {{ form.employee_id }}
+                        {% if form.employee_id.errors %}
+                        <div class="text-danger small mt-1">{{ form.employee_id.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.department.id_for_label }}" class="form-label">Phòng ban</label>
+                        {{ form.department }}
+                        {% if form.department.errors %}
+                        <div class="text-danger small mt-1">{{ form.department.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                            Tên <span class="text-danger">*</span>
+                        </label>
+                        {{ form.first_name }}
+                        {% if form.first_name.errors %}
+                        <div class="text-danger small mt-1">{{ form.first_name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                            Họ <span class="text-danger">*</span>
+                        </label>
+                        {{ form.last_name }}
+                        {% if form.last_name.errors %}
+                        <div class="text-danger small mt-1">{{ form.last_name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.email.id_for_label }}" class="form-label">
+                            Email <span class="text-danger">*</span>
+                        </label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                        <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.phone.id_for_label }}" class="form-label">Số điện thoại</label>
+                        {{ form.phone }}
+                        {% if form.phone.errors %}
+                        <div class="text-danger small mt-1">{{ form.phone.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.position_fk.id_for_label }}" class="form-label">
+                            Chức vụ <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            {{ form.position_fk }}
+                            <button type="button" class="btn btn-outline-secondary" onclick="showCreatePositionModal()" title="Thêm chức vụ mới">
+                                <i class="bi bi-plus-circle"></i>
+                            </button>
+                        </div>
+                        {% if form.position_fk.errors %}
+                        <div class="text-danger small mt-1">{{ form.position_fk.errors.0 }}</div>
+                        {% endif %}
+                        <small class="text-muted">Chọn chức vụ từ danh sách hoặc nhập tùy chỉnh bên dưới</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.employment_type.id_for_label }}" class="form-label">
+                            Loại hợp đồng <span class="text-danger">*</span>
+                        </label>
+                        {{ form.employment_type }}
+                        {% if form.employment_type.errors %}
+                        <div class="text-danger small mt-1">{{ form.employment_type.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.position.id_for_label }}" class="form-label">
+                            Chức vụ tùy chỉnh
+                        </label>
+                        {{ form.position }}
+                        {% if form.position.errors %}
+                        <div class="text-danger small mt-1">{{ form.position.errors.0 }}</div>
+                        {% endif %}
+                        <small class="text-muted">Nếu không chọn từ danh sách, nhập chức vụ tùy chỉnh ở đây</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.role.id_for_label }}" class="form-label">
+                            Quyền <span class="text-danger">*</span>
+                        </label>
+                        {{ form.role }}
+                        {% if form.role.errors %}
+                        <div class="text-danger small mt-1">{{ form.role.errors.0 }}</div>
+                        {% endif %}
+                        <small class="text-muted">Quyền của người dùng trong hệ thống</small>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.hire_date.id_for_label }}" class="form-label">Ngày tuyển dụng</label>
+                        {{ form.hire_date }}
+                        {% if form.hire_date.errors %}
+                        <div class="text-danger small mt-1">{{ form.hire_date.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.hourly_rate.id_for_label }}" class="form-label">Mức lương/giờ</label>
+                        <div class="input-group">
+                            {{ form.hourly_rate }}
+                            <span class="input-group-text">VNĐ/giờ</span>
+                        </div>
+                        {% if form.hourly_rate.errors %}
+                        <div class="text-danger small mt-1">{{ form.hourly_rate.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <div class="form-check form-switch">
+                            {{ form.is_active }}
+                            <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                Đang hoạt động
+                            </label>
+                        </div>
+                        {% if form.is_active.errors %}
+                        <div class="text-danger small mt-1">{{ form.is_active.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {{ form.non_field_errors.0 }}
+                </div>
+                {% endif %}
+
+                <div class="d-flex justify-content-end mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-1"></i>{{ submit_text }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Modal tạo chức vụ mới -->
+<div class="modal fade" id="createPositionModal" tabindex="-1" aria-labelledby="createPositionModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="createPositionModalLabel">
+          <i class="bi bi-briefcase me-2"></i>Thêm chức vụ mới
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="createPositionForm">
+          <div class="mb-3">
+            <label for="positionName" class="form-label">Tên chức vụ <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="positionName" required placeholder="Ví dụ: Nhân viên Kế toán">
+          </div>
+          <div class="mb-3">
+            <label for="positionDescription" class="form-label">Mô tả</label>
+            <textarea class="form-control" id="positionDescription" rows="3" placeholder="Mô tả chức vụ (tùy chọn)"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+        <button type="button" class="btn btn-primary" onclick="createPosition()">
+          <i class="bi bi-check-circle me-1"></i>Tạo chức vụ
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const salaryInput = document.getElementById('{{ form.hourly_rate.id_for_label }}');
+    if (salaryInput) {
+        // Format số với dấu phẩy khi nhập
+        salaryInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/,/g, ''); // Loại bỏ dấu phẩy cũ
+            if (value && !isNaN(value)) {
+                // Format với dấu phẩy phân cách phần nghìn
+                value = parseFloat(value).toLocaleString('en-US');
+                e.target.value = value;
+            }
+        });
+
+        // Loại bỏ dấu phẩy trước khi submit
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (salaryInput.value) {
+                    // Loại bỏ dấu phẩy trước khi submit
+                    salaryInput.value = salaryInput.value.replace(/,/g, '');
+                }
+            });
+        }
+
+        // Format giá trị ban đầu nếu có
+        if (salaryInput.value && !isNaN(salaryInput.value.replace(/,/g, ''))) {
+            const initialValue = parseFloat(salaryInput.value.replace(/,/g, ''));
+            if (initialValue > 0) {
+                salaryInput.value = initialValue.toLocaleString('en-US');
+            }
+        }
+    }
+
+    // Toggle hiển thị position custom khi chọn position từ dropdown
+    const positionFkSelect = document.getElementById('id_position_fk');
+    const positionInput = document.getElementById('id_position');
+    
+    if (positionFkSelect && positionInput) {
+        // Tìm phần tử col-md-6 chứa position input (không phải cả row)
+        const positionInputCol = positionInput.closest('.col-md-6');
+        
+        positionFkSelect.addEventListener('change', function() {
+            if (this.value) {
+                positionInput.value = '';
+                // Chỉ ẩn phần tử col chứa position input, không ẩn cả row
+                if (positionInputCol) {
+                    positionInputCol.style.display = 'none';
+                }
+            } else {
+                // Hiển thị lại phần tử col chứa position input
+                if (positionInputCol) {
+                    positionInputCol.style.display = 'block';
+                }
+            }
+        });
+        
+        // Kiểm tra giá trị ban đầu
+        if (!positionFkSelect.value) {
+            // Hiển thị phần tử col chứa position input
+            if (positionInputCol) {
+                positionInputCol.style.display = 'block';
+            }
+        } else {
+            // Ẩn phần tử col chứa position input
+            if (positionInputCol) {
+                positionInputCol.style.display = 'none';
+            }
+        }
+    }
+});
+
+function showCreatePositionModal() {
+    const modal = new bootstrap.Modal(document.getElementById('createPositionModal'));
+    modal.show();
+    document.getElementById('positionName').focus();
+}
+
+function createPosition() {
+    const name = document.getElementById('positionName').value.trim();
+    const description = document.getElementById('positionDescription').value.trim();
+    
+    if (!name) {
+        showNotification('error', 'Vui lòng nhập tên chức vụ.');
+        return;
+    }
+    
+    fetch('{% url "resources:create_position" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            name: name,
+            description: description
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Thêm option mới vào dropdown
+            const positionFkSelect = document.getElementById('id_position_fk');
+            const option = document.createElement('option');
+            option.value = data.position.id;
+            option.text = data.position.name;
+            option.selected = true;
+            positionFkSelect.appendChild(option);
+            
+            // Đóng modal và reset form
+            const modal = bootstrap.Modal.getInstance(document.getElementById('createPositionModal'));
+            modal.hide();
+            document.getElementById('createPositionForm').reset();
+            
+            // Ẩn position custom input (chỉ ẩn col, không ẩn cả row)
+            const positionInput = document.getElementById('id_position');
+            if (positionInput) {
+                const positionInputCol = positionInput.closest('.col-md-6');
+                if (positionInputCol) {
+                    positionInputCol.style.display = 'none';
+                }
+            }
+            
+            showNotification('success', `Đã tạo chức vụ "${data.position.name}" thành công.`);
+        } else {
+            showNotification('error', data.error || 'Có lỗi xảy ra khi tạo chức vụ.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('error', 'Có lỗi xảy ra khi tạo chức vụ.');
+    });
+}
+</script>
+{% endblock %}

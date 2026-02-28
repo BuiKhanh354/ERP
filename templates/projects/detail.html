@@ -1,0 +1,705 @@
+{% extends 'base_sidebar.html' %}
+{% load static %}
+{% load humanize %}
+{% load custom_filters %}
+
+{% block title %}{{ project.name }} - ERP System{% endblock %}
+
+{% block page_title %}{{ project.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .detail-card {
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .status-badge-large {
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+
+  .progress-ring {
+    width: 120px;
+    height: 120px;
+  }
+
+  .task-item-card {
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    margin-bottom: 1rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+  }
+
+  .task-item-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    border-color: #0000cd;
+  }
+
+  .task-item-card.done {
+    opacity: 1;
+    border-color: #cbd5e1;
+  }
+
+  .task-item-card.done .task-title {
+    text-decoration: line-through;
+    color: #475569;
+  }
+
+  .task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+  }
+
+  .task-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 0.25rem;
+  }
+
+  .task-description {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin-bottom: 0.5rem;
+  }
+
+  .task-status-badge {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .status-todo { background-color: #f1f5f9; color: #64748b; }
+  .status-in_progress { background-color: #dbeafe; color: #1e40af; }
+  .status-review { background-color: #fef3c7; color: #92400e; }
+  .status-done { background-color: #d1fae5; color: #065f46; }
+  .status-overdue { background-color: #fee2e2; color: #991b1b; }
+
+  .task-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: #475569;
+    margin-bottom: 0.75rem;
+  }
+
+  .task-meta-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+  }
+
+  .task-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    font-size: 0.78rem;
+    color: #334155;
+    white-space: nowrap;
+  }
+
+  .task-pill.danger {
+    border-color: rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.06);
+    color: #991b1b;
+  }
+
+  .task-pill.warning {
+    border-color: rgba(245, 158, 11, 0.35);
+    background: rgba(245, 158, 11, 0.08);
+    color: #92400e;
+  }
+
+  .timeline-bar {
+    height: 8px;
+    border-radius: 4px;
+    background-color: #e2e8f0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .timeline-progress {
+    height: 100%;
+    background-color: #0000cd;
+    transition: width 0.3s;
+  }
+
+  .budget-card {
+    background: #667eea;
+    color: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .ai-insight-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+  }
+
+  .ai-insight-card.error {
+    background: #fef2f2;
+    border-color: #fecaca;
+  }
+
+  .ai-insight-card h6 {
+    color: #1e40af;
+  }
+
+  .ai-insight-card.error h6 {
+    color: #991b1b;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header Actions -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <span class="status-badge-large status-{{ project.status }}">
+      {{ project.get_status_display }}
+    </span>
+    <span class="badge bg-{{ project.priority }} ms-2">
+      {{ project.get_priority_display }}
+    </span>
+  </div>
+  <div>
+    {% if user_profile.is_manager %}
+    <a href="{% url 'projects:recommend_personnel' project.pk %}" class="btn btn-outline-info me-2">
+      <i class="bi bi-people me-1"></i>Đề xuất Nhân sự
+    </a>
+    {% endif %}
+    <a href="{% url 'projects:edit' project.pk %}" class="btn btn-outline-primary">
+      <i class="bi bi-pencil me-1"></i>Chỉnh sửa
+    </a>
+    <a href="{% url 'projects:delete' project.pk %}" class="btn btn-outline-danger">
+      <i class="bi bi-trash me-1"></i>Xóa
+    </a>
+  </div>
+</div>
+
+<div class="row">
+  <!-- Left Column -->
+  <div class="col-md-8">
+    <!-- Project Info -->
+    <div class="detail-card">
+      <h5 class="mb-3"><i class="bi bi-info-circle me-2"></i>Thông tin dự án</h5>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <strong class="text-muted">Khách hàng:</strong>
+          <p class="mb-0">{{ project.client.name }}</p>
+        </div>
+        <div class="col-md-6 mb-3">
+          <strong class="text-muted">Ngày tạo:</strong>
+          <p class="mb-0">{{ project.created_at|date:"d/m/Y H:i" }}</p>
+        </div>
+        {% if project.start_date %}
+        <div class="col-md-6 mb-3">
+          <strong class="text-muted">Ngày bắt đầu:</strong>
+          <p class="mb-0">{{ project.start_date|date:"d/m/Y" }}</p>
+        </div>
+        {% endif %}
+        {% if project.end_date %}
+        <div class="col-md-6 mb-3">
+          <strong class="text-muted">Ngày kết thúc:</strong>
+          <p class="mb-0">{{ project.end_date|date:"d/m/Y" }}</p>
+        </div>
+        {% endif %}
+        {% if project.description %}
+        <div class="col-12">
+          <strong class="text-muted">Mô tả:</strong>
+          <p class="mb-0">{{ project.description }}</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Timeline Progress -->
+    {% if project.start_date and project.end_date %}
+    <div class="detail-card">
+      <h5 class="mb-3"><i class="bi bi-calendar-range me-2"></i>Tiến độ thời gian</h5>
+      <div class="timeline-bar">
+        <div class="timeline-progress" style="width: {{ timeline_progress }}%"></div>
+      </div>
+      <div class="d-flex justify-content-between mt-2">
+        <small class="text-muted">{{ project.start_date|date:"d/m/Y" }}</small>
+        <small class="fw-semibold">{{ timeline_progress|floatformat:1 }}%</small>
+        <small class="text-muted">{{ project.end_date|date:"d/m/Y" }}</small>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Tasks -->
+    <div class="detail-card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0"><i class="bi bi-check-square me-2"></i>Công việc</h5>
+        {% if user.profile.is_manager %}
+        <a href="{% url 'projects:task_create' %}?project={{ project.pk }}&from=detail" class="btn btn-sm btn-primary">
+          <i class="bi bi-plus-circle me-1"></i>Thêm công việc
+        </a>
+        {% endif %}
+      </div>
+
+      <!-- Task Stats -->
+      <div class="row mb-3">
+        <div class="col-3 text-center">
+          <div class="fw-bold text-primary">{{ task_stats.total }}</div>
+          <small class="text-muted">Tổng</small>
+        </div>
+        <div class="col-3 text-center">
+          <div class="fw-bold text-secondary">{{ task_stats.todo }}</div>
+          <small class="text-muted">Cần làm</small>
+        </div>
+        <div class="col-3 text-center">
+          <div class="fw-bold text-info">{{ task_stats.in_progress }}</div>
+          <small class="text-muted">Đang làm</small>
+        </div>
+        <div class="col-3 text-center">
+          <div class="fw-bold text-success">{{ task_stats.done }}</div>
+          <small class="text-muted">Hoàn thành</small>
+        </div>
+      </div>
+
+      <!-- Task List -->
+      {% if tasks %}
+      <div class="task-list">
+        {% for task in tasks|slice:":10" %}
+        <div class="task-item-card {% if task.status == 'done' %}done{% endif %}">
+          <div class="task-header">
+            <div class="flex-grow-1">
+              <div class="task-title">{{ task.name }}</div>
+              {% if task.description %}
+              <div class="task-description">{{ task.description|truncatewords:30 }}</div>
+              {% endif %}
+            </div>
+            <span class="task-status-badge status-{{ task.status }}">
+              {% if task.status == 'todo' %}Cần làm
+              {% elif task.status == 'in_progress' %}Đang thực hiện
+              {% elif task.status == 'review' %}Đang xem xét
+              {% elif task.status == 'done' %}Hoàn thành
+              {% elif task.status == 'overdue' %}Quá hạn
+              {% endif %}
+            </span>
+          </div>
+          
+          <div class="task-meta">
+            <div class="task-meta-pills">
+              {% if task.department %}
+              <span class="task-pill"><i class="bi bi-building"></i>{{ task.department.name }}</span>
+              {% endif %}
+              {% if task.assigned_to %}
+              <span class="task-pill"><i class="bi bi-person"></i>{{ task.assigned_to.full_name }}</span>
+              {% endif %}
+              {% if task.due_date %}
+              <span class="task-pill {% if task.status == 'overdue' %}danger{% elif task.due_date|date:'Y-m-d' <= today|date:'Y-m-d' %}warning{% endif %}">
+                <i class="bi bi-calendar"></i>{{ task.due_date|date:"d/m/Y" }}
+              </span>
+              {% endif %}
+              {% if task.estimated_hours %}
+              {% if task.estimated_end_at %}
+              <span class="task-pill" title="Đếm ngược theo giờ ước tính">
+                <i class="bi bi-hourglass-split"></i>
+                <span class="js-countdown" data-end-at="{{ task.estimated_end_at|date:'c' }}"></span>
+              </span>
+              {% else %}
+              <span class="task-pill"><i class="bi bi-clock"></i>{{ task.estimated_hours|hours_hhmm }}</span>
+              {% endif %}
+              {% endif %}
+              {% if task.actual_hours or task.estimated_hours %}
+              <span class="task-pill">
+                <i class="bi bi-stopwatch"></i>
+                {{ task.actual_hours|default:0|hours_hhmm }} / {{ task.estimated_hours|default:0|hours_hhmm }}
+              </span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+        {% if tasks|length > 10 %}
+        <a href="{% url 'projects:tasks' %}?project={{ project.pk }}" class="btn btn-sm btn-outline-primary w-100 mt-2">
+          Xem tất cả {{ tasks|length }} công việc
+        </a>
+        {% endif %}
+      </div>
+      {% else %}
+      <p class="text-muted text-center py-3">Chưa có công việc nào.</p>
+      {% endif %}
+    </div>
+
+    <!-- Resource Allocations -->
+    {% if project.required_departments.exists %}
+    <div class="detail-card mb-3">
+      <h6 class="mb-2"><i class="bi bi-building me-2"></i>Phòng ban bắt buộc</h6>
+      <div class="d-flex flex-wrap gap-2">
+        {% for dept in project.required_departments.all %}
+        <span class="badge bg-primary">{{ dept.name }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if employee_allocations %}
+    <div class="detail-card">
+      <h5 class="mb-3"><i class="bi bi-people me-2"></i>Phân công nhân sự</h5>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Nhân viên</th>
+              <th>Phòng ban</th>
+              <th>Tỷ lệ phân bổ</th>
+              <th>Số công việc</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for alloc in employee_allocations %}
+            <tr>
+              <td>{{ alloc.employee.full_name }}</td>
+              <td>{{ alloc.department.name|default:"-" }}</td>
+              <td>
+                <div class="progress" style="height: 20px;">
+                  <div class="progress-bar" style="width: {{ alloc.allocation_percentage }}%">
+                    {{ alloc.allocation_percentage|floatformat:1 }}%
+                  </div>
+                </div>
+              </td>
+              <td>{{ alloc.task_count }} công việc</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right Column -->
+  <div class="col-md-4">
+    <!-- Completion Rate -->
+    <div class="detail-card text-center">
+      <h5 class="mb-3">Tỷ lệ hoàn thành</h5>
+      <div class="position-relative mb-3" style="width: 120px; height: 120px; margin: 0 auto;">
+        <svg class="progress-ring" viewBox="0 0 120 120" style="width: 120px; height: 120px;">
+          <circle cx="60" cy="60" r="54" fill="none" stroke="#e2e8f0" stroke-width="12"/>
+          {% if completion_rate > 0 %}
+          <circle cx="60" cy="60" r="54" fill="none" stroke="#0000cd" stroke-width="12"
+                  stroke-dasharray="{% widthratio completion_rate 100 339 %} 339"
+                  stroke-dashoffset="84.75"
+                  transform="rotate(-90 60 60)"/>
+          {% endif %}
+        </svg>
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+          <div class="h3 mb-0">{{ completion_rate|floatformat:0 }}%</div>
+        </div>
+      </div>
+      <p class="text-muted mb-0">{{ task_stats.done }}/{{ task_stats.total }} công việc</p>
+    </div>
+
+    <!-- Budget Summary -->
+    {% if total_allocated > 0 %}
+    <div class="budget-card">
+      <h6 class="mb-3"><i class="bi bi-cash-stack me-2"></i>Tổng quan ngân sách</h6>
+      {% if project.budget_for_personnel %}
+      <div class="mb-3 pb-3 border-bottom border-white border-opacity-25">
+        <small class="d-block mb-1 opacity-75">Ngân sách nhân sự</small>
+        <strong>{{ project.budget_for_personnel|floatformat:0|intcomma }} VNĐ</strong>
+      </div>
+      {% endif %}
+      <div class="mb-2">
+        <div class="d-flex justify-content-between mb-1">
+          <span>Đã phân bổ:</span>
+          <strong>{{ total_allocated|floatformat:0|intcomma }} VNĐ</strong>
+        </div>
+        <div class="d-flex justify-content-between mb-1">
+          <span>Đã chi tiêu:</span>
+          <strong>{{ total_spent|floatformat:0|intcomma }} VNĐ</strong>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span>Còn lại:</span>
+          <strong>{{ remaining_budget|floatformat:0|intcomma }} VNĐ</strong>
+        </div>
+        <div class="progress" style="height: 8px; background-color: rgba(255,255,255,0.3);">
+          <div class="progress-bar bg-white" style="width: {{ budget_utilization }}%"></div>
+        </div>
+        <small class="mt-2 d-block">Sử dụng: {{ budget_utilization|floatformat:1 }}%</small>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- AI Insights -->
+    {% if ai_insight and not ai_insight_error and not ai_insight.no_data %}
+    {{ ai_insight|json_script:"ai-insight-data" }}
+    {% endif %}
+    <div class="ai-insight-card {% if ai_insight_error or ai_insight.no_data %}error{% endif %}">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="mb-0"><i class="bi bi-robot me-2"></i>AI Insights</h6>
+        {% if ai_insight and not ai_insight_error and not ai_insight.no_data %}
+        <button
+          type="button"
+          class="btn btn-link p-0 border-0"
+          onclick="showProjectAIInsightsModal()"
+          title="Xem chi tiết"
+          style="color: #1e40af; text-decoration: none; font-size: 1.1rem;"
+          onmouseover="this.style.color='#3b82f6'"
+          onmouseout="this.style.color='#1e40af'"
+        >
+          <i class="bi bi-arrows-fullscreen"></i>
+        </button>
+        {% endif %}
+      </div>
+      {% if ai_insight_error %}
+      <div class="alert alert-danger mb-0" style="font-size: 0.85rem;">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        <strong>Lỗi:</strong> {{ ai_insight_error }}
+        <br><small class="text-muted">Vui lòng kiểm tra cấu hình API key trong settings.</small>
+      </div>
+      {% elif ai_insight and ai_insight.no_data %}
+      <div class="alert alert-info mb-0" style="font-size: 0.85rem;">
+        <i class="bi bi-info-circle me-1"></i>
+        <strong>Thông báo:</strong> {{ ai_insight.summary|default:"Dự án chưa có công việc hoặc phân bổ nhân sự. Vui lòng thêm công việc hoặc phân bổ nhân sự trước khi phân tích." }}
+      </div>
+      {% elif ai_insight %}
+      <p class="mb-2" style="font-size: 0.9rem; color: #334155;">{{ ai_insight.summary|truncatewords:30 }}</p>
+      {% if ai_insight.recommendations %}
+      <div class="mt-2">
+        <strong style="color: #1e40af;">Đề xuất:</strong>
+        <ul class="mt-1" style="font-size: 0.85rem; padding-left: 1.2rem; color: #475569;">
+          {% for rec in ai_insight.recommendations|slice:":3" %}
+          <li>{{ rec }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+      {% else %}
+      <p class="text-muted mb-0" style="font-size: 0.85rem;">Chưa có phân tích AI. Vui lòng thử lại sau.</p>
+      {% endif %}
+    </div>
+
+    <!-- Recent Time Entries -->
+    {% if recent_time_entries %}
+    <div class="detail-card">
+      <h6 class="mb-3"><i class="bi bi-clock-history me-2"></i>Ghi chép thời gian gần đây</h6>
+      {% for entry in recent_time_entries %}
+      <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+        <div>
+          <strong>{{ entry.employee.full_name }}</strong>
+          <br>
+          <small class="text-muted">{{ entry.task.name|truncatewords:5 }}</small>
+        </div>
+        <div class="text-end">
+          <strong>{{ entry.hours }}h</strong>
+          <br>
+          <small class="text-muted">{{ entry.date|date:"d/m/Y" }}</small>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Countdown timers (estimated time)
+function formatCountdown(ms) {
+  if (ms <= 0) return 'Hết giờ';
+  const totalSeconds = Math.floor(ms / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (days > 0) {
+    return `${days}d ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function updateCountdowns() {
+  const now = new Date();
+  document.querySelectorAll('.js-countdown').forEach(el => {
+    const end = el.getAttribute('data-end-at');
+    if (!end) return;
+    const endDate = new Date(end);
+    const diff = endDate.getTime() - now.getTime();
+    el.textContent = formatCountdown(diff);
+    const pill = el.closest('.task-pill');
+    if (pill) {
+      pill.classList.remove('warning', 'danger');
+      if (diff <= 0) pill.classList.add('danger');
+      else if (diff <= 30 * 60 * 1000) pill.classList.add('warning');
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  updateCountdowns();
+  setInterval(updateCountdowns, 1000);
+});
+
+// Function hiển thị modal AI Insights chi tiết cho dự án
+function showProjectAIInsightsModal() {
+  // Lấy dữ liệu từ json_script tag
+  const aiInsightScript = document.getElementById('ai-insight-data');
+  if (!aiInsightScript) {
+    window.showNotification('error', 'Không tìm thấy dữ liệu AI Insights.');
+    return;
+  }
+
+  let aiInsightData;
+  try {
+    aiInsightData = JSON.parse(aiInsightScript.textContent);
+  } catch (e) {
+    console.error('Error parsing AI insight data:', e);
+    window.showNotification('error', 'Lỗi khi đọc dữ liệu AI Insights.');
+    return;
+  }
+
+  // Parse insights và recommendations
+  let insightsList = [];
+  let recommendationsList = [];
+
+  try {
+    if (typeof aiInsightData.insights === 'string') {
+      insightsList = JSON.parse(aiInsightData.insights || '[]');
+    } else {
+      insightsList = Array.isArray(aiInsightData.insights) ? aiInsightData.insights : [];
+    }
+
+    if (typeof aiInsightData.recommendations === 'string') {
+      recommendationsList = JSON.parse(aiInsightData.recommendations || '[]');
+    } else {
+      recommendationsList = Array.isArray(aiInsightData.recommendations) ? aiInsightData.recommendations : [];
+    }
+  } catch (e) {
+    console.error('Error parsing insights/recommendations:', e);
+  }
+
+  // Làm sạch summary
+  let summaryText = aiInsightData.summary || '';
+  summaryText = summaryText
+    .replace(/\*\*/g, '')
+    .replace(/\*/g, '')
+    .replace(/```json/g, '')
+    .replace(/```/g, '')
+    .replace(/\{/g, '')
+    .replace(/\}/g, '')
+    .replace(/\[/g, '')
+    .replace(/\]/g, '')
+    .replace(/"summary":/gi, '')
+    .replace(/"insights":/gi, '')
+    .replace(/"recommendations":/gi, '')
+    .replace(/Dưới đây là.*?JSON:/gi, '')
+    .trim();
+
+  // Tạo HTML cho modal
+  const modalHtml = `
+    <div class="modal fade" id="projectAIInsightsModal" tabindex="-1" aria-labelledby="projectAIInsightsModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title" id="projectAIInsightsModalLabel">
+              <i class="bi bi-robot me-2"></i>${aiInsightData.title || 'AI Insights - {{ project.name|escapejs }}'}
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+            ${summaryText ? `
+              <div class="mb-4">
+                <h6 class="text-primary mb-3"><i class="bi bi-file-text me-2"></i>Tóm tắt</h6>
+                <div class="p-3 bg-light rounded">
+                  ${summaryText.split(/\n\n+/).filter(p => p.trim().length > 0).map(p =>
+                    `<p class="mb-2">${p.trim().replace(/\n/g, '<br>')}</p>`
+                  ).join('')}
+                </div>
+              </div>
+            ` : ''}
+
+            ${insightsList.length > 0 ? `
+              <div class="mb-4">
+                <h6 class="text-info mb-3"><i class="bi bi-lightbulb me-2"></i>Những điểm nổi bật</h6>
+                <ul class="list-group">
+                  ${insightsList.map(insight => {
+                    const insightText = typeof insight === 'string' ? insight : (insight.text || JSON.stringify(insight));
+                    return `
+                      <li class="list-group-item">
+                        <i class="bi bi-check-circle-fill text-info me-2"></i>${insightText}
+                      </li>
+                    `;
+                  }).join('')}
+                </ul>
+              </div>
+            ` : ''}
+
+            ${recommendationsList.length > 0 ? `
+              <div class="mb-4">
+                <h6 class="text-success mb-3"><i class="bi bi-star me-2"></i>Khuyến nghị</h6>
+                <ul class="list-group">
+                  ${recommendationsList.map(rec => {
+                    const recText = typeof rec === 'string' ? rec : (rec.text || JSON.stringify(rec));
+                    return `
+                      <li class="list-group-item">
+                        <i class="bi bi-arrow-right-circle-fill text-success me-2"></i>${recText}
+                      </li>
+                    `;
+                  }).join('')}
+                </ul>
+              </div>
+            ` : ''}
+
+            <div class="text-center mt-4">
+              <a href="{% url 'core:ai-chat' %}" class="btn btn-primary">
+                <i class="bi bi-chat-dots me-2"></i>Chat với AI để tìm hiểu thêm
+              </a>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Xóa modal cũ nếu có
+  const oldModal = document.getElementById('projectAIInsightsModal');
+  if (oldModal) {
+    oldModal.remove();
+  }
+
+  // Thêm modal mới vào body
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+  // Hiển thị modal
+  const modal = new bootstrap.Modal(document.getElementById('projectAIInsightsModal'));
+  modal.show();
+
+  // Xóa modal khi đóng
+  document.getElementById('projectAIInsightsModal').addEventListener('hidden.bs.modal', function() {
+    this.remove();
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,285 @@
+{% extends 'base_sidebar.html' %} {% load static %} {% block title %}Lịch sử
+Chat AI - PRM System{% endblock %} {% block page_title %}Lịch sử Chat AI{%
+endblock %} {% block breadcrumb_title %}Lịch sử Chat AI{% endblock %} {% block
+extra_css %}
+<style>
+  .chat-history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+
+  .chat-session-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    background: #ffffff;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .chat-session-card:hover {
+    border-color: #0000cd;
+    box-shadow: 0 4px 12px rgba(0, 0, 205, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .chat-session-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+  }
+
+  .chat-session-meta {
+    flex: 1;
+  }
+
+  .chat-session-title {
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 0.25rem;
+  }
+
+  .chat-session-preview {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .chat-session-info {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.85rem;
+    color: #94a3b8;
+  }
+
+  .chat-session-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #64748b;
+  }
+
+  .empty-state-icon {
+    font-size: 4rem;
+    color: #cbd5e1;
+    margin-bottom: 1rem;
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="chat-history-header">
+  <div>
+    <h2 class="mb-1" style="font-weight: 800; color: #0f172a">
+      Lịch sử Chat AI
+    </h2>
+    <p class="text-muted mb-0">
+      Xem lại các cuộc trò chuyện trước đó với PRM AI
+    </p>
+  </div>
+  <a href="{% url 'core:ai-chat' %}" class="btn btn-primary">
+    <i class="bi bi-plus-circle"></i> Chat mới
+  </a>
+</div>
+
+{% if chat_sessions %}
+<div class="chat-sessions-list">
+  {% for session in chat_sessions %}
+  <div
+    class="chat-session-card"
+    onclick="window.location.href='{% url 'core:ai-chat' %}?session_id={{ session.session_id }}'"
+  >
+    <div class="chat-session-header">
+      <div class="chat-session-meta">
+        <div class="chat-session-title">
+          Phiên chat - {{ session.last_updated|date:"d/m/Y H:i" }}
+        </div>
+        <div class="chat-session-preview">
+          <strong>Bạn:</strong> {{ session.last_message }}
+        </div>
+        <div class="chat-session-preview">
+          <strong>AI:</strong> {{ session.last_response }}
+        </div>
+        <div class="chat-session-info">
+          <span
+            ><i class="bi bi-chat-dots"></i> {{ session.message_count }} tin
+            nhắn</span
+          >
+          <span
+            ><i class="bi bi-clock"></i> {{ session.last_updated|timesince }}
+            trước</span
+          >
+        </div>
+      </div>
+      <div class="chat-session-actions">
+        <a
+          href="{% url 'core:ai-chat' %}?session_id={{ session.session_id }}"
+          class="btn btn-sm btn-outline-primary"
+          onclick="event.stopPropagation();"
+        >
+          <i class="bi bi-arrow-right"></i> Mở
+        </a>
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-danger"
+          onclick="deleteChatSession('{{ session.session_id }}', event);"
+        >
+          <i class="bi bi-trash"></i> Xóa
+        </button>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% if is_paginated %}
+<nav aria-label="Page navigation">
+  <ul class="pagination justify-content-center">
+    {% if page_obj.has_previous %}
+    <li class="page-item">
+      <a class="page-link" href="?page={{ page_obj.previous_page_number }}"
+        >Trước</a
+      >
+    </li>
+    {% endif %} {% for num in page_obj.paginator.page_range %} {% if
+    page_obj.number == num %}
+    <li class="page-item active">
+      <span class="page-link">{{ num }}</span>
+    </li>
+    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+    <li class="page-item">
+      <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+    </li>
+    {% endif %} {% endfor %} {% if page_obj.has_next %}
+    <li class="page-item">
+      <a class="page-link" href="?page={{ page_obj.next_page_number }}">Sau</a>
+    </li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %} {% else %}
+<div class="empty-state">
+  <div class="empty-state-icon">
+    <i class="bi bi-chat-left-text"></i>
+  </div>
+  <h4>Chưa có lịch sử chat</h4>
+  <p>Bạn chưa có cuộc trò chuyện nào với PRM AI. Hãy bắt đầu chat ngay!</p>
+  <a href="{% url 'core:ai-chat' %}" class="btn btn-primary mt-3">
+    <i class="bi bi-plus-circle"></i> Bắt đầu chat mới
+  </a>
+</div>
+{% endif %}
+
+<!-- Delete Confirmation Modal -->
+<div
+  class="modal fade"
+  id="deleteModal"
+  tabindex="-1"
+  aria-labelledby="deleteModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteModalLabel">Xác nhận xóa</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        Bạn có chắc chắn muốn xóa phiên chat này? Hành động này không thể hoàn
+        tác.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Hủy
+        </button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+          Xóa
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  let sessionToDelete = null;
+
+  function deleteChatSession(sessionId, event) {
+    event.stopPropagation();
+    sessionToDelete = sessionId;
+    const modal = new bootstrap.Modal(document.getElementById("deleteModal"));
+    modal.show();
+  }
+
+  document
+    .getElementById("confirmDeleteBtn")
+    .addEventListener("click", async function () {
+      if (!sessionToDelete) return;
+
+      try {
+        const response = await fetch(
+          `{% url 'core:ai-chat-delete' %}?session_id=${sessionToDelete}`,
+          {
+            method: "DELETE",
+            headers: {
+              "X-CSRFToken": "{{ csrf_token }}",
+              "X-Requested-With": "XMLHttpRequest",
+            },
+          }
+        );
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Remove the session card from DOM
+          const sessionCard = document.querySelector(
+            `[onclick*="${sessionToDelete}"]`
+          );
+          if (sessionCard) {
+            sessionCard.style.transition = "opacity 0.3s";
+            sessionCard.style.opacity = "0";
+            setTimeout(() => {
+              sessionCard.remove();
+              // Reload if no sessions left
+              if (
+                document.querySelectorAll(".chat-session-card").length === 0
+              ) {
+                window.location.reload();
+              }
+            }, 300);
+          }
+
+          // Close modal
+          const modal = bootstrap.Modal.getInstance(
+            document.getElementById("deleteModal")
+          );
+          modal.hide();
+        } else {
+          showNotification(
+            "error",
+            "Có lỗi xảy ra khi xóa phiên chat: " +
+              (data.error || "Unknown error")
+          );
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        showNotification(
+          "error",
+          "Có lỗi xảy ra khi xóa phiên chat. Vui lòng thử lại."
+        );
+      } finally {
+        sessionToDelete = null;
+      }
+    });
+</script>
+{% endblock %}

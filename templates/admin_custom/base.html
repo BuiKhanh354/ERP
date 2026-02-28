@@ -1,0 +1,978 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="icon"
+      type="image/png"
+      href="{% static 'assets/logo/logo.png' %}"
+    />
+    <title>{% block title %}Admin Panel - ERP System{% endblock %}</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/custom.css' %}" />
+    <style>
+      :root {
+        --admin-sidebar-width: 280px;
+        --admin-sidebar-bg: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+        --admin-sidebar-active: #3b82f6;
+        --admin-sidebar-hover: rgba(59, 130, 246, 0.15);
+        --admin-content-bg: #f8fafc;
+        --admin-card-bg: #ffffff;
+        --admin-text-primary: #0f172a;
+        --admin-text-secondary: #64748b;
+        --admin-border-color: #e2e8f0;
+        --admin-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --admin-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --admin-shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        --admin-shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        --admin-shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        margin: 0;
+        padding: 0;
+        color: var(--admin-text-primary);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* Admin Sidebar - Cải thiện đẹp hơn */
+      .admin-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: var(--admin-sidebar-width);
+        background: var(--admin-sidebar-bg);
+        color: #ffffff;
+        overflow-y: auto;
+        overflow-x: hidden;
+        z-index: 1000;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: var(--admin-shadow-xl);
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .admin-sidebar::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .admin-sidebar::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 4px;
+      }
+
+      .admin-sidebar::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+        transition: background 0.2s;
+      }
+
+      .admin-sidebar::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      .admin-sidebar-header {
+        padding: 2rem 1.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        background: rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(10px);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+
+      .admin-sidebar-header img {
+        height: 52px;
+        width: 52px;
+        object-fit: cover;
+        border-radius: 14px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .admin-sidebar-header .brand-text {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .admin-sidebar-header .brand-title {
+        font-size: 1.35rem;
+        font-weight: 900;
+        color: #ffffff;
+        margin: 0;
+        letter-spacing: -0.5px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .admin-sidebar-header .brand-subtitle {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.7);
+        margin: 0;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .admin-sidebar-menu {
+        padding: 1.5rem 0;
+        display: flex;
+        flex-direction: column;
+        min-height: calc(100vh - 140px);
+      }
+
+      .admin-menu-section {
+        margin-bottom: 2.5rem;
+      }
+
+      .admin-menu-section-title {
+        padding: 0.875rem 1.5rem 0.625rem;
+        font-size: 0.7rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: rgba(255, 255, 255, 0.5);
+        margin-bottom: 0.75rem;
+        position: relative;
+      }
+
+      .admin-menu-section-title::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 1.5rem;
+        right: 1.5rem;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      }
+
+      .admin-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 1.5rem;
+        color: rgba(255, 255, 255, 0.85);
+        text-decoration: none;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-left: 4px solid transparent;
+        font-weight: 500;
+        font-size: 0.95rem;
+        margin: 0.25rem 0.75rem;
+        border-radius: 12px;
+        position: relative;
+      }
+
+      .admin-menu-item::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 0;
+        background: var(--admin-sidebar-active);
+        border-radius: 12px 0 0 12px;
+        transition: width 0.3s ease;
+      }
+
+      .admin-menu-item:hover {
+        background: var(--admin-sidebar-hover);
+        color: #ffffff;
+        border-left-color: var(--admin-sidebar-active);
+        transform: translateX(6px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+      }
+
+      .admin-menu-item:hover::before {
+        width: 4px;
+      }
+
+      .admin-menu-item.active {
+        background: linear-gradient(90deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%);
+        color: #ffffff;
+        border-left-color: var(--admin-sidebar-active);
+        font-weight: 700;
+        box-shadow: inset 4px 0 12px rgba(59, 130, 246, 0.3), 0 4px 12px rgba(59, 130, 246, 0.15);
+      }
+
+      .admin-menu-item.active::before {
+        width: 4px;
+      }
+
+      .admin-menu-item i {
+        font-size: 1.3rem;
+        width: 28px;
+        text-align: center;
+        opacity: 0.9;
+        transition: all 0.3s ease;
+      }
+
+      .admin-menu-item:hover i,
+      .admin-menu-item.active i {
+        opacity: 1;
+        transform: scale(1.1);
+      }
+
+      .admin-menu-item .badge {
+        margin-left: auto;
+        background: linear-gradient(135deg, var(--admin-sidebar-active) 0%, #2563eb 100%);
+        color: #ffffff;
+        padding: 0.35rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+      }
+
+      /* Admin Top Bar - Cải thiện */
+      .admin-top-bar {
+        position: fixed;
+        top: 0;
+        left: var(--admin-sidebar-width);
+        right: 0;
+        height: 85px;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border-bottom: 1px solid var(--admin-border-color);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 3rem;
+        z-index: 999;
+        box-shadow: var(--admin-shadow-md);
+        backdrop-filter: blur(10px);
+      }
+
+      .admin-top-bar .page-title {
+        font-size: 2rem;
+        font-weight: 900;
+        color: var(--admin-text-primary);
+        margin: 0;
+        letter-spacing: -1px;
+        background: linear-gradient(135deg, var(--admin-text-primary) 0%, var(--admin-sidebar-active) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .admin-top-bar-actions {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+      }
+
+      .admin-user-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.75rem 1.5rem;
+        border-radius: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+      }
+
+      .admin-user-info:hover {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border-color: var(--admin-sidebar-active);
+        box-shadow: var(--admin-shadow);
+        transform: translateY(-2px);
+      }
+
+      .admin-user-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--admin-sidebar-active) 0%, #2563eb 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 1.1rem;
+        box-shadow: 0 6px 12px rgba(59, 130, 246, 0.4);
+        border: 3px solid rgba(255, 255, 255, 0.5);
+      }
+
+      .admin-user-name {
+        font-weight: 700;
+        color: var(--admin-text-primary);
+        font-size: 1rem;
+      }
+
+      .admin-user-role {
+        font-size: 0.8rem;
+        color: var(--admin-text-secondary);
+        font-weight: 600;
+      }
+
+      /* Admin Content */
+      .admin-main-content {
+        margin-left: var(--admin-sidebar-width);
+        margin-top: 85px;
+        padding: 3rem;
+        min-height: calc(100vh - 85px);
+      }
+
+      /* Cards - Cải thiện đẹp hơn */
+      .card {
+        background-color: var(--admin-card-bg);
+        border-radius: 20px;
+        border: 1px solid var(--admin-border-color);
+        box-shadow: var(--admin-shadow);
+        margin-bottom: 2rem;
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+      }
+
+      .card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--admin-sidebar-active), #2563eb, var(--admin-sidebar-active));
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .card:hover {
+        box-shadow: var(--admin-shadow-lg);
+        transform: translateY(-4px);
+        border-color: rgba(59, 130, 246, 0.3);
+      }
+
+      .card:hover::before {
+        opacity: 1;
+      }
+
+      .card-header {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border-bottom: 2px solid var(--admin-border-color);
+        padding: 1.75rem 2.5rem;
+        font-weight: 800;
+        font-size: 1.15rem;
+        color: var(--admin-text-primary);
+        letter-spacing: -0.3px;
+      }
+
+      .card-header.bg-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+        color: #ffffff;
+        border-bottom: none;
+      }
+
+      .card-body {
+        padding: 2.5rem;
+      }
+
+      /* Buttons - Cải thiện đẹp hơn */
+      .btn {
+        border-radius: 12px;
+        font-weight: 700;
+        padding: 0.75rem 1.5rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none;
+        font-size: 0.95rem;
+        letter-spacing: 0.3px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .btn::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        transform: translate(-50%, -50%);
+        transition: width 0.6s, height 0.6s;
+      }
+
+      .btn:hover::before {
+        width: 300px;
+        height: 300px;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        box-shadow: 0 6px 12px rgba(59, 130, 246, 0.4);
+        color: #ffffff;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(59, 130, 246, 0.5);
+      }
+
+      .btn-outline-primary {
+        border: 2px solid var(--admin-sidebar-active);
+        color: var(--admin-sidebar-active);
+        background: transparent;
+        font-weight: 600;
+      }
+
+      .btn-outline-primary:hover {
+        background: linear-gradient(135deg, var(--admin-sidebar-active) 0%, #2563eb 100%);
+        color: #ffffff;
+        transform: translateY(-3px);
+        box-shadow: 0 6px 12px rgba(59, 130, 246, 0.4);
+        border-color: transparent;
+      }
+
+      .btn-success {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        box-shadow: 0 6px 12px rgba(16, 185, 129, 0.4);
+        color: #ffffff;
+      }
+
+      .btn-success:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(16, 185, 129, 0.5);
+      }
+
+      .btn-outline-success {
+        border: 2px solid #10b981;
+        color: #10b981;
+        background: transparent;
+      }
+
+      .btn-outline-success:hover {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: #ffffff;
+        transform: translateY(-3px);
+        box-shadow: 0 6px 12px rgba(16, 185, 129, 0.4);
+      }
+
+      .btn-outline-danger {
+        border: 2px solid #ef4444;
+        color: #ef4444;
+        background: transparent;
+      }
+
+      .btn-outline-danger:hover {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: #ffffff;
+        transform: translateY(-3px);
+        box-shadow: 0 6px 12px rgba(239, 68, 68, 0.4);
+      }
+
+      .btn-secondary {
+        background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+        box-shadow: 0 6px 12px rgba(100, 116, 139, 0.4);
+        color: #ffffff;
+      }
+
+      .btn-secondary:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(100, 116, 139, 0.5);
+      }
+
+      /* Tables - Cải thiện đẹp hơn */
+      .table {
+        border-collapse: separate;
+        border-spacing: 0;
+        margin: 0;
+      }
+
+      .table thead th {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        color: var(--admin-text-primary);
+        font-weight: 800;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding: 1.25rem 1.5rem;
+        border-bottom: 3px solid var(--admin-border-color);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+
+      .table tbody tr {
+        transition: all 0.3s ease;
+        border-bottom: 1px solid var(--admin-border-color);
+      }
+
+      .table tbody tr:hover {
+        background: linear-gradient(90deg, #f8fafc 0%, #ffffff 50%, #f8fafc 100%);
+        transform: scale(1.01);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+      }
+
+      .table tbody tr:last-child {
+        border-bottom: none;
+      }
+
+      .table tbody td {
+        padding: 1.5rem 1.5rem;
+        border-bottom: 1px solid var(--admin-border-color);
+        vertical-align: middle;
+        font-weight: 500;
+      }
+
+      /* Badges - Cải thiện */
+      .badge {
+        padding: 0.6rem 1rem;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.8rem;
+        letter-spacing: 0.3px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .badge.bg-primary {
+        background: linear-gradient(135deg, var(--admin-sidebar-active) 0%, #2563eb 100%) !important;
+      }
+
+      .badge.bg-success {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+      }
+
+      .badge.bg-danger {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+      }
+
+      .badge.bg-warning {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+      }
+
+      .badge.bg-info {
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%) !important;
+      }
+
+      .badge.bg-secondary {
+        background: linear-gradient(135deg, #64748b 0%, #475569 100%) !important;
+      }
+
+      /* Forms - Cải thiện */
+      .form-control, .form-select {
+        border-radius: 12px;
+        border: 2px solid var(--admin-border-color);
+        padding: 0.875rem 1.25rem;
+        transition: all 0.3s ease;
+        font-weight: 500;
+      }
+
+      .form-control:focus, .form-select:focus {
+        border-color: var(--admin-sidebar-active);
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        transform: translateY(-2px);
+      }
+
+      .form-label {
+        font-weight: 700;
+        color: var(--admin-text-primary);
+        margin-bottom: 0.75rem;
+        font-size: 0.95rem;
+      }
+
+      /* Stats Cards - Cải thiện */
+      .stats-card {
+        border: none;
+        box-shadow: var(--admin-shadow-lg);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        border-radius: 20px;
+      }
+      
+      .stats-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+        animation: pulse 4s ease-in-out infinite;
+      }
+      
+      @keyframes pulse {
+        0%, 100% { opacity: 0.3; transform: scale(1); }
+        50% { opacity: 0.6; transform: scale(1.1); }
+      }
+      
+      .stats-card:hover {
+        transform: translateY(-12px) scale(1.03);
+        box-shadow: var(--admin-shadow-xl);
+      }
+      
+      .stats-card h2 {
+        font-size: 3.5rem;
+        font-weight: 900;
+        margin: 0;
+        text-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        letter-spacing: -2px;
+      }
+
+      /* Quick Action Buttons */
+      .quick-action-btn {
+        height: 90px;
+        border-radius: 18px;
+        border: 2px solid var(--admin-border-color);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+      }
+      
+      .quick-action-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+        transition: left 0.6s;
+      }
+      
+      .quick-action-btn:hover::before {
+        left: 100%;
+      }
+      
+      .quick-action-btn:hover {
+        border-color: var(--admin-sidebar-active);
+        transform: translateY(-6px);
+        box-shadow: 0 12px 24px rgba(59, 130, 246, 0.25);
+        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+      }
+      
+      .quick-action-btn i {
+        font-size: 2.25rem;
+        margin-bottom: 0.5rem;
+        display: block;
+        transition: transform 0.3s ease;
+      }
+
+      .quick-action-btn:hover i {
+        transform: scale(1.15) rotate(5deg);
+      }
+
+      /* List Group Items */
+      .list-group-item {
+        border: none;
+        border-bottom: 1px solid var(--admin-border-color);
+        padding: 1.5rem 2rem;
+        transition: all 0.3s ease;
+        background: transparent;
+      }
+      
+      .list-group-item:hover {
+        background: linear-gradient(90deg, #f8fafc 0%, #ffffff 50%, #f8fafc 100%);
+        transform: translateX(12px);
+        border-left: 5px solid var(--admin-sidebar-active);
+        padding-left: calc(2rem - 5px);
+        box-shadow: -4px 0 12px rgba(59, 130, 246, 0.15);
+      }
+      
+      .list-group-item:last-child {
+        border-bottom: none;
+      }
+
+      /* Dropdown - Cải thiện */
+      .dropdown-menu {
+        border-radius: 16px;
+        border: 1px solid var(--admin-border-color);
+        box-shadow: var(--admin-shadow-lg);
+        padding: 0.75rem;
+        margin-top: 0.75rem;
+        min-width: 240px;
+      }
+
+      .dropdown-item {
+        border-radius: 10px;
+        padding: 0.875rem 1.25rem;
+        transition: all 0.2s;
+        font-weight: 500;
+      }
+
+      .dropdown-item:hover {
+        background: linear-gradient(90deg, #f8fafc 0%, #ffffff 100%);
+        transform: translateX(6px);
+        color: var(--admin-sidebar-active);
+      }
+
+      .dropdown-item.text-danger:hover {
+        background: linear-gradient(90deg, #fee2e2 0%, #ffffff 100%);
+        color: #dc2626;
+      }
+
+      /* Alerts - Cải thiện */
+      .alert {
+        border-radius: 16px;
+        border: none;
+        box-shadow: var(--admin-shadow);
+        padding: 1.5rem 2rem;
+        font-weight: 600;
+        border-left: 5px solid;
+      }
+
+      .alert-success {
+        background: linear-gradient(90deg, #d1fae5 0%, #ffffff 100%);
+        border-left-color: #10b981;
+        color: #065f46;
+      }
+
+      .alert-danger, .alert-error {
+        background: linear-gradient(90deg, #fee2e2 0%, #ffffff 100%);
+        border-left-color: #ef4444;
+        color: #991b1b;
+      }
+
+      .alert-warning {
+        background: linear-gradient(90deg, #fef3c7 0%, #ffffff 100%);
+        border-left-color: #f59e0b;
+        color: #92400e;
+      }
+
+      .alert-info {
+        background: linear-gradient(90deg, #dbeafe 0%, #ffffff 100%);
+        border-left-color: #3b82f6;
+        color: #1e40af;
+      }
+
+      /* Pagination - Cải thiện */
+      .pagination .page-link {
+        border-radius: 10px;
+        border: 2px solid var(--admin-border-color);
+        margin: 0 0.25rem;
+        padding: 0.75rem 1rem;
+        font-weight: 600;
+        color: var(--admin-text-primary);
+        transition: all 0.3s ease;
+      }
+
+      .pagination .page-link:hover {
+        background: var(--admin-sidebar-active);
+        color: #ffffff;
+        border-color: var(--admin-sidebar-active);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+      }
+
+      .pagination .page-item.active .page-link {
+        background: linear-gradient(135deg, var(--admin-sidebar-active) 0%, #2563eb 100%);
+        border-color: var(--admin-sidebar-active);
+        color: #ffffff;
+        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+      }
+
+      /* Empty State */
+      .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+      }
+
+      .empty-state i {
+        font-size: 5rem;
+        color: #cbd5e1;
+        margin-bottom: 1.5rem;
+        display: block;
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .admin-sidebar {
+          transform: translateX(-100%);
+        }
+
+        .admin-sidebar.show {
+          transform: translateX(0);
+        }
+
+        .admin-top-bar {
+          left: 0;
+          padding: 0 1.5rem;
+          height: 70px;
+        }
+
+        .admin-top-bar .page-title {
+          font-size: 1.5rem;
+        }
+
+        .admin-main-content {
+          margin-left: 0;
+          padding: 1.5rem;
+          margin-top: 70px;
+        }
+      }
+    </style>
+    {% block extra_css %}{% endblock %}
+  </head>
+  <body>
+    <!-- Admin Sidebar -->
+    <aside class="admin-sidebar">
+      <div class="admin-sidebar-header">
+        <img src="{% static 'assets/logo/logo.png' %}" alt="ERP System" />
+        <div class="brand-text">
+          <h5 class="brand-title">ERP System</h5>
+          <p class="brand-subtitle">Admin Panel</p>
+        </div>
+      </div>
+
+      <nav class="admin-sidebar-menu">
+        <a href="{% url 'admin_custom:dashboard' %}" class="admin-menu-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+          <i class="bi bi-speedometer2"></i>
+          <span>Dashboard</span>
+        </a>
+
+        <div class="admin-menu-section">
+          <div class="admin-menu-section-title">Quản lý Dự án</div>
+          <a href="{% url 'admin_custom:projects' %}" class="admin-menu-item {% if 'project' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bi bi-folder"></i>
+            <span>Dự án</span>
+          </a>
+          <a href="{% url 'admin_custom:tasks' %}" class="admin-menu-item {% if 'task' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bi bi-check-square"></i>
+            <span>Công việc</span>
+          </a>
+        </div>
+
+        <div class="admin-menu-section">
+          <div class="admin-menu-section-title">Quản lý Nhân sự</div>
+          <a href="{% url 'admin_custom:employees' %}" class="admin-menu-item {% if 'employee' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bi bi-person-badge"></i>
+            <span>Nhân sự</span>
+          </a>
+          <a href="{% url 'admin_custom:departments' %}" class="admin-menu-item {% if 'department' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bi bi-diagram-3"></i>
+            <span>Phòng ban</span>
+          </a>
+        </div>
+
+        <div class="admin-menu-section">
+          <div class="admin-menu-section-title">Ngân sách & Tài chính</div>
+          <a href="{% url 'admin_custom:budgets' %}" class="admin-menu-item {% if 'budget' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bi bi-cash-stack"></i>
+            <span>Ngân sách</span>
+          </a>
+        </div>
+
+        <div class="admin-menu-section">
+          <div class="admin-menu-section-title">Quản lý Khách hàng</div>
+          <a href="{% url 'admin_custom:clients' %}" class="admin-menu-item {% if 'client' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bi bi-building"></i>
+            <span>Khách hàng</span>
+          </a>
+        </div>
+
+        <div class="admin-menu-section">
+          <div class="admin-menu-section-title">Hệ thống</div>
+          <a href="{% url 'admin_custom:users' %}" class="admin-menu-item {% if 'user' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bi bi-people"></i>
+            <span>Người dùng</span>
+          </a>
+          <a href="{% url 'admin_custom:notifications' %}" class="admin-menu-item {% if 'notification' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bi bi-bell"></i>
+            <span>Thông báo</span>
+          </a>
+          <a href="{% url 'admin_custom:performance' %}" class="admin-menu-item {% if 'performance' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bi bi-graph-up"></i>
+            <span>Hiệu suất</span>
+          </a>
+          <a href="{% url 'admin_custom:ai_insights' %}" class="admin-menu-item {% if 'ai_insight' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bi bi-robot"></i>
+            <span>AI Insights</span>
+          </a>
+        </div>
+
+        <div class="admin-menu-section" style="margin-top: auto; padding-top: 2rem; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+          <a href="{% url 'core:dashboard' %}" class="admin-menu-item">
+            <i class="bi bi-arrow-left-circle"></i>
+            <span>Về Client Site</span>
+          </a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Admin Top Bar -->
+    <header class="admin-top-bar">
+      <div>
+        <h1 class="page-title">{% block page_title %}Admin Panel{% endblock %}</h1>
+      </div>
+      <div class="admin-top-bar-actions">
+        <div class="dropdown">
+          <div class="admin-user-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="admin-user-avatar">
+              {% if user.first_name %}
+                {{ user.first_name|first|upper }}{{ user.last_name|first|upper|default:"" }}
+              {% else %}
+                {{ user.username|first|upper }}
+              {% endif %}
+            </div>
+            <div>
+              <div class="admin-user-name">{{ user.get_full_name|default:user.username }}</div>
+              <div class="admin-user-role">Administrator</div>
+            </div>
+            <i class="bi bi-chevron-down ms-2" style="font-size: 0.75rem; color: var(--admin-text-secondary);"></i>
+          </div>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li>
+              <a class="dropdown-item" href="{% url 'core:profile' %}">
+                <i class="bi bi-person me-2"></i>Hồ sơ
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="{% url 'core:settings' %}">
+                <i class="bi bi-gear me-2"></i>Cài đặt
+              </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <a class="dropdown-item text-danger" href="{% url 'core:logout' %}">
+                <i class="bi bi-box-arrow-right me-2"></i>Đăng xuất
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </header>
+
+    <!-- Admin Main Content -->
+    <main class="admin-main-content">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            <i class="bi bi-{% if message.tags == 'success' %}check-circle-fill{% elif message.tags == 'error' or message.tags == 'danger' %}x-circle-fill{% elif message.tags == 'warning' %}exclamation-triangle-fill{% else %}info-circle-fill{% endif %} me-2"></i>
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      {% block admin_content %}{% endblock %}
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
+  </body>
+</html>

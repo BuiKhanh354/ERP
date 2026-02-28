@@ -1,0 +1,279 @@
+{% extends 'base_sidebar.html' %}
+{% load static %}
+{% load humanize %}
+{% load custom_filters %}
+
+{% block title %}Theo dõi Lương - ERP System{% endblock %}
+
+{% block page_title %}Theo dõi Lương{% endblock %}
+
+{% block extra_css %}
+<style>
+  .salary-card {
+    border-radius: 16px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+  }
+  .salary-card:hover {
+    transform: translateY(-4px);
+  }
+  .salary-amount {
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: #10b981;
+  }
+  .stat-item {
+    padding: 1.5rem;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{% if not has_employee_record %}
+<div class="alert alert-warning">
+  <i class="bi bi-exclamation-triangle me-2"></i>
+  Bạn chưa có thông tin nhân sự trong hệ thống. Vui lòng liên hệ quản lý để được thêm vào.
+</div>
+{% else %}
+
+<!-- Thông tin lương cơ bản -->
+<div class="row mb-4">
+  <div class="col-md-4">
+    <div class="card salary-card border-0">
+      <div class="card-body text-center">
+        <h6 class="text-muted mb-3">Lương tháng này (ước tính)</h6>
+        <div class="salary-amount">{{ estimated_salary_this_month|add_thousand_sep }} VNĐ</div>
+        <p class="text-muted mt-2 mb-0">{{ total_hours_this_month|floatformat:1 }} giờ</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card salary-card border-0">
+      <div class="card-body text-center">
+        <h6 class="text-muted mb-3">Thưởng (ước tính)</h6>
+        <div class="salary-amount text-warning">{{ estimated_bonus|add_thousand_sep }} VNĐ</div>
+        <p class="text-muted mt-2 mb-0">Hiệu suất: {{ avg_performance|floatformat:1 }} điểm ({{ bonus_percentage }}%)</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card salary-card border-0">
+      <div class="card-body text-center">
+        <h6 class="text-muted mb-3">Ngày phát lương tiếp theo</h6>
+        <div class="salary-amount text-primary">{{ next_salary_date|date:"d/m/Y" }}</div>
+        <p class="text-muted mt-2 mb-0">
+          Còn {{ days_until_salary }} ngày
+          {% if has_payroll_schedule %}
+          <br><small class="text-info"><i class="bi bi-calendar-check me-1"></i>Lịch: Ngày {{ payment_day }} hàng tháng</small>
+          {% else %}
+          <br><small class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i>Chưa có lịch phát lương</small>
+          {% endif %}
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Thông tin nhân viên -->
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white">
+        <h5 class="mb-0"><i class="bi bi-person-badge me-2"></i>Thông tin Nhân viên</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-3 stat-item">
+            <div class="text-muted small">Họ tên</div>
+            <div class="fw-bold">{{ employee.full_name }}</div>
+          </div>
+          <div class="col-md-3 stat-item">
+            <div class="text-muted small">Mã nhân viên</div>
+            <div class="fw-bold">{{ employee.employee_id }}</div>
+          </div>
+          <div class="col-md-3 stat-item">
+            <div class="text-muted small">Chức vụ</div>
+            <div class="fw-bold">{{ employee.position }}</div>
+          </div>
+          <div class="col-md-3 stat-item">
+            <div class="text-muted small">Phòng ban</div>
+            <div class="fw-bold">{{ department }}</div>
+          </div>
+        </div>
+        <div class="row mt-3">
+          <div class="col-md-3 stat-item">
+            <div class="text-muted small">Lương/giờ</div>
+            <div class="fw-bold text-success">{{ hourly_rate|add_thousand_sep }} VNĐ/giờ</div>
+          </div>
+          <div class="col-md-3 stat-item">
+            <div class="text-muted small">Loại hợp đồng</div>
+            <div class="fw-bold">{{ employment_type }}</div>
+          </div>
+          <div class="col-md-3 stat-item">
+            <div class="text-muted small">Công việc đã hoàn thành</div>
+            <div class="fw-bold">{{ total_completed_tasks }}</div>
+          </div>
+          <div class="col-md-3 stat-item">
+            <div class="text-muted small">Điểm hiệu suất TB</div>
+            <div class="fw-bold text-primary">{{ avg_performance|floatformat:1 }} điểm</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Lịch sử lương theo tháng -->
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white">
+        <h5 class="mb-0"><i class="bi bi-calendar-month me-2"></i>Lịch sử Lương (6 tháng gần nhất)</h5>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Tháng</th>
+                <th class="text-end">Số giờ</th>
+                <th class="text-end">Lương</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for month in monthly_salary %}
+              <tr>
+                <td>{{ month.month_display }}</td>
+                <td class="text-end">{{ month.hours|floatformat:1 }} giờ</td>
+                <td class="text-end fw-bold text-success">{{ month.salary|add_thousand_sep }} VNĐ</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="3" class="text-center text-muted">Chưa có dữ liệu lương</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Công việc đã hoàn thành -->
+<div class="row mb-4">
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white">
+        <h5 class="mb-0"><i class="bi bi-check-circle me-2"></i>Công việc đã hoàn thành</h5>
+      </div>
+      <div class="card-body">
+        {% if completed_tasks %}
+        <div class="list-group list-group-flush">
+          {% for task in completed_tasks %}
+          <div class="list-group-item px-0">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <h6 class="mb-1">{{ task.name }}</h6>
+                <small class="text-muted">{{ task.project.name }}</small>
+              </div>
+              <span class="badge bg-success">{{ task.get_status_display }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Chưa có công việc nào hoàn thành</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Điểm hiệu suất -->
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white">
+        <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Điểm Hiệu suất</h5>
+      </div>
+      <div class="card-body">
+        {% if performance_scores %}
+        <div class="list-group list-group-flush">
+          {% for score in performance_scores %}
+          <div class="list-group-item px-0">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="mb-1">{{ score.period_start|date:"m/Y" }} - {{ score.period_end|date:"m/Y" }}</h6>
+                {% if score.project %}
+                <small class="text-muted">{{ score.project.name }}</small>
+                {% else %}
+                <small class="text-muted">Tổng thể</small>
+                {% endif %}
+              </div>
+              <span class="badge bg-primary fs-6">{{ score.overall_score|floatformat:1 }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Chưa có điểm hiệu suất</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Ghi chép thời gian gần đây -->
+<div class="row">
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white">
+        <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Ghi chép Thời gian gần đây</h5>
+      </div>
+      <div class="card-body">
+        {% if recent_time_entries %}
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Ngày</th>
+                <th>Dự án</th>
+                <th>Công việc</th>
+                <th class="text-end">Số giờ</th>
+                <th class="text-end">Lương</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in recent_time_entries %}
+              <tr>
+                <td>{{ item.entry.date|date:"d/m/Y" }}</td>
+                <td>{{ item.entry.task.project.name }}</td>
+                <td>{{ item.entry.task.name }}</td>
+                <td class="text-end">{{ item.entry.hours|floatformat:1 }} giờ</td>
+                <td class="text-end fw-bold text-success">{{ item.salary|add_thousand_sep }} VNĐ</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Chưa có ghi chép thời gian</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Format số với dấu phẩy
+  function formatNumber(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
+</script>
+{% endblock %}

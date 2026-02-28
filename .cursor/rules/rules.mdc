@@ -1,0 +1,241 @@
+---
+alwaysApply: true
+---
+version: 1
+rules:
+  - id: project-overview
+    pattern: "*"
+    description: |
+      You are assisting in building a Project-Centric ERP system for the service industry.
+      The system follows a Django-based backend architecture and SQL Server database.
+      The design style, folder structure, and app separation should reference:
+      https://github.com/DavidBloomer11/Bloomerp/tree/main.
+
+      All code, migrations, models, and project organization must follow Django best practices.
+
+      The system includes the following major modules:
+        • Project Planning & Scheduling
+        • Human Resource Allocation
+        • Budgeting & Cost Estimation
+        • Client Information Management (CRM-lite)
+        • Resource Performance Analytics
+        • AI Assistant (using genmini model) to:
+            – Analyze resource performance
+            – Recommend improvements for sales/purchasing
+            – Suggest optimal project staffing
+            – Recommend reasonable spending patterns based on charts
+
+      The system must support multi-project management, time tracking,
+      resource cost attribution, performance scoring, and financial summaries.
+
+      The final system must be production-ready, scalable, maintainable, and modular.
+
+
+  - id: technical-stack
+    pattern: "*"
+    description: |
+      The system stack is strictly defined as:
+
+      BACKEND:
+        • Django (latest stable version)
+        • Django REST Framework if API is needed
+        • Authentication: Django built-in or DRF Token/JWT
+        • Scheduling library: django-apscheduler (if required)
+      
+      DATABASE:
+        • Microsoft SQL Server (connected via django-mssql-backend or mssql-django)
+      
+      AI MODEL:
+        • genmini model (use official API client)
+        • All AI-related functionalities must be encapsulated inside `/ai/` Django app
+      
+      FRONTEND:
+        • Django Templates OR React/Next.js (but still served from Django if needed)
+        • UI style follows Bloomerp structure:
+          /templates
+          /static/css
+          /static/js
+        • Layout should be minimal, modern, business-oriented.
+      
+      DEPLOYMENT:
+        • Docker container for backend and frontend
+        • Nginx reverse proxy
+        • Gunicorn for Django
+        • `.env` configuration for secrets
+
+
+  - id: folder-structure
+    pattern: "*"
+    description: |
+      Always generate code that fits this Django folder structure:
+
+      /erp/
+        manage.py
+        /erp/ (main config)
+        /core/ (base utilities, enums, helpers)
+        /projects/ (manage project modules)
+        /resources/ (HR and staff allocation)
+        /budgeting/ (budgeting, cost tracking)
+        /clients/ (CRM-like)
+        /performance/ (performance and scoring analytics)
+        /ai/ (AI assistant using genmini)
+        /static/
+        /templates/
+        /scripts/ (database init, ETL, helpers)
+        /docker/
+        requirements.txt
+
+      Each app must contain:
+        models.py
+        views.py
+        forms.py
+        urls.py
+        serializers.py (if DRF used)
+        services.py (business logic)
+        tasks.py (if scheduled jobs)
+
+      SQL Server migrations must be stable and compatible.
+
+
+  - id: coding-standards
+    pattern: "*.py"
+    description: |
+      Follow Python + Django best practices:
+        • Class-based Views for webpages
+        • DRF ViewSets for APIs
+        • Use services.py to separate business logic
+        • Use repositories (query wrapper classes) when needed
+        • Use PEP8 formatting
+        • Do not put heavy logic inside views
+        • Always validate user input with forms or serializers
+
+      Models must include:
+        • created_at
+        • updated_at
+        • created_by (optional)
+        • updated_by (optional)
+
+
+  - id: ai-module
+    pattern: "*/ai/*"
+    description: |
+      This module integrates genmini model.
+
+      Required functionalities:
+        • Analyze resource performance from DB metrics
+        • Recommend project resource allocation
+        • Provide suggestions for purchasing/sales improvements
+        • Suggest budget optimization plans
+        • Summaries and insights for dashboards
+
+      AI interactions must:
+        • Use a dedicated service class `ai/services.py`
+        • Handle errors gracefully
+        • Never block main request thread (async if needed)
+        • Accept context such as:
+            - Employee performance
+            - Project workload
+            - Budget trends
+            - Financial charts
+            - CRM data
+        • Produce structured responses in JSON format:
+            {
+              "summary": "",
+              "insights": [],
+              "recommendations": []
+            }
+
+
+  - id: ui-guidelines
+    pattern: "*.html"
+    description: |
+      Frontend UI must follow minimal business ERP design.
+      References to the Bloomerp style:
+        • Clean and structured layout
+        • Sidebar navigation
+        • Card-based dashboard
+        • Light/Dark mode optional
+      Required template structure:
+        /templates/base.html
+        /templates/components/
+        /templates/pages/
+
+      Use:
+        • TailwindCSS or Bootstrap (only one)
+        • Highcharts/Chart.js for interactive charts
+        • Responsive layout
+
+
+  - id: chart-logic
+    pattern: "*"
+    description: |
+      All charts used in dashboards must be generated through:
+        - Chart.js OR Highcharts (preferred)
+      
+      Data passed to graphs must be processed through Django services.
+      AI recommendations must appear in a dashboard panel named:
+      **"AI Assistant Insights"**.
+
+
+  - id: sqlserver
+    pattern: "*"
+    description: |
+      Always generate database code fully compatible with Microsoft SQL Server.
+      Use:
+        ENGINE = 'mssql'
+        OPTIONS:
+          driver: 'ODBC Driver 17 for SQL Server'
+      
+      Avoid:
+        • JSONField (use TextField instead)
+        • ArrayField
+        • Postgres-only functions
+        • Unsupported ORM features
+
+      When writing raw SQL:
+        Must be ANSI SQL, not Postgres-specific.
+
+
+  - id: docker-rules
+    pattern: "*Dockerfile*"
+    description: |
+      Use Python 3.11+
+      Should include:
+        - pip install -r requirements.txt
+        - gunicorn for production
+      Keep image minimal and secure.
+
+
+  - id: generate-code
+    pattern: "*"
+    description: |
+      When asked to generate code, always output:
+        • Full file content (not partial snippets)
+        • Correct imports
+        • Path relative to the root of the project
+        • Consistent naming
+        • Ready-to-run Django code
+
+      If user requests many modules at once:
+        Generate in logical order:
+          models → serializers → services → views → urls → templates
+
+
+  - id: no-placeholder
+    pattern: "*"
+    description: |
+      Do not output placeholder text like:
+        "Add your logic here"
+        "Implement this later"
+      Everything must be real, working, meaningful code.
+
+
+  - id: language-and-style
+    pattern: "*"
+    description: |
+      The user prefers clear and professional Vietnamese.
+      All explanations must be:
+        • Ngắn gọn
+        • Dễ hiểu
+        • Theo phong cách technical documentation
+

@@ -1,0 +1,274 @@
+{% extends 'base_sidebar.html' %}
+{% load static %}
+
+{% block title %}Cài đặt - PRM System{% endblock %}
+{% block page_title %}Cài đặt{% endblock %}
+{% block breadcrumb_title %}Cài đặt{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root {
+    --primary: #0000cd;
+    --muted: #64748b;
+    --border: #e2e8f0;
+  }
+
+  .settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .settings-subtitle {
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .settings-card {
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+    margin-bottom: 1.5rem;
+  }
+
+  .settings-section-title {
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  .settings-section-hint {
+    margin: 0.25rem 0 0 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .loading-spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 0.6s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-header">
+  <div>
+    <h2 class="mb-1" style="font-weight: 800; color:#0f172a;">Cài đặt tài khoản</h2>
+    <p class="settings-subtitle">Quản lý bảo mật và xóa tài khoản.</p>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="settings-card p-4 mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <p class="settings-section-title">Lịch sử Chat AI</p>
+          <p class="settings-section-hint">
+            Xem lại các cuộc trò chuyện trước đó với PRM AI.
+          </p>
+        </div>
+      </div>
+      <a href="{% url 'core:ai-chat-history' %}" class="btn btn-outline-primary">
+        <i class="bi bi-chat-left-text"></i> Xem lịch sử chat
+      </a>
+    </div>
+    
+    <div class="settings-card p-4 border-danger">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <p class="settings-section-title text-danger">Xoá tài khoản</p>
+          <p class="settings-section-hint">
+            Xóa vĩnh viễn tài khoản và toàn bộ dữ liệu liên quan. Hành động này không thể hoàn tác.
+          </p>
+        </div>
+      </div>
+
+      <form method="post" class="mb-3" id="deleteOtpRequestForm">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="request_delete_otp" />
+        <button type="submit" class="btn btn-outline-danger" id="deleteOtpRequestBtn">
+          <i class="bi bi-shield-lock"></i> Gửi OTP xác nhận xoá tài khoản
+        </button>
+        {% if has_pending_delete_otp %}
+          <p class="settings-section-hint mt-2 text-success">
+            <i class="bi bi-check-circle"></i> Một mã OTP đang chờ xác nhận. Vui lòng kiểm tra email của bạn.
+          </p>
+        {% endif %}
+      </form>
+
+      <form method="post" id="deleteConfirmForm">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="confirm_delete" />
+        <div class="mb-3">
+          <label class="form-label">Nhập mã OTP từ email</label>
+          <input
+            type="text"
+            name="delete_otp"
+            maxlength="6"
+            class="form-control"
+            placeholder="Nhập mã OTP gồm 6 số để xác nhận xoá"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            id="deleteOtpInput"
+          />
+        </div>
+        <button type="submit" class="btn btn-danger" id="deleteConfirmBtn">
+          <i class="bi bi-trash"></i> Xác nhận xoá tài khoản
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Success/Error Modal -->
+<div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="messageModalLabel">Thông báo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="messageModalBody">
+        <!-- Message content will be inserted here -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Đóng</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Show modal message
+    function showMessage(title, message, type = 'success', redirectUrl = null) {
+      const modal = new bootstrap.Modal(document.getElementById('messageModal'));
+      const modalBody = document.getElementById('messageModalBody');
+      const modalTitle = document.getElementById('messageModalLabel');
+      
+      modalTitle.textContent = title;
+      const icon = type === 'success' ? '<i class="bi bi-check-circle-fill text-success me-2"></i>' : '<i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>';
+      modalBody.innerHTML = `<div class="d-flex align-items-center">${icon}<span>${message}</span></div>`;
+      modal.show();
+
+      // Redirect after modal closes if needed
+      if (redirectUrl) {
+        document.getElementById('messageModal').addEventListener('hidden.bs.modal', function() {
+          window.location.href = redirectUrl;
+        }, { once: true });
+      }
+    }
+
+    // Handle form submissions with AJAX
+    function handleFormSubmit(formId, submitBtnId, successMsg, isDelete = false) {
+      const form = document.getElementById(formId);
+      const submitBtn = document.getElementById(submitBtnId);
+      
+      if (!form || !submitBtn) return;
+
+      form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        const originalBtnText = submitBtn.innerHTML;
+        
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="loading-spinner"></span> Đang xử lý...';
+
+        try {
+          const response = await fetch(form.action || window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest',
+            },
+          });
+
+          const contentType = response.headers.get('content-type');
+          
+          if (contentType && contentType.includes('application/json')) {
+            // JSON response (AJAX)
+            const data = await response.json();
+            
+            if (data.success) {
+              showMessage('Thành công', data.message || successMsg, 'success', data.redirect_url);
+              
+              // Reset form if needed
+              if (formId === 'deleteOtpRequestForm') {
+                // Reload page to show pending OTP status
+                setTimeout(() => window.location.reload(), 1500);
+              } else if (formId === 'deleteConfirmForm') {
+                // Redirect to login after account deletion
+                // Modal will handle redirect
+              }
+            } else {
+              showMessage('Lỗi', data.message || 'Có lỗi xảy ra. Vui lòng thử lại.', 'error');
+              
+              // Show field errors if any
+              if (data.errors) {
+                Object.keys(data.errors).forEach(field => {
+                  const input = form.querySelector(`[name="${field}"]`);
+                  if (input) {
+                    input.classList.add('is-invalid');
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'invalid-feedback';
+                    errorDiv.textContent = data.errors[field];
+                    input.parentNode.appendChild(errorDiv);
+                  }
+                });
+              }
+            }
+          } else {
+            // HTML response (redirect or form errors)
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // Check for error messages in form
+            const errorMessages = doc.querySelectorAll('.text-danger, .alert-danger, .invalid-feedback');
+            if (errorMessages.length > 0) {
+              let errorText = Array.from(errorMessages).map(el => el.textContent.trim()).join('; ');
+              showMessage('Lỗi', errorText || 'Có lỗi xảy ra. Vui lòng kiểm tra lại thông tin.', 'error');
+            } else {
+              // Success - reload page or redirect
+              if (isDelete) {
+                showMessage('Thành công', successMsg, 'success', '{% url "core:login" %}');
+              } else {
+                showMessage('Thành công', successMsg, 'success');
+                setTimeout(() => window.location.reload(), 1500);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          showMessage('Lỗi', 'Có lỗi xảy ra khi gửi yêu cầu. Vui lòng thử lại.', 'error');
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnText;
+        }
+      });
+    }
+
+    // Initialize form handlers
+    handleFormSubmit('deleteOtpRequestForm', 'deleteOtpRequestBtn', 'Đã gửi mã OTP xoá tài khoản tới email của bạn. Vui lòng kiểm tra hộp thư.');
+    handleFormSubmit('deleteConfirmForm', 'deleteConfirmBtn', 'Tài khoản của bạn đã được xoá vĩnh viễn.', true);
+  });
+</script>
+{% endblock %}

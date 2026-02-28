@@ -1,0 +1,517 @@
+{% extends 'base_sidebar.html' %}
+{% load static %}
+
+{% block title %}Hồ sơ - PRM System{% endblock %}
+{% block page_title %}Hồ sơ{% endblock %}
+{% block breadcrumb_title %}Hồ sơ{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root {
+    --primary: #0000cd;
+    --muted: #64748b;
+    --border: #e2e8f0;
+  }
+
+  .profile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .profile-subtitle {
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .profile-tabs {
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 2rem;
+  }
+
+  .profile-tabs .nav-link {
+    color: var(--muted);
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-bottom: 3px solid transparent;
+    background: transparent;
+    transition: all 0.2s;
+  }
+
+  .profile-tabs .nav-link:hover {
+    color: var(--primary);
+    border-bottom-color: rgba(0, 0, 205, 0.3);
+  }
+
+  .profile-tabs .nav-link.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    background: transparent;
+  }
+
+  .profile-card {
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  }
+
+  /* Bootstrap tabs: không được ẩn .tab-content (wrapper).
+     Bootstrap sẽ tự quản lý show/hide qua class: .tab-pane + .active + .show */
+  .tab-pane {
+    padding-top: 1.25rem;
+    animation: fadeIn 0.2s ease-in;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .section-title {
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  .section-hint {
+    margin: 0.25rem 0 0 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .avatar-wrap {
+    width: 92px;
+    height: 92px;
+    border-radius: 999px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .avatar-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .avatar-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    color: #fff;
+    background: var(--primary);
+    font-size: 1.5rem;
+  }
+
+  .btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    box-shadow: none;
+  }
+
+  .btn-primary:hover {
+    background-color: #0000b0;
+    border-color: #0000b0;
+  }
+
+  .form-label {
+    font-weight: 700;
+  }
+
+  .muted {
+    color: var(--muted);
+  }
+
+  .otp-inline {
+    display: flex;
+    gap: 0.75rem;
+    align-items: end;
+    flex-wrap: wrap;
+  }
+
+  .badge-soft {
+    background: rgba(0, 0, 205, 0.08);
+    color: var(--primary);
+    border: 1px solid rgba(0, 0, 205, 0.15);
+    font-weight: 700;
+  }
+
+  .password-eye {
+    cursor: pointer;
+  }
+
+  .form-control.is-invalid {
+    border-color: #dc3545;
+  }
+
+  .loading-spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 0.6s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-header">
+  <div>
+    <h2 class="mb-1" style="font-weight: 800; color:#0f172a;">Quản lý tài khoản</h2>
+    <p class="profile-subtitle">Cập nhật hồ sơ, đổi email có OTP và đổi mật khẩu an toàn.</p>
+  </div>
+</div>
+
+<!-- Tabs Navigation -->
+<ul class="nav profile-tabs" id="profileTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile-pane" type="button" role="tab">
+      <i class="bi bi-person me-2"></i>Thông tin cá nhân
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="email-tab" data-bs-toggle="tab" data-bs-target="#email-pane" type="button" role="tab">
+      <i class="bi bi-envelope me-2"></i>Đổi email
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="password-tab" data-bs-toggle="tab" data-bs-target="#password-pane" type="button" role="tab">
+      <i class="bi bi-key me-2"></i>Đổi mật khẩu
+    </button>
+  </li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content" id="profileTabContent">
+  <!-- Tab 1: Thông tin cá nhân -->
+  <div class="tab-pane fade show active" id="profile-pane" role="tabpanel">
+    <div class="profile-card p-4">
+      <div class="d-flex align-items-start gap-3 mb-4">
+        <div class="avatar-wrap" id="avatarPreviewWrap">
+          {% if user_profile.avatar %}
+            <img id="avatarPreview" src="{{ user_profile.avatar.url }}" alt="Avatar" />
+          {% else %}
+            <div class="avatar-fallback" id="avatarFallback">
+              {% if user.get_full_name %}{{ user.get_full_name|first|upper }}{% else %}{{ user.username|first|upper }}{% endif %}
+            </div>
+          {% endif %}
+        </div>
+        <div class="flex-grow-1">
+          <p class="section-title">Thông tin cá nhân</p>
+          <p class="section-hint">Cập nhật ảnh đại diện và tên hiển thị.</p>
+          <span class="badge badge-soft">Username: {{ user.username }}</span>
+        </div>
+      </div>
+
+      <form method="post" enctype="multipart/form-data" id="profileForm" class="mt-3">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_profile" />
+
+        <div class="mb-3">
+          <label class="form-label">{{ profile_form.avatar.label }}</label>
+          {{ profile_form.avatar }}
+          <div class="form-text muted">Chấp nhận PNG/JPG. Ảnh sẽ được hiển thị trên topbar.</div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">{{ profile_form.first_name.label }}</label>
+            {{ profile_form.first_name }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">{{ profile_form.last_name.label }}</label>
+            {{ profile_form.last_name }}
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <label class="form-label">Email hiện tại</label>
+          <input class="form-control" value="{{ user.email }}" readonly />
+        </div>
+
+        <div class="mt-4 d-flex gap-2">
+          <button type="submit" class="btn btn-primary" id="profileSubmitBtn">
+            <i class="bi bi-save"></i> Lưu hồ sơ
+          </button>
+          <a href="{% url 'core:dashboard' %}" class="btn btn-outline-secondary">
+            Quay lại Dashboard
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tab 2: Đổi email -->
+  <div class="tab-pane fade" id="email-pane" role="tabpanel">
+    <div class="profile-card p-4">
+      <p class="section-title">Đổi email (OTP)</p>
+      <p class="section-hint">Nhập email mới, hệ thống sẽ gửi OTP để xác nhận trước khi đổi.</p>
+
+      <form method="post" id="emailRequestForm" class="mt-3">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="request_email_otp" />
+        <div class="mb-3">
+          <label class="form-label">{{ email_request_form.new_email.label }}</label>
+          {{ email_request_form.new_email }}
+        </div>
+        <button type="submit" class="btn btn-primary" id="sendOtpBtn">
+          <i class="bi bi-envelope"></i> Gửi OTP
+        </button>
+      </form>
+
+      <hr class="my-4" />
+
+      <div class="otp-inline">
+        <div style="min-width:280px; flex:1;">
+          <label class="form-label">{{ email_verify_form.otp.label }}</label>
+          <form method="post" id="emailVerifyForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="verify_email_otp" />
+            <div class="d-flex gap-2">
+              <div class="flex-grow-1">
+                {{ email_verify_form.otp }}
+                <div class="form-text muted" id="otpStatus">
+                  {% if pending_email %}
+                    OTP đang chờ xác nhận cho email: <strong>{{ pending_email }}</strong>
+                  {% else %}
+                    Chưa có OTP đang chờ. Vui lòng bấm "Gửi OTP".
+                  {% endif %}
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary" id="verifyOtpBtn" {% if not pending_email %}disabled{% endif %}>
+                <i class="bi bi-shield-check"></i> Xác nhận
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 3: Đổi mật khẩu -->
+  <div class="tab-pane fade" id="password-pane" role="tabpanel">
+    <div class="profile-card p-4">
+      <p class="section-title">Đổi mật khẩu</p>
+      <p class="section-hint">Yêu cầu nhập đúng mật khẩu hiện tại trước khi đổi mật khẩu mới.</p>
+
+      <form method="post" id="passwordForm" class="mt-3">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="change_password" />
+
+        <div class="mb-3">
+          <label class="form-label">{{ password_form.old_password.label }}</label>
+          <div class="input-group">
+            {{ password_form.old_password }}
+            <span class="input-group-text password-eye" data-target="id_old_password"><i class="bi bi-eye"></i></span>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">{{ password_form.new_password1.label }}</label>
+          <div class="input-group">
+            {{ password_form.new_password1 }}
+            <span class="input-group-text password-eye" data-target="id_new_password1"><i class="bi bi-eye"></i></span>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">{{ password_form.new_password2.label }}</label>
+          <div class="input-group">
+            {{ password_form.new_password2 }}
+            <span class="input-group-text password-eye" data-target="id_new_password2"><i class="bi bi-eye"></i></span>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="passwordSubmitBtn">
+          <i class="bi bi-key"></i> Đổi mật khẩu
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Success/Error Modal -->
+<div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="messageModalLabel">Thông báo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="messageModalBody">
+        <!-- Message content will be inserted here -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Đóng</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Avatar preview
+    const fileInput = document.getElementById("id_avatar");
+    if (fileInput) {
+      fileInput.addEventListener("change", function (e) {
+        const f = e.target.files && e.target.files[0];
+        if (!f) return;
+        const url = URL.createObjectURL(f);
+        const wrap = document.getElementById("avatarPreviewWrap");
+        if (!wrap) return;
+        wrap.innerHTML = `<img id="avatarPreview" src="${url}" alt="Avatar preview" />`;
+      });
+    }
+
+    // Password eye toggles
+    document.querySelectorAll(".password-eye").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const targetId = btn.getAttribute("data-target");
+        const input = document.getElementById(targetId);
+        if (!input) return;
+        input.type = input.type === "password" ? "text" : "password";
+        const icon = btn.querySelector("i");
+        if (icon) icon.className = input.type === "password" ? "bi bi-eye" : "bi bi-eye-slash";
+      });
+    });
+
+    // Show modal message
+    function showMessage(title, message, type = 'success') {
+      const modal = new bootstrap.Modal(document.getElementById('messageModal'));
+      const modalBody = document.getElementById('messageModalBody');
+      const modalTitle = document.getElementById('messageModalLabel');
+      
+      modalTitle.textContent = title;
+      const icon = type === 'success' ? '<i class="bi bi-check-circle-fill text-success me-2"></i>' : '<i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>';
+      modalBody.innerHTML = `<div class="d-flex align-items-center">${icon}<span>${message}</span></div>`;
+      modal.show();
+    }
+
+    // Handle form submissions with AJAX
+    function handleFormSubmit(formId, submitBtnId, successMsg) {
+      const form = document.getElementById(formId);
+      const submitBtn = document.getElementById(submitBtnId);
+      
+      if (!form || !submitBtn) return;
+
+      form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        const originalBtnText = submitBtn.innerHTML;
+        
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="loading-spinner"></span> Đang xử lý...';
+
+        try {
+          const response = await fetch(form.action || window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest',
+            },
+          });
+
+          const contentType = response.headers.get('content-type');
+          
+          if (contentType && contentType.includes('application/json')) {
+            // JSON response (AJAX)
+            const data = await response.json();
+            
+            if (data.success) {
+              showMessage('Thành công', data.message || successMsg, 'success');
+              
+              // Reset form if needed
+              if (formId === 'profileForm') {
+                // Reload page to update avatar in topbar
+                setTimeout(() => window.location.reload(), 1500);
+              } else if (formId === 'emailRequestForm') {
+                // Enable verify button and update status
+                document.getElementById('verifyOtpBtn').disabled = false;
+                document.getElementById('otpStatus').innerHTML = `OTP đang chờ xác nhận cho email: <strong>${formData.get('new_email')}</strong>`;
+                form.reset();
+              } else if (formId === 'emailVerifyForm') {
+                // Reload page to update email
+                setTimeout(() => window.location.reload(), 1500);
+              } else if (formId === 'passwordForm') {
+                form.reset();
+              }
+            } else {
+              showMessage('Lỗi', data.message || 'Có lỗi xảy ra. Vui lòng thử lại.', 'error');
+              
+              // Show field errors if any
+              if (data.errors) {
+                Object.keys(data.errors).forEach(field => {
+                  const input = form.querySelector(`[name="${field}"]`);
+                  if (input) {
+                    input.classList.add('is-invalid');
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'invalid-feedback';
+                    errorDiv.textContent = data.errors[field];
+                    input.parentNode.appendChild(errorDiv);
+                  }
+                });
+              }
+            }
+          } else {
+            // HTML response (redirect or form errors)
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // Check for error messages in form
+            const errorMessages = doc.querySelectorAll('.text-danger, .alert-danger, .invalid-feedback');
+            if (errorMessages.length > 0) {
+              let errorText = Array.from(errorMessages).map(el => el.textContent.trim()).join('; ');
+              showMessage('Lỗi', errorText || 'Có lỗi xảy ra. Vui lòng kiểm tra lại thông tin.', 'error');
+            } else {
+              // Success - reload page
+              showMessage('Thành công', successMsg, 'success');
+              setTimeout(() => window.location.reload(), 1500);
+            }
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          showMessage('Lỗi', 'Có lỗi xảy ra khi gửi yêu cầu. Vui lòng thử lại.', 'error');
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnText;
+        }
+      });
+    }
+
+    // Initialize form handlers
+    handleFormSubmit('profileForm', 'profileSubmitBtn', 'Đã cập nhật hồ sơ thành công.');
+    handleFormSubmit('emailRequestForm', 'sendOtpBtn', 'Đã gửi OTP tới email mới.');
+    handleFormSubmit('emailVerifyForm', 'verifyOtpBtn', 'Đổi email thành công.');
+    handleFormSubmit('passwordForm', 'passwordSubmitBtn', 'Đổi mật khẩu thành công.');
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends 'base_sidebar.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - ERP System{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <a href="{% url 'core:dashboard' %}" class="btn btn-outline-secondary btn-sm" style="border-radius: 8px; padding: 0.5rem 0.75rem;">
+    <i class="bi bi-arrow-left me-1"></i>Quay lại
+  </a>
+  <span>{{ page_title }}</span>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/custom.css' %}">
+<style>
+  .form-card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    padding: 2.5rem;
+    border: 1px solid #e2e8f0;
+  }
+
+  .form-label {
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .form-control,
+  .form-select {
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    border-color: #0000cd;
+    box-shadow: 0 0 0 0.2rem rgba(0, 0, 205, 0.15);
+    outline: none;
+  }
+
+  .btn-primary {
+    background-color: #0000cd;
+    border-color: #0000cd;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="form-card">
+      <div class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i>
+        <strong>Lưu ý:</strong> Lịch phát lương này sẽ áp dụng cho <strong>tất cả nhân viên</strong> trong hệ thống.
+      </div>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="mb-4">
+          <label for="{{ form.payment_day.id_for_label }}" class="form-label">
+            {{ form.payment_day.label }} <span class="text-danger">*</span>
+          </label>
+          {{ form.payment_day }}
+          {% if form.payment_day.errors %}
+          <div class="text-danger small mt-1">{{ form.payment_day.errors.0 }}</div>
+          {% endif %}
+          {% if form.payment_day.help_text %}
+          <small class="text-muted">{{ form.payment_day.help_text }}</small>
+          {% endif %}
+        </div>
+
+        <div class="mb-4">
+          <label for="{{ form.notes.id_for_label }}" class="form-label">
+            {{ form.notes.label }}
+          </label>
+          {{ form.notes }}
+          {% if form.notes.errors %}
+          <div class="text-danger small mt-1">{{ form.notes.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        {% if payroll_schedule %}
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle me-2"></i>
+          <strong>Lịch phát lương tiếp theo:</strong> 
+          {{ payroll_schedule.get_next_payment_date|date:"d/m/Y" }}
+          (Còn {{ payroll_schedule.get_next_payment_date|timesince }})
+        </div>
+        {% endif %}
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {{ form.non_field_errors.0 }}
+        </div>
+        {% endif %}
+
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <a href="{% url 'core:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-x-circle me-1"></i>Hủy
+          </a>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle me-1"></i>Lưu lịch phát lương
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

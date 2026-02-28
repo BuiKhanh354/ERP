@@ -1,0 +1,187 @@
+{% extends 'base_sidebar.html' %}
+{% load static %}
+
+{% block title %}Chi tiết Khách hàng - ERP System{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center">
+    <a href="{% url 'clients:list' %}" class="btn btn-outline-secondary me-3">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    Chi tiết: {{ client.name }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Thông tin Khách hàng</h5>
+                <div>
+                    <a href="{% url 'clients:edit' client.pk %}" class="btn btn-sm btn-outline-secondary me-2">
+                        <i class="bi bi-pencil me-1"></i>Chỉnh sửa
+                    </a>
+                    <a href="{% url 'clients:delete' client.pk %}" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash me-1"></i>Xóa
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <strong>Tên khách hàng:</strong><br>
+                        {{ client.name }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>Loại khách hàng:</strong><br>
+                        {{ client.get_client_type_display }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>Trạng thái:</strong><br>
+                        <span class="badge bg-{% if client.status == 'active' %}success{% elif client.status == 'inactive' %}danger{% else %}warning{% endif %}">
+                            {{ client.get_status_display }}
+                        </span>
+                    </div>
+                    {% if client.email %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Email:</strong><br>
+                        {{ client.email }}
+                    </div>
+                    {% endif %}
+                    {% if client.phone %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Số điện thoại:</strong><br>
+                        {{ client.phone }}
+                    </div>
+                    {% endif %}
+                    {% if client.website %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Website:</strong><br>
+                        <a href="{{ client.website }}" target="_blank">{{ client.website }}</a>
+                    </div>
+                    {% endif %}
+                    {% if client.industry %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Ngành nghề:</strong><br>
+                        {{ client.industry }}
+                    </div>
+                    {% endif %}
+                    {% if client.address %}
+                    <div class="col-md-12 mb-3">
+                        <strong>Địa chỉ:</strong><br>
+                        {{ client.address|linebreaksbr }}
+                    </div>
+                    {% endif %}
+                    {% if client.notes %}
+                    <div class="col-md-12 mb-3">
+                        <strong>Ghi chú:</strong><br>
+                        {{ client.notes|linebreaksbr }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Liên hệ</h5>
+                <a href="{% url 'clients:contact-create' client.pk %}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i>Thêm liên hệ
+                </a>
+            </div>
+            <div class="card-body">
+                {% if contacts %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Tên</th>
+                                <th>Email</th>
+                                <th>Số điện thoại</th>
+                                <th>Chức vụ</th>
+                                <th>Liên hệ chính</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for contact in contacts %}
+                            <tr>
+                                <td>{{ contact.full_name }}</td>
+                                <td>{{ contact.email|default:"-" }}</td>
+                                <td>{{ contact.phone|default:"-" }}</td>
+                                <td>{{ contact.position|default:"-" }}</td>
+                                <td>
+                                    {% if contact.is_primary %}
+                                    <span class="badge bg-success">Có</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Không</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">Chưa có liên hệ nào.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Lịch sử Tương tác</h5>
+                <a href="{% url 'clients:interaction-create' client.pk %}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i>Thêm tương tác
+                </a>
+            </div>
+            <div class="card-body">
+                {% if interactions %}
+                <div class="list-group">
+                    {% for interaction in interactions %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="mb-1">{{ interaction.subject }}</h6>
+                                <p class="mb-1 small text-muted">{{ interaction.get_interaction_type_display }} - {{ interaction.date|date:"d/m/Y H:i" }}</p>
+                                <p class="mb-0">{{ interaction.description|truncatewords:30 }}</p>
+                            </div>
+                            {% if interaction.follow_up_required %}
+                            <span class="badge bg-warning">Cần theo dõi</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">Chưa có tương tác nào.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Dự án</h5>
+            </div>
+            <div class="card-body">
+                {% if projects %}
+                <ul class="list-group list-group-flush">
+                    {% for project in projects %}
+                    <li class="list-group-item">
+                        <a href="{% url 'projects:detail' project.pk %}" class="text-decoration-none">
+                            {{ project.name }}
+                        </a>
+                        <br>
+                        <small class="text-muted">{{ project.get_status_display }}</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted">Chưa có dự án nào.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

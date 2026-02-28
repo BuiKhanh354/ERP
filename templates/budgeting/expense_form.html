@@ -1,0 +1,433 @@
+{% extends 'base_sidebar.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - ERP System{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  {% if back_url %}
+  <a href="{{ back_url }}" class="btn btn-outline-secondary btn-sm" style="border-radius: 8px; padding: 0.5rem 0.75rem;">
+    <i class="bi bi-arrow-left me-1"></i>Quay lại
+  </a>
+  {% else %}
+  <a href="{% if initial_budget %}{% url 'budgeting:detail' initial_budget.pk %}{% else %}{% url 'budgeting:list' %}{% endif %}" class="btn btn-outline-secondary btn-sm" style="border-radius: 8px; padding: 0.5rem 0.75rem;">
+    <i class="bi bi-arrow-left me-1"></i>Quay lại
+  </a>
+  {% endif %}
+  <span>{{ page_title }}</span>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/custom.css' %}">
+<style>
+  .form-card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    padding: 2.5rem;
+    border: 1px solid #e2e8f0;
+  }
+
+  .form-section {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .form-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .form-section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .form-section-title i {
+    color: #0000cd;
+  }
+
+  .form-label {
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .form-label .text-danger {
+    color: #ef4444;
+  }
+
+  .form-control,
+  .form-select {
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    border-color: #0000cd;
+    box-shadow: 0 0 0 0.2rem rgba(0, 0, 205, 0.15);
+    outline: none;
+  }
+
+  .form-control::placeholder {
+    color: #94a3b8;
+  }
+
+  textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+  }
+
+  .input-group-text {
+    background-color: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-left: none;
+    border-radius: 0 8px 8px 0;
+    color: #64748b;
+    font-weight: 500;
+  }
+
+  .input-group .form-control {
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+  }
+
+  .input-group .form-control:focus {
+    border-right: 1px solid #0000cd;
+  }
+
+  .btn-primary {
+    background-color: #0000cd;
+    border-color: #0000cd;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+  }
+
+  .btn-primary:hover {
+    background-color: #0000b3;
+    border-color: #0000b3;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 205, 0.2);
+  }
+
+  .btn-outline-secondary {
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 0.75rem 1.5rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-10">
+    <div class="form-card">
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <!-- Thông tin cơ bản -->
+        <div class="form-section">
+          <div class="form-section-title">
+            <i class="bi bi-info-circle"></i>
+            <span>Thông tin cơ bản</span>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="{{ form.project.id_for_label }}" class="form-label">Dự án <span class="text-danger">*</span></label>
+              {{ form.project }}
+              {% if form.project.errors %}
+              <span class="text-danger small d-block mt-1">{{ form.project.errors.0 }}</span>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <label for="{{ form.budget.id_for_label }}" class="form-label">Ngân sách</label>
+              {{ form.budget }}
+              {% if form.budget.errors %}
+              <span class="text-danger small d-block mt-1">{{ form.budget.errors.0 }}</span>
+              {% endif %}
+              <small class="text-muted">Chọn ngân sách liên quan (tùy chọn)</small>
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="{{ form.category.id_for_label }}" class="form-label">Danh mục <span class="text-danger">*</span></label>
+              <div class="input-group">
+                {{ form.category }}
+                <button type="button" class="btn btn-outline-secondary" onclick="showCreateCategoryModal()" title="Thêm danh mục mới">
+                  <i class="bi bi-plus-circle"></i>
+                </button>
+              </div>
+              {% if form.category.errors %}
+              <span class="text-danger small d-block mt-1">{{ form.category.errors.0 }}</span>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <label for="{{ form.expense_type.id_for_label }}" class="form-label">Loại chi phí <span class="text-danger">*</span></label>
+              {{ form.expense_type }}
+              {% if form.expense_type.errors %}
+              <span class="text-danger small d-block mt-1">{{ form.expense_type.errors.0 }}</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Thông tin chi phí -->
+        <div class="form-section">
+          <div class="form-section-title">
+            <i class="bi bi-cash-stack"></i>
+            <span>Thông tin chi phí</span>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="{{ form.amount.id_for_label }}" class="form-label">Số tiền <span class="text-danger">*</span></label>
+              <div style="position: relative">
+                {{ form.amount }}
+                <span
+                  style="
+                    position: absolute;
+                    right: 12px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: #64748b;
+                    pointer-events: none;
+                    font-weight: 500;
+                  "
+                  >VNĐ</span
+                >
+              </div>
+              {% if form.amount.errors %}
+              <span class="text-danger small d-block mt-1">{{ form.amount.errors.0 }}</span>
+              {% endif %}
+              <small class="text-muted">Nhập số tiền chi phí (ví dụ: 1000000 hoặc 1,000,000)</small>
+            </div>
+            <div class="col-md-6">
+              <label for="{{ form.expense_date.id_for_label }}" class="form-label">Ngày chi phí <span class="text-danger">*</span></label>
+              {{ form.expense_date }}
+              {% if form.expense_date.errors %}
+              <span class="text-danger small d-block mt-1">{{ form.expense_date.errors.0 }}</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-12">
+              <label for="{{ form.description.id_for_label }}" class="form-label">Mô tả <span class="text-danger">*</span></label>
+              {{ form.description }}
+              {% if form.description.errors %}
+              <span class="text-danger small d-block mt-1">{{ form.description.errors.0 }}</span>
+              {% endif %}
+              <small class="text-muted">Mô tả chi tiết về chi phí này</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Thông tin bổ sung -->
+        <div class="form-section">
+          <div class="form-section-title">
+            <i class="bi bi-file-earmark-text"></i>
+            <span>Thông tin bổ sung</span>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="{{ form.vendor.id_for_label }}" class="form-label">Nhà cung cấp</label>
+              {{ form.vendor }}
+              {% if form.vendor.errors %}
+              <span class="text-danger small d-block mt-1">{{ form.vendor.errors.0 }}</span>
+              {% endif %}
+              <small class="text-muted">Tên nhà cung cấp hoặc nguồn chi phí</small>
+            </div>
+            <div class="col-md-6">
+              <label for="{{ form.invoice_number.id_for_label }}" class="form-label">Số hóa đơn</label>
+              {{ form.invoice_number }}
+              {% if form.invoice_number.errors %}
+              <span class="text-danger small d-block mt-1">{{ form.invoice_number.errors.0 }}</span>
+              {% endif %}
+              <small class="text-muted">Số hóa đơn hoặc mã chứng từ (nếu có)</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+          {% if back_url %}
+          <a href="{{ back_url }}" class="btn btn-outline-secondary">
+            <i class="bi bi-x-circle me-1"></i>Hủy
+          </a>
+          {% else %}
+          <a href="{% if initial_budget %}{% url 'budgeting:detail' initial_budget.pk %}{% else %}{% url 'budgeting:list' %}{% endif %}" class="btn btn-outline-secondary">
+            <i class="bi bi-x-circle me-1"></i>Hủy
+          </a>
+          {% endif %}
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle me-1"></i>{{ submit_text }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Pre-fill budget if provided
+  {% if initial_budget %}
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('{{ form.budget.id_for_label }}').value = '{{ initial_budget.pk }}';
+    document.getElementById('{{ form.project.id_for_label }}').value = '{{ initial_budget.project.pk }}';
+  });
+  {% endif %}
+
+  // Format số tiền cho input Số tiền
+  const amountInput = document.getElementById("id_amount");
+
+  if (amountInput) {
+    function formatNumber(value) {
+      if (!value) return "";
+      // Remove all non-digit characters except for a potential decimal point
+      let cleanedValue = value.toString().replace(/[^\d.]/g, "");
+      // Handle decimal part
+      const parts = cleanedValue.split(".");
+      let integerPart = parts[0];
+      let decimalPart =
+        parts.length > 1 ? "." + parts[1].substring(0, 2) : "";
+
+      // Add commas to the integer part
+      integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      return integerPart + decimalPart;
+    }
+
+    function unformatNumber(value) {
+      if (!value) return "";
+      return value.toString().replace(/,/g, "");
+    }
+
+    // Format on initial load (for edit forms)
+    if (amountInput.value) {
+      amountInput.value = formatNumber(amountInput.value);
+    }
+
+    // Format on input
+    amountInput.addEventListener("input", function (e) {
+      const start = this.selectionStart;
+      const end = this.selectionEnd;
+      const oldLength = this.value.length;
+
+      this.value = formatNumber(this.value);
+
+      const newLength = this.value.length;
+      const cursorOffset = newLength - oldLength;
+      this.setSelectionRange(start + cursorOffset, end + cursorOffset);
+    });
+
+    // Unformat before form submission
+    amountInput
+      .closest("form")
+      .addEventListener("submit", function () {
+        if (amountInput) {
+          amountInput.value = unformatNumber(amountInput.value);
+        }
+      });
+  }
+</script>
+
+<!-- Modal tạo danh mục mới -->
+<div class="modal fade" id="createCategoryModal" tabindex="-1" aria-labelledby="createCategoryModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="createCategoryModalLabel">
+          <i class="bi bi-folder-plus me-2"></i>Thêm danh mục mới
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="createCategoryForm">
+          <div class="mb-3">
+            <label for="categoryName" class="form-label">Tên danh mục <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="categoryName" required placeholder="Ví dụ: Dịch vụ, Vật tư, Nhân sự...">
+          </div>
+          <div class="mb-3">
+            <label for="categoryDescription" class="form-label">Mô tả</label>
+            <textarea class="form-control" id="categoryDescription" rows="3" placeholder="Mô tả danh mục (tùy chọn)"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+        <button type="button" class="btn btn-primary" onclick="createCategory()">
+          <i class="bi bi-check-circle me-1"></i>Tạo danh mục
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showCreateCategoryModal() {
+  const modal = new bootstrap.Modal(document.getElementById('createCategoryModal'));
+  modal.show();
+  document.getElementById('categoryName').focus();
+}
+
+function createCategory() {
+  const name = document.getElementById('categoryName').value.trim();
+  const description = document.getElementById('categoryDescription').value.trim();
+  
+  if (!name) {
+    showNotification('error', 'Vui lòng nhập tên danh mục.');
+    return;
+  }
+  
+  fetch('{% url "budgeting:create_category" %}', {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': '{{ csrf_token }}',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      name: name,
+      description: description
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Thêm option mới vào dropdown
+      const categorySelect = document.getElementById('id_category');
+      const option = document.createElement('option');
+      option.value = data.category.id;
+      option.text = data.category.name;
+      option.selected = true;
+      categorySelect.appendChild(option);
+      
+      // Đóng modal và reset form
+      const modal = bootstrap.Modal.getInstance(document.getElementById('createCategoryModal'));
+      modal.hide();
+      document.getElementById('createCategoryForm').reset();
+      
+      showNotification('success', `Đã tạo danh mục "${data.category.name}" thành công.`);
+    } else {
+      showNotification('error', data.error || 'Có lỗi xảy ra khi tạo danh mục.');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showNotification('error', 'Có lỗi xảy ra khi tạo danh mục.');
+  });
+}
+</script>
+{% endblock %}

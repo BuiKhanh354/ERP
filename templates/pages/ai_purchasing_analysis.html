@@ -1,0 +1,177 @@
+{% extends 'base_sidebar.html' %}
+{% load static %}
+
+{% block title %}Phân tích Mua hàng - ERP System{% endblock %}
+
+{% block page_title %}Phân tích Mua hàng{% endblock %}
+
+{% block extra_css %}
+<style>
+  .ai-card {
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .insight-item {
+    padding: 1rem;
+    border-left: 4px solid #0000cd;
+    background: #f8fafc;
+    margin-bottom: 0.75rem;
+    border-radius: 4px;
+  }
+
+  .recommendation-item {
+    padding: 1rem;
+    border-left: 4px solid #22c55e;
+    background: #f0fdf4;
+    margin-bottom: 0.75rem;
+    border-radius: 4px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col-md-12">
+    <div class="ai-card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0"><i class="bi bi-cart-check me-2"></i>Phân tích Mua hàng</h5>
+        <button id="analyzeBtn" class="btn btn-primary">
+          <i class="bi bi-graph-up me-1"></i>Bắt đầu Phân tích
+        </button>
+      </div>
+      
+      <div id="loadingIndicator" class="text-center py-4" style="display: none;">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Đang phân tích...</span>
+        </div>
+        <p class="mt-2 text-muted">AI đang phân tích dữ liệu mua hàng...</p>
+      </div>
+
+      <div id="resultsContainer" style="display: none;">
+        <!-- Summary -->
+        <div class="ai-card mb-3">
+          <h6 class="mb-3">Tóm tắt Phân tích</h6>
+          <div id="summaryContent"></div>
+        </div>
+
+        <!-- Insights -->
+        <div class="ai-card mb-3">
+          <h6 class="mb-3"><i class="bi bi-info-circle me-2"></i>Nhận định</h6>
+          <div id="insightsContent"></div>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="ai-card">
+          <h6 class="mb-3"><i class="bi bi-check-circle me-2"></i>Đề xuất Cải thiện</h6>
+          <div id="recommendationsContent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Polyfill showNotification/showConfirm để tránh lỗi tham chiếu
+  (function ensureModalHelpers() {
+    const hasConfirm = typeof window.showConfirm === 'function';
+    const hasNotify = typeof window.showNotification === 'function';
+    if (hasConfirm && hasNotify) return;
+
+    const modalContainerId = 'global-modal-container';
+    function getContainer() {
+      let el = document.getElementById(modalContainerId);
+      if (!el) {
+        el = document.createElement('div');
+        el.id = modalContainerId;
+        document.body.appendChild(el);
+      }
+      return el;
+    }
+
+    window.showNotification = function(type, message) {
+      const container = getContainer();
+      const color = type === 'error' ? '#dc2626' : type === 'success' ? '#16a34a' : '#2563eb';
+      const box = document.createElement('div');
+      box.style.cssText = `
+        position: fixed; top: 20px; right: 20px; z-index: 2050;
+        background: #fff; border: 1px solid #e2e8f0; border-left: 4px solid ${color};
+        padding: 12px 16px; border-radius: 8px; box-shadow: 0 10px 30px rgba(15,23,42,0.12);
+        min-width: 260px; font-size: 14px; color: #0f172a;
+      `;
+      box.innerHTML = `
+        <div style="font-weight: 600; margin-bottom: 4px; text-transform: uppercase; color: ${color};">${type || 'info'}</div>
+        <div>${message || ''}</div>
+      `;
+      container.appendChild(box);
+      setTimeout(() => box.remove(), 3200);
+    };
+
+    window.showConfirm = function(message, onConfirm) {
+      const confirmed = window.confirm(message || 'Bạn có chắc chắn?');
+      if (confirmed && typeof onConfirm === 'function') onConfirm();
+      return confirmed;
+    };
+  })();
+
+  document.getElementById('analyzeBtn').addEventListener('click', async function() {
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const resultsContainer = document.getElementById('resultsContainer');
+    
+    loadingIndicator.style.display = 'block';
+    resultsContainer.style.display = 'none';
+    
+    try {
+      const response = await fetch('{% url "core:ai-purchasing-analysis-api" %}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({})
+      });
+      
+      const data = await response.json();
+      loadingIndicator.style.display = 'none';
+      
+      if (data.error) {
+        showNotification('error', 'Lỗi: ' + data.error);
+        return;
+      }
+      
+      // Kiểm tra xem có data không
+      if (data.no_data) {
+        showNotification('warning', data.summary || data.message || 'Chưa có đủ dữ liệu để phân tích. Vui lòng tạo ngân sách hoặc chi phí trước.');
+        return;
+      }
+      
+      // Display summary
+      document.getElementById('summaryContent').innerHTML = '<p>' + (data.summary || '').replace(/\n/g, '<br>') + '</p>';
+      
+      // Display insights
+      const insights = Array.isArray(data.insights) ? data.insights : [];
+      const insightsHtml = insights.map(insight => 
+        `<div class="insight-item"><p class="mb-0">${insight}</p></div>`
+      ).join('');
+      document.getElementById('insightsContent').innerHTML = insightsHtml || '<p class="text-muted">Không có nhận định nào.</p>';
+      
+      // Display recommendations
+      const recommendations = Array.isArray(data.recommendations) ? data.recommendations : [];
+      const recommendationsHtml = recommendations.map(rec => 
+        `<div class="recommendation-item"><p class="mb-0">${rec}</p></div>`
+      ).join('');
+      document.getElementById('recommendationsContent').innerHTML = recommendationsHtml || '<p class="text-muted">Không có đề xuất nào.</p>';
+      
+      resultsContainer.style.display = 'block';
+    } catch (error) {
+      loadingIndicator.style.display = 'none';
+      showNotification('error', 'Lỗi khi phân tích: ' + error.message);
+    }
+  });
+</script>
+{% endblock %}

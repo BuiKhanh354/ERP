@@ -1,0 +1,439 @@
+{% extends 'base_sidebar.html' %}
+{% load static %}
+{% load humanize %}
+{% load custom_filters %}
+
+{% block title %}Quản lý Nhân sự - ERP System{% endblock %}
+
+{% block page_title %}Quản lý Nhân sự{% endblock %}
+
+{% block extra_css %}
+<style>
+  .employee-card {
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+    background: #ffffff;
+  }
+
+  .employee-card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    transform: translateY(-4px);
+    border-color: #0000cd;
+  }
+
+  .stats-card {
+    text-align: center;
+    padding: 1.5rem;
+    border-radius: 12px;
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+  }
+
+  .stats-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+  }
+
+  .stats-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0.5rem 0;
+    line-height: 1.2;
+  }
+
+  .stats-label {
+    font-size: 0.9rem;
+    color: #64748b;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .performance-badge {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-weight: 600;
+  }
+
+  .performance-excellent { background-color: #d1fae5; color: #065f46; }
+  .performance-good { background-color: #dbeafe; color: #1e40af; }
+  .performance-average { background-color: #fef3c7; color: #92400e; }
+  .performance-low { background-color: #fee2e2; color: #991b1b; }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Stats Summary -->
+<div class="row mb-4">
+  <div class="col-md-4 mb-3">
+    <div class="stats-card">
+      <div class="stats-value" style="color: #3b82f6;">{{ total_employees }}</div>
+      <div class="stats-label">Tổng nhân sự</div>
+    </div>
+  </div>
+  <div class="col-md-4 mb-3">
+    <div class="stats-card">
+      <div class="stats-value" style="color: #22c55e;">{{ active_employees }}</div>
+      <div class="stats-label">Nhân sự hoạt động</div>
+    </div>
+  </div>
+  <div class="col-md-4 mb-3">
+    <div class="stats-card">
+      <div class="stats-value" style="color: #f59e0b;">{{ departments_count }}</div>
+      <div class="stats-label">Phòng ban</div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">Tìm kiếm</label>
+        <input
+          type="text"
+          name="search"
+          class="form-control"
+          placeholder="Tên, email, mã nhân viên, chức vụ..."
+          value="{{ search_query }}"
+        />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold">Phòng ban</label>
+        <select name="department" class="form-select">
+          <option value="">Tất cả</option>
+          {% for dept in departments %}
+          <option value="{{ dept.id }}" {% if department_filter == dept.id|stringformat:"s" %}selected{% endif %}>
+            {{ dept.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold">Trạng thái</label>
+        <select name="status" class="form-select">
+          <option value="">Tất cả</option>
+          <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Hoạt động</option>
+          <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Không hoạt động</option>
+        </select>
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary w-100">
+          <i class="bi bi-search me-1"></i>Lọc
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Employees List -->
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <h5 class="mb-0">Danh sách nhân sự</h5>
+  <div class="d-flex gap-2 flex-wrap">
+    {% if user.profile.is_manager %}
+    <a href="{% url 'core:ai-salary-recommendation' %}" class="btn btn-outline-info">
+      <i class="bi bi-lightbulb me-1"></i>AI Đề xuất Lương & Thưởng
+    </a>
+    <a href="{% url 'resources:department_create' %}" class="btn btn-outline-primary">
+      <i class="bi bi-building me-1"></i>Tạo phòng ban mới
+    </a>
+    <a href="{% url 'resources:create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-circle me-1"></i>Tạo nhân sự mới
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+{% if employees %}
+<div class="row">
+  {% for employee in employees %}
+  <div class="col-md-6 mb-4">
+    <div class="card employee-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <div>
+            <h5 class="card-title mb-1">
+              <a href="{% url 'resources:detail' employee.pk %}" class="text-decoration-none text-dark fw-bold">
+                {{ employee.full_name }}
+              </a>
+            </h5>
+            <p class="text-muted small mb-0">
+              <i class="bi bi-briefcase me-1"></i>{{ employee.position }}
+            </p>
+            {% if employee.department %}
+            <p class="text-muted small mb-0">
+              <i class="bi bi-building me-1"></i>{{ employee.department.name }}
+            </p>
+            {% endif %}
+          </div>
+          {% if employee.avg_score %}
+          <span 
+            class="performance-badge {% if employee.avg_score >= 90 %}performance-excellent{% elif employee.avg_score >= 75 %}performance-good{% elif employee.avg_score >= 60 %}performance-average{% else %}performance-low{% endif %}"
+            title="Điểm hiệu suất trung bình: {{ employee.avg_score|floatformat:1 }}/100"
+            data-bs-toggle="tooltip"
+            data-bs-placement="top"
+          >
+            {{ employee.avg_score|floatformat:1 }}/100
+          </span>
+          {% endif %}
+        </div>
+
+        <div class="mt-3">
+          {% if employee.email %}
+          <p class="mb-1 small">
+            <i class="bi bi-envelope me-1"></i>{{ employee.email }}
+          </p>
+          {% endif %}
+          {% if employee.phone %}
+          <p class="mb-1 small">
+            <i class="bi bi-telephone me-1"></i>{{ employee.phone }}
+          </p>
+          {% endif %}
+          {% if employee.hourly_rate %}
+          <p class="mb-1 small">
+            <i class="bi bi-cash-stack me-1"></i>{{ employee.hourly_rate|add_thousand_sep }} VNĐ/giờ
+          </p>
+          {% endif %}
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+          <div>
+            <small class="text-muted">
+              <i class="bi bi-folder me-1"></i>{{ employee.project_count }} dự án
+            </small>
+          </div>
+          <div>
+            <a href="{% url 'resources:detail' employee.pk %}" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-eye me-1"></i>Xem
+            </a>
+            {% if user.profile.is_manager %}
+            <a href="{% url 'resources:edit' employee.pk %}" class="btn btn-sm btn-outline-secondary ms-1">
+              <i class="bi bi-pencil"></i>
+            </a>
+            <a href="#" class="btn btn-sm btn-outline-danger ms-1" data-employee-id="{{ employee.pk }}" data-employee-name="{{ employee.full_name }}" onclick="handleDeleteEmployeeFromElement(this, event); return false;">
+              <i class="bi bi-trash"></i>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<nav aria-label="Page navigation" class="mt-4">
+  <ul class="pagination justify-content-center">
+    {% if page_obj.has_previous %}
+    <li class="page-item">
+      <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if department_filter %}&department={{ department_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">Trước</a>
+    </li>
+    {% endif %}
+    
+    {% for num in page_obj.paginator.page_range %}
+      {% if page_obj.number == num %}
+      <li class="page-item active">
+        <span class="page-link">{{ num }}</span>
+      </li>
+      {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if department_filter %}&department={{ department_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">{{ num }}</a>
+      </li>
+      {% endif %}
+    {% endfor %}
+    
+    {% if page_obj.has_next %}
+    <li class="page-item">
+      <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if department_filter %}&department={{ department_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">Sau</a>
+    </li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="card">
+  <div class="card-body text-center py-5">
+    <i class="bi bi-people" style="font-size: 3rem; color: #cbd5e1;"></i>
+    <p class="text-muted mt-3">Không tìm thấy nhân sự nào.</p>
+    {% if user.profile.is_manager %}
+    <a href="{% url 'resources:create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-circle me-1"></i>Tạo nhân sự đầu tiên
+    </a>
+    {% else %}
+    <p class="text-muted">Liên hệ quản lý để thêm nhân sự.</p>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Đảm bảo luôn có showNotification/showConfirm (polyfill)
+(function ensureGlobalModals() {
+  function fallbackNotify(type, message, title) {
+    const full = (title ? (title + ': ') : '') + (message || '');
+    window.alert(full);
+  }
+  function fallbackConfirm(message) {
+    return Promise.resolve(window.confirm(message || 'Xác nhận?'));
+  }
+  if (typeof window.showNotification !== 'function') {
+    window.showNotification = function(type, message, title = null) {
+      try {
+        const modal = document.getElementById('globalNotificationModal');
+        if (!modal || typeof bootstrap === 'undefined') {
+          return fallbackNotify(type, message, title);
+        }
+        const header = document.getElementById('globalNotificationModalHeader');
+        const label = document.getElementById('globalNotificationModalLabel');
+        const body = document.getElementById('globalNotificationModalBody');
+        const footer = document.getElementById('globalNotificationModalFooter');
+        const resolvedTitle = title || (type === 'success' ? 'Thành công' : type === 'warning' ? 'Cảnh báo' : type === 'info' ? 'Thông tin' : 'Lỗi');
+        if (label) label.textContent = resolvedTitle;
+        if (header) {
+          header.className = 'modal-header';
+          if (type === 'success') header.classList.add('bg-success', 'text-white');
+          else if (type === 'warning') header.classList.add('bg-warning', 'text-dark');
+          else if (type === 'info') header.classList.add('bg-info', 'text-white');
+          else header.classList.add('bg-danger', 'text-white');
+        }
+        if (body) {
+          body.innerHTML = `<div>${String(message || '').replace(/\n/g, '<br>')}</div>`;
+        }
+        if (footer) {
+          footer.innerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>';
+        }
+        new bootstrap.Modal(modal).show();
+      } catch (e) {
+        fallbackNotify(type, message, title);
+      }
+    };
+  }
+  if (typeof window.showConfirm !== 'function') {
+    window.showConfirm = function(message, title = 'Xác nhận', confirmText = 'Xác nhận', cancelText = 'Hủy') {
+      try {
+        const modal = document.getElementById('globalConfirmModal');
+        if (!modal || typeof bootstrap === 'undefined') {
+          return fallbackConfirm(message);
+        }
+        const label = document.getElementById('globalConfirmModalLabel');
+        const body = document.getElementById('globalConfirmModalBody');
+        const okBtn = document.getElementById('globalConfirmOkBtn');
+        const cancelBtn = document.getElementById('globalConfirmCancelBtn');
+        if (label) label.textContent = title || 'Xác nhận';
+        if (body) body.innerHTML = `<div>${String(message || '').replace(/\n/g, '<br>')}</div>`;
+        if (okBtn) okBtn.textContent = confirmText || 'Xác nhận';
+        if (cancelBtn) cancelBtn.textContent = cancelText || 'Hủy';
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+        return new Promise((resolve) => {
+          const cleanup = () => {
+            if (okBtn) okBtn.removeEventListener('click', onOk);
+            if (cancelBtn) cancelBtn.removeEventListener('click', onCancel);
+            modal.removeEventListener('hidden.bs.modal', onHidden);
+          };
+          const onOk = () => { cleanup(); bsModal.hide(); resolve(true); };
+          const onCancel = () => { cleanup(); bsModal.hide(); resolve(false); };
+          const onHidden = () => { cleanup(); resolve(false); };
+          if (okBtn) okBtn.addEventListener('click', onOk, { once: true });
+          if (cancelBtn) cancelBtn.addEventListener('click', onCancel, { once: true });
+          modal.addEventListener('hidden.bs.modal', onHidden, { once: true });
+        });
+      } catch (e) {
+        return fallbackConfirm(message);
+      }
+    };
+  }
+})();
+
+(function initDeleteEmployee() {
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  function handleDeleteEmployeeFromElement(element, event) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    const employeeId = element.getAttribute('data-employee-id');
+    const employeeName = element.getAttribute('data-employee-name') || 'nhân sự này';
+    handleDeleteEmployee(employeeId, employeeName, event);
+  }
+
+  async function handleDeleteEmployee(employeeId, employeeName, event) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
+    // Xử lý employeeName để đảm bảo là string
+    const nameStr = String(employeeName || 'nhân sự này');
+    
+    const confirmed = await window.showConfirm(
+      `Bạn có chắc chắn muốn xóa nhân sự <strong>${nameStr}</strong>?<br><small class="text-muted">Hành động này không thể hoàn tác. Tất cả dữ liệu liên quan đến nhân sự này sẽ bị xóa.</small>`,
+      'Xác nhận xóa nhân sự',
+      'Xóa',
+      'Hủy'
+    );
+    if (!confirmed) return;
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/resources/${employeeId}/delete/`;
+
+    const csrftoken = getCookie('csrftoken');
+    if (csrftoken) {
+      const csrfInput = document.createElement('input');
+      csrfInput.type = 'hidden';
+      csrfInput.name = 'csrfmiddlewaretoken';
+      csrfInput.value = csrftoken;
+      form.appendChild(csrfInput);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+  }
+
+  // gắn vào global để onclick gọi được
+  window.handleDeleteEmployee = handleDeleteEmployee;
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const deletedEmployee = urlParams.get('deleted');
+    if (deletedEmployee) {
+      const decodedName = decodeURIComponent(deletedEmployee);
+      setTimeout(function() {
+        window.showNotification('success', `Đã xóa nhân sự "${decodedName}" thành công.`, 'Thành công');
+      }, 300);
+      const newUrl = window.location.pathname + (window.location.search.replace(/[?&]deleted=[^&]*/, '').replace(/^&/, '?') || '');
+      window.history.replaceState({}, '', newUrl);
+    }
+
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+  });
+})();
+</script>
+{% endblock %}

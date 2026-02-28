@@ -1,0 +1,420 @@
+{% extends 'base_sidebar.html' %}
+{% load static %}
+
+{% block title %}Gợi ý Tối ưu Chi tiêu - ERP System{% endblock %}
+
+{% block page_title %}Gợi ý Tối ưu Chi tiêu{% endblock %}
+
+{% block extra_css %}
+<style>
+  .ai-card {
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .chart-container {
+    position: relative;
+    height: 300px;
+    margin-top: 1rem;
+  }
+
+  .insight-item {
+    padding: 1rem;
+    border-left: 4px solid #0000cd;
+    background: #f8fafc;
+    margin-bottom: 0.75rem;
+    border-radius: 4px;
+  }
+
+  .recommendation-item {
+    padding: 1rem;
+    border-left: 4px solid #22c55e;
+    background: #f0fdf4;
+    margin-bottom: 0.75rem;
+    border-radius: 4px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col-md-12">
+    <div class="ai-card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0"><i class="bi bi-lightbulb me-2"></i>Phân tích Chi tiêu</h5>
+        <div>
+          <select id="projectSelect" class="form-select form-select-sm" style="width: 200px;">
+            <option value="">Tất cả dự án</option>
+            {% for project in projects %}
+            <option value="{{ project.id }}">{{ project.name }}</option>
+            {% endfor %}
+          </select>
+          <button id="analyzeBtn" class="btn btn-primary btn-sm ms-2">
+            <i class="bi bi-graph-up me-1"></i>Phân tích
+          </button>
+        </div>
+      </div>
+      
+      <div id="loadingIndicator" class="text-center py-4" style="display: none;">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Đang phân tích...</span>
+        </div>
+        <p class="mt-2 text-muted">AI đang phân tích dữ liệu chi tiêu...</p>
+      </div>
+
+      <div id="resultsContainer" style="display: none;">
+        <!-- Summary -->
+        <div class="ai-card mb-3">
+          <h6 class="mb-3">Tóm tắt Phân tích</h6>
+          <div id="summaryContent"></div>
+        </div>
+
+        <!-- Charts -->
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <div class="ai-card">
+              <h6 class="mb-3">Chi tiêu theo Tháng</h6>
+              <div class="chart-container">
+                <canvas id="monthlySpendingChart"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="ai-card">
+              <h6 class="mb-3">Chi tiêu theo Danh mục</h6>
+              <div class="chart-container">
+                <canvas id="categorySpendingChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-4">
+          <div class="col-md-12">
+            <div class="ai-card">
+              <h6 class="mb-3">Chi tiêu theo Loại</h6>
+              <div class="chart-container">
+                <canvas id="typeSpendingChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Insights -->
+        <div class="ai-card mb-3">
+          <h6 class="mb-3"><i class="bi bi-info-circle me-2"></i>Nhận định</h6>
+          <div id="insightsContent"></div>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="ai-card">
+          <h6 class="mb-3"><i class="bi bi-check-circle me-2"></i>Đề xuất</h6>
+          <div id="recommendationsContent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+<script>
+  if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
+    Chart.register(ChartDataLabels);
+  }
+  (function ensureModalHelpers() {
+    const hasConfirm = typeof window.showConfirm === 'function';
+    const hasNotify = typeof window.showNotification === 'function';
+    if (hasConfirm && hasNotify) return;
+
+    const modalContainerId = 'global-modal-container';
+    function getContainer() {
+      let el = document.getElementById(modalContainerId);
+      if (!el) {
+        el = document.createElement('div');
+        el.id = modalContainerId;
+        document.body.appendChild(el);
+      }
+      return el;
+    }
+
+    window.showNotification = function(type, message) {
+      const container = getContainer();
+      const color = type === 'error' ? '#dc2626' : type === 'success' ? '#16a34a' : '#2563eb';
+      const box = document.createElement('div');
+      box.style.cssText = `
+        position: fixed; top: 20px; right: 20px; z-index: 2050;
+        background: #fff; border: 1px solid #e2e8f0; border-left: 4px solid ${color};
+        padding: 12px 16px; border-radius: 8px; box-shadow: 0 10px 30px rgba(15,23,42,0.12);
+        min-width: 260px; font-size: 14px; color: #0f172a;
+      `;
+      box.innerHTML = `
+        <div style="font-weight: 600; margin-bottom: 4px; text-transform: uppercase; color: ${color};">${type || 'info'}</div>
+        <div>${message || ''}</div>
+      `;
+      container.appendChild(box);
+      setTimeout(() => box.remove(), 3200);
+    };
+
+    window.showConfirm = function(message, onConfirm) {
+      const confirmed = window.confirm(message || 'Bạn có chắc chắn?');
+      if (confirmed && typeof onConfirm === 'function') onConfirm();
+      return confirmed;
+    };
+  })();
+
+  function safeParseJSON(text) {
+    if (!text) return null;
+    try {
+      return JSON.parse(text);
+    } catch (err) {
+      console.error('safeParseJSON error:', err, 'input:', text);
+      return null;
+    }
+  }
+
+  document.getElementById('analyzeBtn').addEventListener('click', async function() {
+    const projectId = document.getElementById('projectSelect').value;
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const resultsContainer = document.getElementById('resultsContainer');
+    
+    loadingIndicator.style.display = 'block';
+    resultsContainer.style.display = 'none';
+    
+    try {
+      const response = await fetch('{% url "core:ai-expense-optimization-api" %}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ project_id: projectId || null })
+      });
+      
+      const rawText = await response.text();
+      const cleaned = rawText ? rawText.trim() : '';
+      const contentType = response.headers.get('content-type') || '';
+      let data = {};
+
+      if (cleaned) {
+        if (contentType.includes('application/json') || cleaned.startsWith('{') || cleaned.startsWith('[')) {
+          data = safeParseJSON(cleaned) || {};
+          if (!Object.keys(data).length && !response.ok) {
+            // JSON parse failed or empty while status bad -> surface raw text
+            loadingIndicator.style.display = 'none';
+            showNotification('error', cleaned);
+            return;
+          }
+        } else {
+          // Không phải JSON: trả thông báo thô
+          loadingIndicator.style.display = 'none';
+          showNotification('error', cleaned);
+          console.error('AI expense response (non-JSON):', cleaned);
+          return;
+        }
+      }
+
+      loadingIndicator.style.display = 'none';
+      
+      if (!response.ok || data.error) {
+        const msg = data && data.error ? data.error : 'Yêu cầu không thành công';
+        showNotification('error', msg);
+        return;
+      }
+      
+      // Kiểm tra xem có data không
+      if (data.no_data) {
+        showNotification('warning', data.summary || data.message || 'Chưa có đủ dữ liệu để tối ưu chi tiêu. Vui lòng tạo chi phí trước.');
+        return;
+      }
+      
+      // Display summary
+      document.getElementById('summaryContent').innerHTML = '<p>' + (data.summary || '').replace(/\n/g, '<br>') + '</p>';
+      
+      // Display insights
+      const insights = Array.isArray(data.insights) ? data.insights : [];
+      const insightsHtml = insights.map(insight => 
+        `<div class="insight-item"><p class="mb-0">${insight}</p></div>`
+      ).join('');
+      document.getElementById('insightsContent').innerHTML = insightsHtml || '<p class="text-muted">Không có nhận định nào.</p>';
+      
+      // Display recommendations
+      const recs = Array.isArray(data.recommendations) ? data.recommendations : [];
+      const recommendationsHtml = recs.map(rec => 
+        `<div class="recommendation-item"><p class="mb-0">${rec}</p></div>`
+      ).join('');
+      document.getElementById('recommendationsContent').innerHTML = recommendationsHtml || '<p class="text-muted">Không có đề xuất nào.</p>';
+      
+      // Render charts
+      if (data.chart_data) {
+        renderCharts(data.chart_data);
+      }
+      
+      resultsContainer.style.display = 'block';
+    } catch (error) {
+      loadingIndicator.style.display = 'none';
+      showNotification('error', 'Lỗi khi phân tích: ' + error.message);
+    }
+  });
+  
+  function renderCharts(chartData) {
+    if (!chartData || typeof chartData !== 'object') return;
+
+    const labelFmtCurrency = function(value) {
+      const v = Number(value) || 0;
+      if (v >= 1_000_000_000) return (v / 1_000_000_000).toFixed(1) + 'B';
+      if (v >= 1_000_000) return (v / 1_000_000).toFixed(1) + 'M';
+      if (v >= 1_000) return (v / 1_000).toFixed(0) + 'K';
+      return v.toLocaleString('vi-VN');
+    };
+
+    // Monthly Spending Chart
+    if (chartData.monthly_spending) {
+      const monthlyCtx = document.getElementById('monthlySpendingChart');
+      const monthlyLabels = Object.keys(chartData.monthly_spending).sort();
+      const monthlyData = monthlyLabels.map(key => chartData.monthly_spending[key]);
+      
+      new Chart(monthlyCtx, {
+        type: 'line',
+        data: {
+          labels: monthlyLabels,
+          datasets: [{
+            label: 'Chi tiêu (VNĐ)',
+            data: monthlyData,
+            borderColor: '#0000cd',
+            backgroundColor: 'rgba(0, 0, 205, 0.1)',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            datalabels: {
+              align: 'end',
+              anchor: 'end',
+              color: '#0f172a',
+              font: { weight: 'bold', size: 10 },
+              formatter: labelFmtCurrency
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.parsed.y.toLocaleString('vi-VN') + ' VNĐ';
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return value.toLocaleString('vi-VN') + ' VNĐ';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // Category Spending Chart
+    if (chartData.spending_by_category) {
+      const categoryCtx = document.getElementById('categorySpendingChart');
+      const categoryLabels = Object.keys(chartData.spending_by_category);
+      const categoryData = Object.values(chartData.spending_by_category);
+      
+      new Chart(categoryCtx, {
+        type: 'doughnut',
+        data: {
+          labels: categoryLabels,
+          datasets: [{
+            data: categoryData,
+            backgroundColor: [
+              '#0000cd', '#3b82f6', '#22c55e', '#f59e0b', '#ef4444',
+              '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316'
+            ]
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' },
+            datalabels: {
+              color: '#0f172a',
+              font: { weight: 'bold', size: 10 },
+              formatter: (value) => labelFmtCurrency(value)
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.label + ': ' + context.parsed.toLocaleString('vi-VN') + ' VNĐ';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // Type Spending Chart
+    if (chartData.spending_by_type) {
+      const typeCtx = document.getElementById('typeSpendingChart');
+      const typeLabels = Object.keys(chartData.spending_by_type);
+      const typeData = Object.values(chartData.spending_by_type);
+      
+      new Chart(typeCtx, {
+        type: 'bar',
+        data: {
+          labels: typeLabels,
+          datasets: [{
+            label: 'Chi tiêu (VNĐ)',
+            data: typeData,
+            backgroundColor: '#0000cd'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            datalabels: {
+              anchor: 'end',
+              align: 'end',
+              color: '#0f172a',
+              font: { weight: 'bold', size: 10 },
+              formatter: labelFmtCurrency
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.parsed.y.toLocaleString('vi-VN') + ' VNĐ';
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return value.toLocaleString('vi-VN') + ' VNĐ';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+  }
+</script>
+{% endblock %}

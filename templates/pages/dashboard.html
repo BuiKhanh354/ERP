@@ -1,0 +1,913 @@
+{% extends 'base_sidebar.html' %} {% load static %} {% block title %}Bảng điều
+khiển - ERP System{% endblock %} {% block page_title %}Bảng điều khiển {% endblock %} {% block breadcrumb_title %}Dashboard{% endblock %} 
+{% block extra_css %}
+<style>
+  .stat-card {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  }
+
+  .stat-card .card-body {
+    padding: 1.5rem;
+  }
+
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0.5rem 0;
+  }
+
+  .stat-label {
+    font-size: 0.9rem;
+    color: #64748b;
+    font-weight: 500;
+  }
+
+  .stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .alert-card {
+    border-left: 4px solid;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+  }
+
+  .alert-card.alert-danger {
+    border-left-color: #ef4444;
+  }
+
+  .alert-card.alert-warning {
+    border-left-color: #f59e0b;
+  }
+
+  .alert-card.alert-info {
+    border-left-color: #3b82f6;
+  }
+
+  .chart-container {
+    position: relative;
+    height: 300px;
+    margin-top: 1rem;
+  }
+
+  .ai-insights-panel {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+  }
+
+  .ai-insights-panel h6 {
+    color: white;
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+
+  .ai-insights-panel .btn-link {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    transition: color 0.2s;
+    padding: 0;
+    border: none;
+    background: none;
+  }
+
+  .ai-insights-panel .btn-link:hover {
+    color: #ffffff;
+    text-decoration: none;
+    background: none;
+  }
+
+  .ai-insights-panel .btn-link:focus {
+    box-shadow: none;
+    outline: none;
+  }
+
+  .project-completion-item {
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    margin-bottom: 1rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+  }
+
+  .project-completion-item:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    border-color: #0000cd;
+  }
+
+  .project-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .project-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin-right: 0.5rem;
+  }
+
+  .project-status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    color: white;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .completion-bar {
+    height: 10px;
+    border-radius: 10px;
+    background-color: #e2e8f0;
+    overflow: hidden;
+    margin: 0.75rem 0;
+    position: relative;
+  }
+
+  .completion-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #0000cd 0%, #3b82f6 100%);
+    transition: width 0.5s ease;
+    border-radius: 10px;
+  }
+
+  .completion-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+    color: #64748b;
+    margin-top: 0.5rem;
+  }
+
+  .completion-percentage {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #0000cd;
+  }
+</style>
+{% endblock %} {% block content %}
+<!-- Stats Cards -->
+<div class="row mb-4">
+  <div class="col-md-3 mb-3">
+    <a
+      href="{% url 'projects:list' %}"
+      class="card stat-card text-decoration-none text-reset"
+      style="display: block"
+    >
+      <div class="card-body">
+        <div
+          class="stat-icon"
+          style="background-color: rgba(0, 0, 205, 0.1); color: #0000cd"
+        >
+          <i class="bi bi-folder"></i>
+        </div>
+        <div class="stat-label">Dự án đang chạy</div>
+        <div class="stat-value" id="active-projects">{{ projects.active }}</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-3 mb-3">
+    <a
+      href="/resources/"
+      class="card stat-card text-decoration-none text-reset"
+      style="display: block"
+    >
+      <div class="card-body">
+        <div
+          class="stat-icon"
+          style="background-color: rgba(34, 197, 94, 0.1); color: #22c55e"
+        >
+          <i class="bi bi-people"></i>
+        </div>
+        <div class="stat-label">Tổng nhân sự</div>
+        <div class="stat-value">{{ total_employees }}</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-3 mb-3">
+    <a
+      href="/budgeting/list/"
+      class="card stat-card text-decoration-none text-reset"
+      style="display: block"
+    >
+      <div class="card-body">
+        <div
+          class="stat-icon"
+          style="background-color: rgba(59, 130, 246, 0.1); color: #3b82f6"
+        >
+          <i class="bi bi-cash-stack"></i>
+        </div>
+        <div class="stat-label">Tỷ lệ sử dụng ngân sách</div>
+        <div class="stat-value">{{ budget.utilization_rate }}%</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-3 mb-3">
+    <a
+      href="/clients/"
+      class="card stat-card text-decoration-none text-reset"
+      style="display: block"
+    >
+      <div class="card-body">
+        <div
+          class="stat-icon"
+          style="background-color: rgba(245, 158, 11, 0.1); color: #f59e0b"
+        >
+          <i class="bi bi-building"></i>
+        </div>
+        <div class="stat-label">Khách hàng</div>
+        <div class="stat-value">{{ active_clients }}</div>
+      </div>
+    </a>
+    </div>
+</div>
+
+<!-- Alerts & Project Completion -->
+<div class="row mb-4">
+  <div class="col-md-8">
+    <!-- Ẩn phần Cảnh báo & Thông báo cho cả quản lý và admin -->
+    {% comment %}
+    <div class="card">
+      <div class="card-header bg-white border-bottom">
+        <h5 class="mb-0">
+          <i class="bi bi-exclamation-triangle me-2"></i>Cảnh báo & Thông báo
+        </h5>
+      </div>
+            <div class="card-body">
+        {% for alert in alerts %}
+        <div
+          class="alert-card alert alert-{{ alert.severity }} py-2 mb-2"
+          role="alert"
+        >
+          <div class="d-flex align-items-center">
+            <i
+              class="bi bi-{% if alert.type == 'deadline' %}clock{% elif alert.type == 'overload' %}person-exclamation{% else %}exclamation-circle{% endif %} me-2"
+            ></i>
+            <span>{{ alert.message }}</span>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-muted mb-0">Không có cảnh báo nào.</p>
+        {% endfor %}
+        </div>
+    </div>
+    {% endcomment %}
+
+    <div class="card">
+      <div class="card-header bg-white border-bottom">
+        <h5 class="mb-0">
+          <i class="bi bi-graph-up me-2"></i>Tỷ lệ hoàn thành dự án
+        </h5>
+      </div>
+            <div class="card-body">
+        {% for project in projects.projects_completion %}
+        <div class="project-completion-item">
+          <div class="project-header">
+            <div class="d-flex align-items-center">
+              <span class="project-title">{{ project.name }}</span>
+              <span
+                class="project-status-badge bg-{% if project.status == 'Active' %}primary{% elif project.status == 'Completed' %}success{% else %}secondary{% endif %}"
+              >
+                {{ project.status }}
+              </span>
+            </div>
+            <span class="completion-percentage"
+              >{{ project.completion_rate }}%</span
+            >
+          </div>
+          <div class="completion-bar">
+            <div
+              class="completion-fill"
+              style="width: {{ project.completion_rate }}%"
+            ></div>
+          </div>
+          <div class="completion-stats">
+            <span>
+              <i class="bi bi-check-circle me-1"></i>
+              {{ project.completed_tasks }}/{{ project.total_tasks }} công việc
+            </span>
+            <span>
+              <i class="bi bi-clock me-1"></i>
+              Còn {{ project.total_tasks|add:"-"|add:project.completed_tasks }}
+              công việc
+            </span>
+          </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-4">
+          <i class="bi bi-inbox" style="font-size: 3rem; color: #cbd5e1"></i>
+          <p class="text-muted mt-3 mb-0">Chưa có dự án nào.</p>
+        </div>
+        {% endfor %}
+        </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <!-- AI Insights Panel -->
+    <div class="ai-insights-panel">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="mb-0">
+          <i class="bi bi-robot me-2"></i>AI Assistant Insights
+        </h6>
+        <button
+          type="button"
+          class="btn btn-link p-0 border-0"
+          onclick="openAIChat()"
+          title="Xem thêm"
+          style="color: rgba(255, 255, 255, 0.8); text-decoration: none"
+          onmouseover="this.style.color='#ffffff'"
+          onmouseout="this.style.color='rgba(255, 255, 255, 0.8)'"
+        >
+          <i class="bi bi-arrows-fullscreen" style="font-size: 1.1rem"></i>
+        </button>
+            </div>
+      <div id="ai-insights-content">
+        <p class="mb-2">Đang tải insights...</p>
+        </div>
+    </div>
+
+    <!-- Workload Summary -->
+    <div class="card mt-3">
+      <div class="card-header bg-white border-bottom">
+        <h5 class="mb-0">
+          <i class="bi bi-calendar-week me-2"></i>Workload tuần này
+        </h5>
+      </div>
+            <div class="card-body">
+        {% if workload %} {% for item in workload|slice:":5" %}
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div>
+            <strong>{{ item.employee_name }}</strong>
+            <br />
+            <small class="text-muted">{{ item.department }}</small>
+          </div>
+          <span
+            class="badge bg-{% if item.total_hours > 40 %}danger{% elif item.total_hours > 30 %}warning{% else %}info{% endif %}"
+          >
+            {{ item.total_hours|floatformat:1 }}h
+          </span>
+        </div>
+        {% endfor %} {% else %}
+        <p class="text-muted mb-0">Chưa có dữ liệu workload.</p>
+        {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row">
+  <div class="col-md-6 mb-3">
+        <div class="card">
+      <div class="card-header bg-white border-bottom">
+        <h5 class="mb-0">
+          <i class="bi bi-pie-chart me-2"></i>Trạng thái dự án
+        </h5>
+            </div>
+            <div class="card-body">
+        <div class="chart-container">
+          <canvas id="projectStatusChart"></canvas>
+            </div>
+        </div>
+    </div>
+  </div>
+  <div class="col-md-6 mb-3">
+        <div class="card">
+      <div class="card-header bg-white border-bottom">
+        <h5 class="mb-0">
+          <i class="bi bi-bar-chart me-2"></i>Chi tiêu theo thời gian
+        </h5>
+            </div>
+      <div class="card-body">
+        <div class="chart-container">
+          <canvas id="burnRateChart"></canvas>
+        </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2/dist/chartjs-plugin-datalabels.min.js"></script>
+<script>
+  // Đăng ký plugin ChartDataLabels
+  Chart.register(ChartDataLabels);
+
+  // Project Status Chart với label inside trên từng segment
+  const projectStatusCtx = document.getElementById('projectStatusChart').getContext('2d');
+  const projectStatusData = [
+    {{ projects.active }},
+    {{ projects.planning }},
+    {{ projects.completed }},
+    {{ projects.on_hold }}
+  ];
+  const projectStatusLabels = ['Đang chạy', 'Lên kế hoạch', 'Hoàn thành', 'Tạm dừng'];
+  const totalProjects = projectStatusData.reduce((a, b) => a + b, 0);
+
+  new Chart(projectStatusCtx, {
+                type: 'doughnut',
+                data: {
+      labels: projectStatusLabels,
+                    datasets: [{
+        data: projectStatusData,
+                        backgroundColor: [
+          '#0000cd',
+          '#3b82f6',
+          '#22c55e',
+          '#f59e0b'
+        ],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '60%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            padding: 15,
+            usePointStyle: true,
+            font: {
+              size: 12,
+              weight: '500'
+            }
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const label = context.label || '';
+              const value = context.parsed || 0;
+              const percentage = totalProjects > 0 ? ((value / totalProjects) * 100).toFixed(1) : 0;
+              return `${label}: ${value} (${percentage}%)`;
+            }
+          }
+        },
+        datalabels: {
+          color: '#ffffff',
+          font: {
+            weight: 'bold',
+            size: 13
+          },
+          formatter: function(value, context) {
+            const percentage = totalProjects > 0 ? ((value / totalProjects) * 100).toFixed(0) : 0;
+            // Chỉ hiển thị label nếu giá trị > 0
+            if (value > 0) {
+              return value + '\n(' + percentage + '%)';
+            }
+            return '';
+          },
+          textAlign: 'center',
+          textStrokeColor: 'rgba(0, 0, 0, 0.5)',
+          textStrokeWidth: 2,
+          anchor: 'center',
+          clamp: true,
+          display: function(context) {
+            // Chỉ hiển thị nếu segment đủ lớn
+            return context.dataset.data[context.dataIndex] > 0;
+          }
+        }
+      }
+    },
+    plugins: [{
+      id: 'centerLabel',
+      afterDraw: function(chart) {
+        const ctx = chart.ctx;
+        const centerX = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2;
+        const centerY = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2;
+
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = 'bold 18px Arial';
+        ctx.fillStyle = '#0f172a';
+
+        ctx.fillText('Tổng: ' + totalProjects, centerX, centerY - 10);
+
+        ctx.font = '14px Arial';
+        ctx.fillStyle = '#64748b';
+        ctx.fillText('dự án', centerX, centerY + 10);
+        ctx.restore();
+      }
+    }]
+  });
+
+  // Burn Rate Chart với data từ database và label inside
+  const burnRateCtx = document.getElementById('burnRateChart').getContext('2d');
+  const expenseChartData = JSON.parse('{{ expense_chart_data|escapejs }}');
+  const expenseLabels = expenseChartData.labels || ['Tuần 1', 'Tuần 2', 'Tuần 3', 'Tuần 4'];
+  const expenseActual = expenseChartData.actual || [0, 0, 0, 0];
+  const expenseBudget = expenseChartData.budget || [0, 0, 0, 0];
+
+  new Chart(burnRateCtx, {
+    type: 'line',
+    data: {
+      labels: expenseLabels,
+      datasets: [{
+        label: 'Chi tiêu thực tế',
+        data: expenseActual,
+        borderColor: '#ef4444',
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        tension: 0.4,
+        fill: true,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        pointBackgroundColor: '#ef4444',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 2
+      }, {
+        label: 'Dự toán',
+        data: expenseBudget,
+        borderColor: '#0000cd',
+        borderDash: [5, 5],
+        backgroundColor: 'rgba(0, 0, 205, 0.05)',
+        tension: 0.4,
+        fill: false,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        pointBackgroundColor: '#0000cd',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            padding: 15,
+            usePointStyle: true,
+            font: {
+              size: 12,
+              weight: '500'
+            }
+          }
+        },
+        tooltip: {
+          enabled: true,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: '#ffffff',
+          bodyColor: '#ffffff',
+          borderColor: 'rgba(255, 255, 255, 0.2)',
+          borderWidth: 1,
+          padding: 12,
+          displayColors: true,
+          callbacks: {
+            title: function(context) {
+              return context[0].label;
+            },
+            label: function(context) {
+              const value = context.parsed.y;
+              const formattedValue = value.toLocaleString('vi-VN', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+              });
+              return context.dataset.label + ': ' + formattedValue + ' VNĐ';
+            },
+            labelColor: function(context) {
+              return {
+                borderColor: context.dataset.borderColor,
+                backgroundColor: context.dataset.borderColor
+              };
+            }
+          }
+        },
+        // Tắt ChartDataLabels plugin cho chart này
+        datalabels: {
+          display: false
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function(value) {
+              // Format số với dấu phẩy phân cách phần ngàn
+              return value.toLocaleString('vi-VN', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+              }) + ' VNĐ';
+            },
+            font: {
+              size: 11
+            }
+          },
+          grid: {
+            color: 'rgba(0, 0, 0, 0.05)'
+          }
+        },
+        x: {
+          grid: {
+            display: false
+          },
+          ticks: {
+            font: {
+              size: 11
+            }
+          }
+        }
+      },
+      interaction: {
+        mode: 'nearest',
+        axis: 'x',
+        intersect: false
+      }
+    },
+    plugins: [{
+      id: 'customDatalabels',
+      afterDatasetsDraw: function(chart) {
+        const ctx = chart.ctx;
+        chart.data.datasets.forEach((dataset, i) => {
+          const meta = chart.getDatasetMeta(i);
+          meta.data.forEach((element, index) => {
+            const value = dataset.data[index];
+            if (value > 0) {
+              ctx.save();
+
+              // Format số - CHỈ hiển thị dạng rút gọn (M hoặc k)
+              let displayValue = '';
+              if (value >= 1000000) {
+                displayValue = (value / 1000000).toFixed(1) + 'M';
+              } else if (value >= 1000) {
+                displayValue = (value / 1000).toFixed(1) + 'k';
+              } else {
+                displayValue = value.toFixed(0);
+              }
+
+              // Tính toán vị trí label (phía trên điểm)
+              const labelY = element.y - 20;
+              const labelX = element.x;
+
+              // Vẽ background tròn cho label
+              ctx.fillStyle = dataset.borderColor;
+              ctx.beginPath();
+              ctx.arc(labelX, labelY, 14, 0, 2 * Math.PI);
+              ctx.fill();
+
+              // Vẽ text màu trắng
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.font = 'bold 11px Arial';
+              ctx.fillStyle = '#ffffff';
+              ctx.fillText(displayValue, labelX, labelY);
+
+              ctx.restore();
+                }
+            });
+        });
+      }
+    }]
+  });
+
+  // Load AI Insights (force refresh để luôn có insights mới)
+  fetch('/api/ai/insights/?refresh=true')
+    .then(response => response.json())
+    .then(data => {
+      const insightsDiv = document.getElementById('ai-insights-content');
+      
+      // Kiểm tra xem có thông báo không có data không
+      if (data.no_data) {
+        insightsDiv.innerHTML = `
+          <div style="padding: 1rem; background-color: rgba(255, 193, 7, 0.1); border-radius: 8px; border-left: 4px solid #ffc107;">
+            <p style="opacity: 0.9; font-size: 0.85rem; margin: 0; color: #ffc107;">
+              <i class="bi bi-info-circle me-2"></i>${data.message || 'Chưa có đủ dữ liệu để phân tích. Vui lòng tạo dự án, công việc, ngân sách hoặc chi phí trước.'}
+            </p>
+          </div>
+        `;
+        return;
+      }
+      
+      if (data.length > 0) {
+        const latest = data[0];
+        // Làm sạch summary: loại bỏ markdown, JSON format, dấu *
+        let summaryText = latest.summary || '';
+
+        // Loại bỏ các ký tự markdown và format không mong muốn
+        summaryText = summaryText
+          .replace(/\*\*/g, '') // Loại bỏ **
+          .replace(/\*/g, '') // Loại bỏ *
+          .replace(/```json/g, '') // Loại bỏ ```json
+          .replace(/```/g, '') // Loại bỏ ```
+          .replace(/\{/g, '') // Loại bỏ {
+          .replace(/\}/g, '') // Loại bỏ }
+          .replace(/\[/g, '') // Loại bỏ [
+          .replace(/\]/g, '') // Loại bỏ ]
+          .replace(/"summary":/gi, '') // Loại bỏ "summary":
+          .replace(/"insights":/gi, '') // Loại bỏ "insights":
+          .replace(/"recommendations":/gi, '') // Loại bỏ "recommendations":
+          .replace(/Dưới đây là.*?JSON:/gi, '') // Loại bỏ phần giới thiệu JSON
+          .trim();
+
+        // Chia summary thành các đoạn dựa trên dấu xuống dòng
+        let summaryHtml = summaryText
+          .split(/\n\n+/)
+          .filter(p => p.trim().length > 0 && !p.trim().startsWith('{') && !p.trim().startsWith('['))
+          .slice(0, 4) // Chỉ lấy 4 đoạn đầu
+          .map(p => {
+            // Loại bỏ các ký tự đặc biệt còn sót lại
+            let cleanP = p.trim()
+              .replace(/^[-•]\s*/, '') // Loại bỏ bullet points
+              .replace(/\s+/g, ' ') // Chuẩn hóa khoảng trắng
+              .trim();
+            return `<p style="font-size: 0.85rem; opacity: 0.95; line-height: 1.6; margin-bottom: 0.75rem;">${cleanP}</p>`;
+          })
+          .join('');
+
+        // Nếu không có đoạn nào hợp lệ, hiển thị thông báo
+        if (!summaryHtml || summaryHtml.trim().length === 0) {
+          summaryHtml = '<p style="opacity: 0.8; font-size: 0.85rem;">Đang phân tích dữ liệu...</p>';
+        }
+
+        insightsDiv.innerHTML = `
+          <h6 style="color: white; font-size: 0.95rem; font-weight: 600; margin-bottom: 1rem;">
+            <i class="bi bi-lightbulb me-2"></i>${latest.title}
+          </h6>
+          <div style="max-height: 300px; overflow-y: auto;">
+            ${summaryHtml}
+          </div>
+        `;
+      } else {
+        insightsDiv.innerHTML = '<p style="opacity: 0.8; font-size: 0.85rem;">Chưa có insights. Hệ thống đang phân tích dữ liệu...</p>';
+      }
+    })
+    .catch(() => {
+      document.getElementById('ai-insights-content').innerHTML = '<p style="opacity: 0.8; font-size: 0.85rem;">Không thể tải insights.</p>';
+    });
+
+  // Function để mở AI Insights Modal
+  function openAIChat() {
+    // Lấy insights từ API
+    fetch('/api/ai/insights/')
+        .then(response => response.json())
+        .then(data => {
+            // Kiểm tra xem có thông báo không có data không
+            if (data.no_data) {
+                showNotification('warning', data.message || 'Chưa có đủ dữ liệu để phân tích. Vui lòng tạo dự án, công việc, ngân sách hoặc chi phí trước.', 'Thông báo');
+                return;
+            }
+            
+            if (data.length > 0) {
+                const latest = data[0];
+                showAIInsightsModal(latest);
+            } else {
+                showNotification('info', 'Chưa có insights. Hệ thống đang phân tích dữ liệu...', 'Thông báo');
+            }
+        })
+      .catch(() => {
+        showNotification('error', 'Không thể tải insights.', 'Lỗi');
+      });
+  }
+
+  // Function hiển thị modal AI Insights chi tiết
+  function showAIInsightsModal(insight) {
+    // Parse insights và recommendations từ JSON string
+    let insightsList = [];
+    let recommendationsList = [];
+
+    try {
+      if (typeof insight.insights === 'string') {
+        insightsList = JSON.parse(insight.insights || '[]');
+      } else {
+        insightsList = insight.insights || [];
+      }
+
+      if (typeof insight.recommendations === 'string') {
+        recommendationsList = JSON.parse(insight.recommendations || '[]');
+      } else {
+        recommendationsList = insight.recommendations || [];
+      }
+    } catch (e) {
+      console.error('Error parsing insights/recommendations:', e);
+    }
+
+    // Làm sạch summary
+    let summaryText = insight.summary || '';
+    summaryText = summaryText
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .replace(/\{/g, '')
+      .replace(/\}/g, '')
+      .replace(/\[/g, '')
+      .replace(/\]/g, '')
+      .replace(/"summary":/gi, '')
+      .replace(/"insights":/gi, '')
+      .replace(/"recommendations":/gi, '')
+      .replace(/Dưới đây là.*?JSON:/gi, '')
+      .trim();
+
+    // Tạo HTML cho modal
+    const modalHtml = `
+      <div class="modal fade" id="aiInsightsModal" tabindex="-1" aria-labelledby="aiInsightsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+              <h5 class="modal-title" id="aiInsightsModalLabel">
+                <i class="bi bi-robot me-2"></i>${insight.title || 'AI Assistant Insights'}
+              </h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+              ${summaryText ? `
+                <div class="mb-4">
+                  <h6 class="text-primary mb-3"><i class="bi bi-file-text me-2"></i>Tóm tắt</h6>
+                  <div class="p-3 bg-light rounded">
+                    ${summaryText.split(/\n\n+/).filter(p => p.trim().length > 0).map(p =>
+                      `<p class="mb-2">${p.trim().replace(/\n/g, '<br>')}</p>`
+                    ).join('')}
+                  </div>
+                </div>
+              ` : ''}
+
+              ${insightsList.length > 0 ? `
+                <div class="mb-4">
+                  <h6 class="text-info mb-3"><i class="bi bi-lightbulb me-2"></i>Những điểm nổi bật</h6>
+                  <ul class="list-group">
+                    ${insightsList.map(insight => `
+                      <li class="list-group-item">
+                        <i class="bi bi-check-circle-fill text-info me-2"></i>${insight}
+                      </li>
+                    `).join('')}
+                  </ul>
+                </div>
+              ` : ''}
+
+              ${recommendationsList.length > 0 ? `
+                <div class="mb-4">
+                  <h6 class="text-success mb-3"><i class="bi bi-star me-2"></i>Khuyến nghị</h6>
+                  <ul class="list-group">
+                    ${recommendationsList.map(rec => `
+                      <li class="list-group-item">
+                        <i class="bi bi-arrow-right-circle-fill text-success me-2"></i>${rec}
+                      </li>
+                    `).join('')}
+                  </ul>
+                </div>
+              ` : ''}
+
+              <div class="text-center mt-4">
+                <a href="{% url 'core:ai-chat' %}" class="btn btn-primary">
+                  <i class="bi bi-chat-dots me-2"></i>Chat với AI để tìm hiểu thêm
+                </a>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Xóa modal cũ nếu có
+    const oldModal = document.getElementById('aiInsightsModal');
+    if (oldModal) {
+      oldModal.remove();
+    }
+
+    // Thêm modal mới vào body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Hiển thị modal
+    const modal = new bootstrap.Modal(document.getElementById('aiInsightsModal'));
+    modal.show();
+
+    // Xóa modal khi đóng
+    document.getElementById('aiInsightsModal').addEventListener('hidden.bs.modal', function() {
+      this.remove();
+    });
+  }
+</script>
+{% endblock %}

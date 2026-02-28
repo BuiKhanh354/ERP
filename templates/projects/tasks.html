@@ -1,0 +1,576 @@
+{% extends 'base_sidebar.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Quản lý Công việc - ERP System{% endblock %}
+
+{% block page_title %}Quản lý Công việc{% endblock %}
+
+{% block extra_css %}
+<style>
+  .task-item-card {
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    margin-bottom: 1rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+  }
+
+  .task-item-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    border-color: #0000cd;
+  }
+
+  .task-item-card.done {
+    opacity: 1;
+    border-color: #cbd5e1;
+  }
+
+  .task-item-card.done .task-title {
+    text-decoration: line-through;
+    color: #475569;
+  }
+
+  .task-item-card.done .task-description {
+    color: #64748b;
+  }
+
+  .task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+  }
+
+  .task-title-section {
+    flex: 1;
+  }
+
+  .task-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 0.25rem;
+  }
+
+  .task-description {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin-bottom: 0.5rem;
+  }
+
+  .task-status-badge {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .status-todo { background-color: #f1f5f9; color: #64748b; }
+  .status-in_progress { background-color: #dbeafe; color: #1e40af; }
+  .status-review { background-color: #fef3c7; color: #92400e; }
+  .status-done { background-color: #d1fae5; color: #065f46; }
+
+  .task-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: #475569;
+    margin-bottom: 0.75rem;
+  }
+
+  .task-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .task-meta-item i {
+    color: #334155;
+  }
+
+  .task-meta-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+  }
+
+  .task-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    font-size: 0.78rem;
+    color: #334155;
+    white-space: nowrap;
+  }
+
+  .task-pill.danger {
+    border-color: rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.06);
+    color: #991b1b;
+  }
+
+  .task-pill.warning {
+    border-color: rgba(245, 158, 11, 0.35);
+    background: rgba(245, 158, 11, 0.08);
+    color: #92400e;
+  }
+
+  .task-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .task-status-select {
+    min-width: 150px;
+    font-size: 0.875rem;
+  }
+
+  .task-save-btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .stats-mini {
+    text-align: center;
+    padding: 1rem;
+    border-radius: 8px;
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+  }
+
+  .stats-mini-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0.25rem 0;
+  }
+
+  .stats-mini-label {
+    font-size: 0.85rem;
+    color: #64748b;
+  }
+
+  .completion-bar {
+    height: 8px;
+    background-color: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 0.75rem 0;
+  }
+
+  .completion-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6 0%, #22c55e 100%);
+    transition: width 0.3s ease;
+  }
+
+  .assignment-status-badge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Project Selector -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-10">
+        <label class="form-label fw-semibold">Chọn dự án</label>
+        <select name="project" class="form-select" onchange="this.form.submit()">
+          <option value="">-- Chọn dự án --</option>
+          {% for proj in projects %}
+          <option value="{{ proj.id }}" {% if selected_project == proj.id|stringformat:"s" %}selected{% endif %}>
+            {{ proj.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        {% if user.profile.is_manager %}
+        <a href="{% url 'projects:task_create' %}?project={{ selected_project }}" class="btn btn-primary w-100">
+          <i class="bi bi-plus-circle me-1"></i>Tạo mới
+        </a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if project %}
+<!-- Stats -->
+<div class="row mb-4">
+  <div class="col-md-3 mb-3">
+    <div class="stats-mini">
+      <div class="stats-mini-value" style="color: #64748b;">{{ total_tasks }}</div>
+      <div class="stats-mini-label">Tổng công việc</div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="stats-mini">
+      <div class="stats-mini-value" style="color: #3b82f6;">{{ in_progress_tasks }}</div>
+      <div class="stats-mini-label">Đang làm</div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="stats-mini">
+      <div class="stats-mini-value" style="color: #f59e0b;">{{ review_tasks }}</div>
+      <div class="stats-mini-label">Đang xem xét</div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="stats-mini">
+      <div class="stats-mini-value" style="color: #22c55e;">{{ done_tasks }}</div>
+      <div class="stats-mini-label">Hoàn thành</div>
+    </div>
+  </div>
+</div>
+
+<!-- Progress Bar -->
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="fw-semibold">Tiến độ hoàn thành</span>
+      <span class="fw-bold">{{ completion_rate|floatformat:1 }}%</span>
+    </div>
+    <div class="completion-bar">
+      <div class="completion-fill" style="width: {{ completion_rate }}%"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Tasks List -->
+<div class="card">
+  <div class="card-header bg-white border-bottom">
+    <h5 class="mb-0">Danh sách công việc - {{ project.name }}</h5>
+  </div>
+  <div class="card-body">
+    {% if tasks %}
+    {% for task in tasks %}
+    <div class="task-item-card {% if task.status == 'done' %}done{% endif %}" id="task-{{ task.pk }}">
+      <div class="task-header">
+        <div class="task-title-section">
+          <div class="task-title">{{ task.name }}</div>
+          {% if task.description %}
+          <div class="task-description">{{ task.description|truncatewords:30 }}</div>
+          {% endif %}
+        </div>
+        <span class="task-status-badge status-{{ task.status }}" id="status-badge-{{ task.pk }}">
+          {% if task.status == 'todo' %}Cần làm
+          {% elif task.status == 'in_progress' %}Đang thực hiện
+          {% elif task.status == 'review' %}Đang xem xét
+          {% elif task.status == 'done' %}Hoàn thành
+          {% endif %}
+        </span>
+      </div>
+      
+      <div class="task-meta">
+        <div class="task-meta-pills">
+          {% if task.department %}
+          <span class="task-pill"><i class="bi bi-building"></i>{{ task.department.name }}</span>
+          {% endif %}
+          {% if task.assigned_to %}
+          <span class="task-pill"><i class="bi bi-person"></i>{{ task.assigned_to.full_name }}</span>
+          {% endif %}
+          {% if task.assignment_status %}
+          <span class="task-pill"><i class="bi bi-send"></i>
+            {% if task.assignment_status == 'assigned' %}Đã giao
+            {% elif task.assignment_status == 'accepted' %}Đã nhận
+            {% elif task.assignment_status == 'in_progress' %}Đang thực hiện
+            {% elif task.assignment_status == 'completed' %}Hoàn thành
+            {% elif task.assignment_status == 'rejected' %}Từ chối
+            {% endif %}
+          </span>
+          {% endif %}
+          {% if task.due_date %}
+          <span class="task-pill"><i class="bi bi-calendar"></i>{{ task.due_date|date:"d/m/Y" }}</span>
+          {% endif %}
+          {% if task.estimated_hours %}
+          {% if task.estimated_end_at %}
+          <span class="task-pill" title="Đếm ngược theo giờ ước tính">
+            <i class="bi bi-hourglass-split"></i>
+            <span class="js-countdown" data-end-at="{{ task.estimated_end_at|date:'c' }}"></span>
+          </span>
+          {% else %}
+          <span class="task-pill"><i class="bi bi-clock"></i>{{ task.estimated_hours|hours_hhmm }}</span>
+          {% endif %}
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="task-actions">
+        {% if user.profile.is_manager %}
+        <select class="form-select form-select-sm task-status-select" id="status-select-{{ task.pk }}" data-task-id="{{ task.pk }}" data-original-status="{{ task.status }}">
+          <option value="todo" {% if task.status == 'todo' %}selected{% endif %}>Cần làm</option>
+          <option value="in_progress" {% if task.status == 'in_progress' %}selected{% endif %}>Đang thực hiện</option>
+          <option value="review" {% if task.status == 'review' %}selected{% endif %}>Đang xem xét</option>
+          <option value="done" {% if task.status == 'done' %}selected{% endif %}>Hoàn thành</option>
+        </select>
+        <button type="button" class="btn btn-sm btn-primary task-save-btn" onclick="saveTaskStatus({{ task.pk }})" id="save-btn-{{ task.pk }}" style="display: none;">
+          <i class="bi bi-check-lg me-1"></i>Lưu
+        </button>
+        <a href="{% url 'projects:task_edit' task.pk %}" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-pencil"></i>
+        </a>
+        <a href="{% url 'projects:task_delete' task.pk %}" class="btn btn-sm btn-outline-danger" onclick="event.preventDefault(); handleDeleteTask('{% url 'projects:task_delete' task.pk %}', '{{ task.name }}'); return false;">
+          <i class="bi bi-trash"></i>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="text-center py-4">
+      <i class="bi bi-check-square" style="font-size: 3rem; color: #cbd5e1;"></i>
+      <p class="text-muted mt-3">Chưa có công việc nào.</p>
+      <a href="{% url 'projects:task_create' %}?project={{ project.pk }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i>Tạo công việc đầu tiên
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <div class="card-body text-center py-5">
+    <i class="bi bi-folder" style="font-size: 3rem; color: #cbd5e1;"></i>
+    <p class="text-muted mt-3">Vui lòng chọn dự án để xem danh sách công việc.</p>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Hiển thị nút Lưu khi thay đổi status
+  document.querySelectorAll('.task-status-select').forEach(select => {
+    const originalStatus = select.getAttribute('data-original-status');
+    const saveBtn = document.getElementById('save-btn-' + select.getAttribute('data-task-id'));
+    
+    select.addEventListener('change', function() {
+      if (this.value !== originalStatus) {
+        saveBtn.style.display = 'inline-block';
+      } else {
+        saveBtn.style.display = 'none';
+      }
+    });
+  });
+});
+
+function saveTaskStatus(taskId) {
+  const select = document.getElementById('status-select-' + taskId);
+  const newStatus = select.value;
+  const saveBtn = document.getElementById('save-btn-' + taskId);
+  
+  // Disable button while saving
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Đang lưu...';
+  
+  fetch(`/projects/tasks/${taskId}/update-status/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': '{{ csrf_token }}',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      status: newStatus
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Cập nhật badge status
+      const badge = document.getElementById('status-badge-' + taskId);
+      const statusText = {
+        'todo': 'Cần làm',
+        'in_progress': 'Đang thực hiện',
+        'review': 'Đang xem xét',
+        'done': 'Hoàn thành'
+      };
+      badge.textContent = statusText[newStatus];
+      badge.className = 'task-status-badge status-' + newStatus;
+      
+      // Cập nhật original status
+      select.setAttribute('data-original-status', newStatus);
+      
+      // Ẩn nút Lưu
+      saveBtn.style.display = 'none';
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Lưu';
+      
+      // Cập nhật class của card nếu done
+      const card = document.getElementById('task-' + taskId);
+      if (newStatus === 'done') {
+        card.classList.add('done');
+      } else {
+        card.classList.remove('done');
+      }
+      
+      showNotification('success', 'Đã cập nhật trạng thái công việc thành công.');
+      
+      // Reload sau 1 giây để cập nhật stats
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      showNotification('error', data.error || 'Có lỗi xảy ra khi cập nhật trạng thái.');
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Lưu';
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showNotification('error', 'Có lỗi xảy ra khi cập nhật trạng thái.');
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Lưu';
+  });
+}
+
+// Polyfill đảm bảo luôn có showNotification/showConfirm (fallback bootstrap/alert)
+(function ensureTaskModals() {
+  function fallbackNotify(type, message, title) {
+    const full = (title ? (title + ': ') : '') + (message || '');
+    window.alert(full);
+  }
+  function fallbackConfirm(message) {
+    return Promise.resolve(window.confirm(message || 'Xác nhận?'));
+  }
+  if (typeof window.showNotification !== 'function') {
+    window.showNotification = function(type, message, title = null) {
+      try {
+        const modal = document.getElementById('globalNotificationModal');
+        if (!modal || typeof bootstrap === 'undefined') {
+          return fallbackNotify(type, message, title);
+        }
+        const header = document.getElementById('globalNotificationModalHeader');
+        const label = document.getElementById('globalNotificationModalLabel');
+        const body = document.getElementById('globalNotificationModalBody');
+        const footer = document.getElementById('globalNotificationModalFooter');
+        const resolvedTitle = title || (type === 'success' ? 'Thành công' : type === 'warning' ? 'Cảnh báo' : type === 'info' ? 'Thông tin' : 'Lỗi');
+        if (label) label.textContent = resolvedTitle;
+        if (header) {
+          header.className = 'modal-header';
+          if (type === 'success') header.classList.add('bg-success', 'text-white');
+          else if (type === 'warning') header.classList.add('bg-warning', 'text-dark');
+          else if (type === 'info') header.classList.add('bg-info', 'text-white');
+          else header.classList.add('bg-danger', 'text-white');
+        }
+        if (body) body.innerHTML = `<div>${String(message || '').replace(/\n/g, '<br>')}</div>`;
+        if (footer) footer.innerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>';
+        new bootstrap.Modal(modal).show();
+      } catch (e) {
+        fallbackNotify(type, message, title);
+      }
+    };
+  }
+  if (typeof window.showConfirm !== 'function') {
+    window.showConfirm = function(message, title = 'Xác nhận', confirmText = 'Xác nhận', cancelText = 'Hủy') {
+      try {
+        const modal = document.getElementById('globalConfirmModal');
+        if (!modal || typeof bootstrap === 'undefined') {
+          return fallbackConfirm(message);
+        }
+        const label = document.getElementById('globalConfirmModalLabel');
+        const body = document.getElementById('globalConfirmModalBody');
+        const okBtn = document.getElementById('globalConfirmOkBtn');
+        const cancelBtn = document.getElementById('globalConfirmCancelBtn');
+        if (label) label.textContent = title || 'Xác nhận';
+        if (body) body.innerHTML = `<div>${String(message || '').replace(/\n/g, '<br>')}</div>`;
+        if (okBtn) okBtn.textContent = confirmText || 'Xác nhận';
+        if (cancelBtn) cancelBtn.textContent = cancelText || 'Hủy';
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+        return new Promise((resolve) => {
+          const cleanup = () => {
+            if (okBtn) okBtn.removeEventListener('click', onOk);
+            if (cancelBtn) cancelBtn.removeEventListener('click', onCancel);
+            modal.removeEventListener('hidden.bs.modal', onHidden);
+          };
+          const onOk = () => { cleanup(); bsModal.hide(); resolve(true); };
+          const onCancel = () => { cleanup(); bsModal.hide(); resolve(false); };
+          const onHidden = () => { cleanup(); resolve(false); };
+          if (okBtn) okBtn.addEventListener('click', onOk, { once: true });
+          if (cancelBtn) cancelBtn.addEventListener('click', onCancel, { once: true });
+          modal.addEventListener('hidden.bs.modal', onHidden, { once: true });
+        });
+      } catch (e) {
+        return fallbackConfirm(message);
+      }
+    };
+  }
+})();
+
+async function handleDeleteTask(url, taskName) {
+  const confirmed = await window.showConfirm(
+    `Bạn có chắc muốn xóa công việc "${taskName}"? Hành động này không thể hoàn tác.`,
+    'Xác nhận xóa',
+    'Xóa',
+    'Hủy'
+  );
+  
+  if (confirmed) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = url;
+    
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrfmiddlewaretoken';
+    csrfInput.value = '{{ csrf_token }}';
+    form.appendChild(csrfInput);
+    
+    document.body.appendChild(form);
+    form.submit();
+  }
+}
+
+// Countdown timers (estimated time)
+function formatCountdown(ms) {
+  if (ms <= 0) return 'Hết giờ';
+  const totalSeconds = Math.floor(ms / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (days > 0) {
+    return `Còn ${days}d ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+  return `Còn ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function updateCountdowns() {
+  const now = new Date();
+  document.querySelectorAll('.js-countdown').forEach(el => {
+    const end = el.getAttribute('data-end-at');
+    if (!end) return;
+    const endDate = new Date(end);
+    const diff = endDate.getTime() - now.getTime();
+    el.textContent = formatCountdown(diff);
+    const pill = el.closest('.task-pill');
+    if (pill) {
+      pill.classList.remove('warning', 'danger');
+      if (diff <= 0) pill.classList.add('danger');
+      else if (diff <= 30 * 60 * 1000) pill.classList.add('warning');
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  updateCountdowns();
+  setInterval(updateCountdowns, 1000);
+});
+</script>
+{% endblock %}

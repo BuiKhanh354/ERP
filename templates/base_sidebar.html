@@ -1,0 +1,1626 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="icon"
+      type="image/png"
+      href="{% static 'assets/logo/logo.png' %}"
+    />
+    <title>{% block title %}Hệ thống ERP{% endblock %}</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
+    />
+    <link rel="stylesheet" href="{% static 'css/custom.css' %}" />
+    <style>
+      :root {
+        --sidebar-width: 260px;
+        --sidebar-bg: #f1f5f9;
+        --sidebar-active: #0000cd;
+        --sidebar-hover: #f1f5f9;
+        --content-bg: #f8fafc;
+        --card-bg: #ffffff;
+        --text-primary: #0f172a;
+        --text-secondary: #64748b;
+        --border-color: #e2e8f0;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        background-color: var(--content-bg);
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        margin: 0;
+        padding: 0;
+        color: var(--text-primary);
+      }
+
+      /* Sidebar */
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: var(--sidebar-width);
+        background: var(--sidebar-bg);
+        color: var(--text-primary);
+        overflow-y: auto;
+        overflow-x: hidden;
+        z-index: 1000;
+        transition: transform 0.3s ease;
+        border-right: 1px solid var(--border-color);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      }
+
+      .sidebar::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .sidebar::-webkit-scrollbar-track {
+        background: rgba(15, 23, 42, 0.06);
+      }
+
+      .sidebar::-webkit-scrollbar-thumb {
+        background: rgba(15, 23, 42, 0.18);
+        border-radius: 3px;
+      }
+
+      .sidebar-header {
+        padding: 1.5rem 1.25rem;
+        border-bottom: 1px solid #cccccc;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background-color: #f1f5f9;
+      }
+
+      .sidebar-header img {
+        height: 82px;
+        width: 82px;
+        object-fit: cover;
+        background: #f1f5f9;
+        border-radius: 8px;
+      }
+
+      .sidebar-header .brand-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .sidebar-header .brand-title {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: var(--text-primary);
+        line-height: 1.2;
+      }
+
+      .sidebar-header .brand-subtitle {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        line-height: 1.2;
+      }
+
+      .sidebar-menu {
+        padding: 0.75rem 0;
+      }
+
+      .menu-section {
+        margin-bottom: 1.5rem;
+      }
+
+      .menu-section-title {
+        padding: 0.5rem 1.25rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--sidebar-active);
+        margin-bottom: 0.5rem;
+      }
+
+      .menu-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1.25rem;
+        color: var(--text-secondary);
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border-left: 3px solid transparent;
+        font-size: 0.9rem;
+        gap: 0.75rem;
+      }
+
+      .menu-item i {
+        width: 20px;
+        font-size: 1.1rem;
+        text-align: center;
+        flex-shrink: 0;
+      }
+
+      .menu-item:hover {
+        background-color: var(--sidebar-hover);
+        color: var(--text-primary);
+        border-left-color: var(--sidebar-active);
+      }
+
+      .menu-item.active {
+        background-color: rgba(0, 0, 205, 0.08);
+        color: var(--text-primary);
+        border-left-color: var(--sidebar-active);
+        font-weight: 600;
+      }
+
+      .menu-item .badge {
+        margin-left: auto;
+        background-color: #ef4444;
+        color: #ffffff;
+        font-size: 0.7rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 12px;
+        font-weight: 600;
+      }
+
+      /* Main Content */
+      .main-content {
+        margin-left: var(--sidebar-width);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        transition: margin-left 0.3s ease;
+      }
+
+      .sidebar.collapsed {
+        width: 60px;
+      }
+
+      .sidebar.collapsed .brand-text,
+      .sidebar.collapsed .menu-section-title,
+      .sidebar.collapsed .menu-item span:not(.badge) {
+        opacity: 0;
+        width: 0;
+        overflow: hidden;
+      }
+
+      .sidebar.collapsed .sidebar-header {
+        display: none;
+      }
+
+      .sidebar.collapsed .menu-section {
+        margin-bottom: 0.1rem;
+      }
+
+      .sidebar.collapsed .menu-item {
+        padding: 0.55rem 0.2rem;
+        justify-content: center;
+        border-left-width: 0;
+      }
+
+      .sidebar.collapsed .menu-item i {
+        margin-right: 0;
+      }
+
+      .main-content.sidebar-collapsed {
+        margin-left: 60px;
+      }
+
+      body.sidebar-hidden .sidebar {
+        transform: translateX(-100%);
+      }
+
+      body.sidebar-hidden .main-content {
+        margin-left: 0;
+      }
+
+      /* Top Header Bar */
+      .top-header {
+        background-color: var(--card-bg);
+        padding: 1rem 2rem;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      }
+
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex: 1;
+      }
+
+      .sidebar-toggle-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        border: none;
+        background-color: var(--content-bg);
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 1.25rem;
+      }
+
+      .sidebar-toggle-btn:hover {
+        background-color: var(--border-color);
+        color: var(--text-primary);
+      }
+
+      .header-logo {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        text-decoration: none;
+        color: var(--text-primary);
+      }
+
+      .header-logo img {
+        height: 36px;
+        width: 36px;
+      }
+
+      .header-logo .logo-text {
+        font-weight: 700;
+        font-size: 1.25rem;
+        color: var(--sidebar-active);
+      }
+
+      .search-container {
+        flex: 1;
+        max-width: 500px;
+        position: relative;
+      }
+
+      .search-input {
+        width: 100%;
+        padding: 0.6rem 1rem 0.6rem 2.5rem;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        font-size: 0.9rem;
+        background-color: var(--content-bg);
+        transition: all 0.2s;
+      }
+
+      .search-input:focus {
+        outline: none;
+        border-color: var(--sidebar-active);
+        box-shadow: 0 0 0 3px rgba(0, 0, 205, 0.1);
+        background-color: var(--card-bg);
+      }
+
+      .search-icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 45%;
+        transform: translateY(-50%);
+        color: var(--text-secondary);
+        font-size: 1rem;
+      }
+
+      .search-results {
+        position: absolute;
+        top: 110%;
+        left: 0;
+        right: 0;
+        background-color: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+        padding: 0.5rem 0;
+        z-index: 1050;
+        max-height: 260px;
+        overflow-y: auto;
+      }
+
+      .search-result-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.55rem 1rem;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+      }
+
+      .search-result-item i {
+        width: 20px;
+        text-align: center;
+        color: var(--sidebar-active);
+      }
+
+      .search-result-item span {
+        flex: 1;
+      }
+
+      .search-result-item small {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+      }
+
+      .search-result-item.active,
+      .search-result-item:hover {
+        background-color: #f1f5f9;
+        color: var(--text-primary);
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .header-icon-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        border: none;
+        background-color: var(--content-bg);
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+        font-size: 1.1rem;
+      }
+
+      .header-icon-btn:hover {
+        background-color: var(--border-color);
+        color: var(--text-primary);
+      }
+
+      .header-icon-btn .badge {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        background-color: #ef4444;
+        color: #ffffff;
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        font-size: 0.7rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+      }
+
+      /* Notification modal */
+      .notifications-modal .modal-dialog {
+        max-width: 800px;
+        width: 100%;
+      }
+
+      .notifications-modal .modal-content {
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+      }
+
+      .notifications-modal .modal-header {
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .notifications-modal .search-input {
+        background-color: #f8fafc;
+      }
+
+      .notification-item {
+        display: flex;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        border-radius: 10px;
+        transition: background 0.15s;
+        cursor: pointer;
+      }
+
+      .notification-item:hover {
+        background-color: #f8fafc;
+      }
+
+      .notification-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 999px;
+        background-color: #e0f2fe;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #0369a1;
+        flex-shrink: 0;
+      }
+
+      .notification-item.level-info .notification-icon {
+        background-color: #e0f2fe;
+        color: #0369a1;
+      }
+
+      .notification-item.level-success .notification-icon {
+        background-color: #dcfce7;
+        color: #166534;
+      }
+
+      .notification-item.level-warning .notification-icon {
+        background-color: #fef9c3;
+        color: #854d0e;
+      }
+
+      .notification-item.level-danger .notification-icon {
+        background-color: #fee2e2;
+        color: #991b1b;
+      }
+
+      .notification-item.unread .notification-title {
+        font-weight: 800;
+      }
+
+      .notification-title {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--text-primary);
+      }
+
+      .notification-meta {
+        font-size: 0.78rem;
+        color: var(--text-secondary);
+      }
+
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      /* Ẩn caret mặc định của Bootstrap cho dropdown-toggle để tránh trùng với icon chevron */
+      .user-profile.dropdown-toggle::after {
+        display: none;
+      }
+
+      .user-profile:hover {
+        background-color: var(--content-bg);
+      }
+
+      .user-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #0000cd 0%, #1e40af 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+
+      .user-avatar img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .user-info {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .user-name {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--text-primary);
+        line-height: 1.2;
+      }
+
+      .user-role {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        line-height: 1.2;
+      }
+
+      /* Content Area */
+      .content-wrapper {
+        flex: 1;
+        padding: 2rem;
+        overflow-y: auto;
+      }
+
+      .page-header {
+        margin-bottom: 2rem;
+      }
+
+      .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0 0 0.5rem 0;
+      }
+
+      .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .breadcrumb-item {
+        display: flex;
+        align-items: center;
+      }
+
+      .breadcrumb-item a {
+        color: var(--sidebar-active);
+        text-decoration: none;
+      }
+
+      .breadcrumb-item.active {
+        color: var(--text-secondary);
+      }
+
+      .breadcrumb-separator {
+        color: var(--text-secondary);
+        margin: 0 0.5rem;
+      }
+
+      /* Cards */
+      .card {
+        background-color: var(--card-bg);
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+        transition: box-shadow 0.2s;
+      }
+
+      .card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      }
+
+      .card-header {
+        background-color: var(--card-bg);
+        border-bottom: 1px solid var(--border-color);
+        padding: 1.25rem 1.5rem;
+        font-weight: 600;
+        font-size: 1rem;
+        color: var(--text-primary);
+      }
+
+      .card-body {
+        padding: 1.5rem;
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .sidebar {
+          transform: translateX(-100%);
+        }
+
+        .sidebar.show {
+          transform: translateX(0);
+        }
+
+        .main-content {
+          margin-left: 0;
+        }
+
+        .top-header {
+          padding: 1rem;
+        }
+
+        .search-container {
+          display: none;
+        }
+
+        .content-wrapper {
+          padding: 1rem;
+        }
+      }
+    </style>
+    {% block extra_css %}{% endblock %}
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <img src="{% static 'assets/logo/logo.png' %}" alt="ERP Logo" />
+        <div class="brand-text">
+          <span class="brand-title">PRM System</span>
+          <span class="brand-subtitle">Quản lý dự án</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu">
+        <a
+          href="{% url 'core:dashboard' %}"
+          class="menu-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+        >
+          <i class="bi bi-speedometer2"></i>
+          <span>Dashboard</span>
+        </a>
+
+        <div class="menu-section">
+          <div class="menu-section-title">Quản lý Dự án</div>
+          <a
+            href="{% url 'projects:list' %}"
+            class="menu-item {% if 'projects' in request.resolver_match.namespace and request.resolver_match.url_name in 'list,detail,create,edit,delete' and request.resolver_match.url_name != 'tasks' and 'task' not in request.resolver_match.url_name %}active{% endif %}"
+          >
+            <i class="bi bi-folder"></i>
+            <span>Dự án</span>
+          </a>
+          <a
+            href="{% url 'budgeting:list' %}"
+            class="menu-item {% if 'budgeting' in request.resolver_match.namespace %}active{% endif %}"
+          >
+            <i class="bi bi-cash-stack"></i>
+            <span>Ngân sách</span>
+          </a>
+          {% if user.profile.is_manager %}
+          <a
+            href="{% url 'projects:tasks' %}"
+            class="menu-item {% if 'projects' in request.resolver_match.namespace and request.resolver_match.url_name in 'tasks,task_create,task_edit,task_delete,task_update_status' %}active{% endif %}"
+          >
+            <i class="bi bi-check-square"></i>
+            <span>Công việc</span>
+            {% if pending_tasks_count > 0 %}
+            <span class="badge" id="task-badge">{{ pending_tasks_count }}</span>
+            {% else %}
+            <span class="badge" id="task-badge" style="display: none;">0</span>
+            {% endif %}
+          </a>
+          {% endif %}
+          {% if not user.profile.is_manager %}
+          <a
+            href="{% url 'projects:my_tasks' %}"
+            class="menu-item {% if 'projects' in request.resolver_match.namespace and request.resolver_match.url_name == 'my_tasks' %}active{% endif %}"
+          >
+            <i class="bi bi-person-check"></i>
+            <span>Công việc của tôi</span>
+          </a>
+          {% endif %}
+          <a
+            href="{% url 'core:analytics' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}"
+          >
+            <i class="bi bi-graph-up"></i>
+            <span>Phân tích</span>
+          </a>
+        </div>
+
+        <div class="menu-section">
+          {% if user.profile.is_manager %}
+          <div class="menu-section-title">Quản lý Nhân sự &amp; Khách hàng</div>
+          <a
+            href="{% url 'resources:list' %}"
+            class="menu-item {% if 'resources' in request.resolver_match.namespace and request.resolver_match.url_name != 'salary-tracking' %}active{% endif %}"
+          >
+            <i class="bi bi-people"></i>
+            <span>Nhân sự</span>
+          </a>
+          <a
+            href="{% url 'clients:list' %}"
+            class="menu-item {% if 'clients' in request.resolver_match.namespace %}active{% endif %}"
+          >
+            <i class="bi bi-building"></i>
+            <span>Khách hàng</span>
+          </a>
+          {% else %}
+          <div class="menu-section-title">Theo dõi Lương</div>
+          <a
+            href="{% url 'resources:salary-tracking' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'salary-tracking' %}active{% endif %}"
+          >
+            <i class="bi bi-cash-stack"></i>
+            <span>Theo dõi Lương</span>
+          </a>
+          {% endif %}
+        </div>
+
+        <div class="menu-section">
+          <div class="menu-section-title">Chat với PRM AI</div>
+          <a
+            href="{% url 'core:ai-chat' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'ai-chat' or request.resolver_match.url_name == 'ai-chat-history' %}active{% endif %}"
+          >
+            <i class="bi bi-chat-dots"></i>
+            <span>Chat với PRM AI</span>
+          </a>
+          {% if user.is_staff %}
+          <div class="menu-section">
+            <div class="menu-section-title">Quản trị</div>
+            <a
+              href="{% url 'admin_custom:dashboard' %}"
+              class="menu-item {% if 'admin_custom' in request.resolver_match.namespace %}active{% endif %}"
+            >
+              <i class="bi bi-shield-check"></i>
+              <span>Admin Panel</span>
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="header-left">
+          <button
+            id="sidebar-toggle"
+            class="sidebar-toggle-btn"
+            type="button"
+            aria-label="Toggle sidebar"
+          >
+            <i class="bi bi-list"></i>
+          </button>
+
+          <div class="search-container">
+            <i class="bi bi-search search-icon"></i>
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Search (Ctrl + Q)"
+              id="global-search"
+            />
+            <div id="search-results" class="search-results d-none"></div>
+          </div>
+        </div>
+        <div class="header-right">
+          {% if user_profile and user_profile.is_manager %}
+          <a
+            href="{% url 'resources:payroll-schedule' %}"
+            class="header-icon-btn"
+            title="Cài đặt lịch phát lương"
+            style="text-decoration: none; display: flex; align-items: center; justify-content: center;"
+          >
+            <i class="bi bi-calendar-check"></i>
+          </a>
+          {% elif user.is_authenticated and user.profile.is_manager %}
+          <a
+            href="{% url 'resources:payroll-schedule' %}"
+            class="header-icon-btn"
+            title="Cài đặt lịch phát lương"
+            style="text-decoration: none; display: flex; align-items: center; justify-content: center;"
+          >
+            <i class="bi bi-calendar-check"></i>
+          </a>
+          {% endif %}
+          <button
+            class="header-icon-btn"
+            title="Notifications"
+            type="button"
+            data-bs-toggle="modal"
+            data-bs-target="#notificationsModal"
+          >
+            <i class="bi bi-bell"></i>
+            <span class="badge" id="notification-count">0</span>
+          </button>
+          <div class="user-profile dropdown-toggle" data-bs-toggle="dropdown">
+            <div class="user-avatar">
+              {% if user_profile and user_profile.avatar %}
+              <img src="{{ user_profile.avatar.url }}" alt="Avatar" />
+              {% else %} {% if user.get_full_name %}{{
+              user.get_full_name|first|upper }}{% else %}{{
+              user.username|first|upper }}{% endif %} {% endif %}
+            </div>
+            <div class="user-info">
+              <div class="user-name">
+                {% if user.get_full_name %} {{ user.get_full_name }} {% else %}
+                {{ user.username }} {% endif %}
+              </div>
+              <div class="user-role">
+                {% if user.profile.is_manager %} Quản lý {% else %} Nhân viên {% endif %}
+              </div>
+            </div>
+            <i class="bi bi-chevron-down"></i>
+          </div>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li>
+              <a class="dropdown-item" href="{% url 'core:profile' %}"
+                ><i class="bi bi-person me-2"></i>Hồ sơ</a
+              >
+            </li>
+            <li>
+              <a class="dropdown-item" href="{% url 'core:settings' %}"
+                ><i class="bi bi-gear me-2"></i>Cài đặt</a
+              >
+            </li>
+            <li><hr class="dropdown-divider" /></li>
+            <li>
+              <a class="dropdown-item" href="{% url 'core:logout' %}"
+                ><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</a
+              >
+            </li>
+          </ul>
+        </div>
+      </header>
+
+      <!-- Content Wrapper -->
+      <div class="content-wrapper">
+        {# Messages are now shown in modal - see globalNotificationModal #}
+
+        <div class="page-header">
+          <h1 class="page-title">
+            {% block page_title %}Dashboard{% endblock %}
+          </h1>
+          {% block breadcrumb %}
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item">
+                <a href="{% url 'core:dashboard' %}">Home</a>
+              </li>
+              <li class="breadcrumb-item active">
+                {% block breadcrumb_title %}{% endblock %}
+              </li>
+            </ol>
+          </nav>
+          {% endblock %}
+        </div>
+
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+
+    <!-- Notifications Modal -->
+    <div
+      class="modal fade notifications-modal"
+      id="notificationsModal"
+      tabindex="-1"
+      aria-labelledby="notificationsModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-end modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="notificationsModalLabel">Thông báo</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3 position-relative">
+              <i class="bi bi-search search-icon" style="left: 0.25rem"></i>
+              <input
+                type="text"
+                id="notification-search"
+                class="form-control ps-4 search-input"
+                placeholder="Tìm kiếm thông báo..."
+              />
+            </div>
+            <div class="mb-3">
+              <button
+                type="button"
+                id="mark-all-read-btn"
+                class="btn btn-outline-primary btn-sm w-100"
+                onclick="markAllNotificationsAsRead()"
+              >
+                <i class="bi bi-check-all me-2"></i>Đánh dấu đọc tất cả
+              </button>
+            </div>
+            <div id="notification-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const sidebarToggle = document.getElementById("sidebar-toggle");
+        const sidebar = document.getElementById("sidebar");
+        const mainContent = document.querySelector(".main-content");
+
+        function toggleSidebar() {
+          const isMobile = window.innerWidth <= 768;
+          if (isMobile) {
+            if (sidebar) {
+              sidebar.classList.toggle("show");
+            }
+          } else if (sidebar && mainContent) {
+            const hidden = document.body.classList.toggle("sidebar-hidden");
+            try {
+              localStorage.setItem(
+                "erp_client_sidebar_hidden",
+                hidden ? "1" : "0"
+              );
+            } catch (e) {}
+          }
+        }
+
+        if (sidebarToggle && sidebar && mainContent) {
+          sidebarToggle.addEventListener("click", toggleSidebar);
+
+          // Khôi phục trạng thái sidebar từ localStorage
+          try {
+            const saved =
+              localStorage.getItem("erp_client_sidebar_hidden") === "1";
+            if (saved && window.innerWidth > 768) {
+              document.body.classList.add("sidebar-hidden");
+            }
+          } catch (e) {}
+        }
+
+        // Global search (Ctrl + Q) + quick navigation
+        const searchInput = document.getElementById("global-search");
+        const searchResults = document.getElementById("search-results");
+        const notificationSearch = document.getElementById(
+          "notification-search"
+        );
+        const notificationList = document.getElementById("notification-list");
+        const notificationCountEl =
+          document.getElementById("notification-count");
+
+        const commands = [
+          {
+            label: "Dashboard",
+            group: "Điều hướng",
+            icon: "bi-speedometer2",
+            url: "{% url 'core:dashboard' %}",
+          },
+          {
+            label: "Dự án",
+            group: "Quản lý Dự án",
+            icon: "bi-folder",
+            url: "/projects/",
+          },
+          {
+            label: "Ngân sách",
+            group: "Quản lý Dự án",
+            icon: "bi-cash-stack",
+            url: "/budgeting/",
+          },
+          {
+            label: "Công việc",
+            group: "Quản lý Dự án",
+            icon: "bi-check-square",
+            url: "/projects/tasks/",
+          },
+          {
+            label: "Phân tích",
+            group: "Quản lý Dự án",
+            icon: "bi-graph-up",
+            url: "/analytics/",
+          },
+          {
+            label: "Nhân sự",
+            group: "Quản lý Nhân sự & Khách hàng",
+            icon: "bi-people",
+            url: "/resources/",
+          },
+          {
+            label: "Khách hàng",
+            group: "Quản lý Nhân sự & Khách hàng",
+            icon: "bi-building",
+            url: "/clients/",
+          },
+          {
+            label: "Chat với PRM AI",
+            group: "Trí tuệ nhân tạo",
+            icon: "bi-chat-dots",
+            url: "/ai/",
+          },
+        ];
+
+        let activeIndex = -1;
+
+        function renderResults(items) {
+          if (!searchResults) return;
+
+          if (!items.length) {
+            searchResults.classList.add("d-none");
+            searchResults.innerHTML = "";
+            activeIndex = -1;
+            return;
+          }
+
+          searchResults.classList.remove("d-none");
+          searchResults.innerHTML = items
+            .map(
+              (item, index) => `
+              <div class="search-result-item${
+                index === activeIndex ? " active" : ""
+              }" data-url="${item.url}">
+                <i class="bi ${item.icon}"></i>
+                <span>${item.label}</span>
+                <small>${item.group}</small>
+              </div>
+            `
+            )
+            .join("");
+
+          Array.from(
+            searchResults.querySelectorAll(".search-result-item")
+          ).forEach((el) => {
+            el.addEventListener("click", () => {
+              const url = el.getAttribute("data-url");
+              if (url) {
+                window.location.href = url;
+              }
+            });
+          });
+        }
+
+        function performSearch(query) {
+          const q = query.trim().toLowerCase();
+          if (q.length < 2) {
+            renderResults([]);
+            return;
+          }
+          const matches = commands.filter((cmd) =>
+            (cmd.label + " " + cmd.group).toLowerCase().includes(q)
+          );
+          activeIndex = 0;
+          renderResults(matches.slice(0, 8));
+        }
+
+        if (searchInput) {
+          document.addEventListener("keydown", function (e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === "q") {
+              e.preventDefault();
+              searchInput.focus();
+              searchInput.select();
+            }
+          });
+
+          searchInput.addEventListener("input", function (e) {
+            performSearch(e.target.value || "");
+          });
+
+          searchInput.addEventListener("keydown", function (e) {
+            const items = searchResults
+              ? Array.from(
+                  searchResults.querySelectorAll(".search-result-item")
+                )
+              : [];
+            if (!items.length) return;
+
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              activeIndex = (activeIndex + 1) % items.length;
+              items.forEach((el, idx) =>
+                el.classList.toggle("active", idx === activeIndex)
+              );
+            } else if (e.key === "ArrowUp") {
+              e.preventDefault();
+              activeIndex = (activeIndex - 1 + items.length) % items.length;
+              items.forEach((el, idx) =>
+                el.classList.toggle("active", idx === activeIndex)
+              );
+            } else if (e.key === "Enter") {
+              e.preventDefault();
+              const target = items[activeIndex] || items[0];
+              if (target) {
+                const url = target.getAttribute("data-url");
+                if (url) {
+                  window.location.href = url;
+                }
+              }
+            } else if (e.key === "Escape") {
+              renderResults([]);
+              searchInput.blur();
+            }
+          });
+
+          document.addEventListener("click", function (e) {
+            if (
+              searchResults &&
+              !searchResults.contains(e.target) &&
+              e.target !== searchInput
+            ) {
+              renderResults([]);
+            }
+          });
+        }
+
+        function getCookie(name) {
+          const value = `; ${document.cookie}`;
+          const parts = value.split(`; ${name}=`);
+          if (parts.length === 2) return parts.pop().split(";").shift();
+          return "";
+        }
+
+        function iconForLevel(level) {
+          if (level === "success") return "bi-check-circle";
+          if (level === "warning") return "bi-exclamation-triangle";
+          if (level === "danger") return "bi-exclamation-octagon";
+          return "bi-info-circle";
+        }
+
+        function renderNotifications(items) {
+          if (!notificationList) return;
+          if (!items || !items.length) {
+            notificationList.innerHTML =
+              '<div class="text-muted px-2">Không có thông báo.</div>';
+            return;
+          }
+
+          notificationList.innerHTML = items
+            .map((n) => {
+              const level = n.level || "info";
+              const icon = iconForLevel(level);
+              const unreadClass = n.is_read ? "" : "unread";
+              const url = n.url || "";
+              return `
+                <div class="notification-item level-${level} ${unreadClass}" data-id="${
+                n.id
+              }" data-url="${url}" data-title="${(n.title || "").replaceAll(
+                '"',
+                "&quot;"
+              )}" data-body="${(n.message || "").replaceAll('"', "&quot;")}">
+                  <div class="notification-icon">
+                    <i class="bi ${icon}"></i>
+                  </div>
+                  <div style="min-width:0;">
+                    <div class="notification-title">${n.title || ""}</div>
+                    <div class="notification-meta">${n.message || ""} · ${
+                n.created_at || ""
+              }</div>
+                  </div>
+                </div>
+              `;
+            })
+            .join("");
+
+          Array.from(
+            notificationList.querySelectorAll(".notification-item")
+          ).forEach((el) => {
+            el.addEventListener("click", async () => {
+              const id = el.getAttribute("data-id");
+              const url = el.getAttribute("data-url") || "";
+              try {
+                const csrftoken = getCookie("csrftoken");
+                await fetch(
+                  `{% url 'core:notification-read' 0 %}`.replace(
+                    "/0/read/",
+                    `/${id}/read/`
+                  ),
+                  {
+                    method: "POST",
+                    headers: {
+                      "X-CSRFToken": csrftoken,
+                      "X-Requested-With": "XMLHttpRequest",
+                    },
+                    credentials: "same-origin",
+                  }
+                );
+              } catch (e) {}
+
+              if (url) {
+                window.location.href = url;
+              }
+            });
+          });
+        }
+
+        async function loadNotifications() {
+          try {
+            const res = await fetch(`{% url 'core:notifications' %}?limit=30`, {
+              credentials: "same-origin",
+              headers: { "X-Requested-With": "XMLHttpRequest" },
+            });
+            const data = await res.json();
+            if (notificationCountEl) {
+              const c = Number(data.unread_count || 0);
+              notificationCountEl.textContent = String(c);
+              notificationCountEl.style.display = c > 0 ? "flex" : "none";
+            }
+            renderNotifications(data.items || []);
+
+            // Hook search after render
+            if (notificationSearch && notificationList) {
+              const items = Array.from(
+                notificationList.querySelectorAll(".notification-item")
+              );
+              notificationSearch.addEventListener("input", function (e) {
+                const q = (e.target.value || "").trim().toLowerCase();
+                items.forEach((item) => {
+                  const text = (
+                    (item.dataset.title || "") +
+                    " " +
+                    (item.dataset.body || "") +
+                    " " +
+                    item.innerText
+                  )
+                    .toLowerCase()
+                    .trim();
+                  const matched = !q || text.includes(q);
+                  item.style.display = matched ? "flex" : "none";
+                });
+              });
+            }
+          } catch (e) {
+            if (notificationList) {
+              notificationList.innerHTML =
+                '<div class="text-muted px-2">Không tải được thông báo.</div>';
+            }
+          }
+        }
+
+        // Function để đánh dấu tất cả thông báo là đã đọc
+        async function markAllNotificationsAsRead() {
+          const btn = document.getElementById("mark-all-read-btn");
+          if (!btn) return;
+          
+          // Disable button và hiển thị loading
+          const originalText = btn.innerHTML;
+          btn.disabled = true;
+          btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Đang xử lý...';
+          
+          try {
+            // Lấy CSRF token
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                            getCookie('csrftoken') || '';
+            
+            const res = await fetch(`{% url 'core:notification-mark-all-read' %}`, {
+              method: "POST",
+              credentials: "same-origin",
+              headers: {
+                "X-Requested-With": "XMLHttpRequest",
+                "X-CSRFToken": csrftoken,
+                "Content-Type": "application/json",
+              },
+            });
+            
+            const data = await res.json();
+            
+            if (data.ok) {
+              // Reload notifications để cập nhật UI
+              await loadNotifications();
+              
+              // Hiển thị thông báo thành công
+              if (typeof window.showNotification === 'function') {
+                window.showNotification('success', data.message || 'Đã đánh dấu tất cả thông báo là đã đọc.');
+              } else {
+                alert(data.message || 'Đã đánh dấu tất cả thông báo là đã đọc.');
+              }
+            } else {
+              throw new Error(data.message || 'Có lỗi xảy ra.');
+            }
+          } catch (e) {
+            console.error('Error marking all as read:', e);
+            if (typeof window.showNotification === 'function') {
+              window.showNotification('error', 'Không thể đánh dấu tất cả thông báo. Vui lòng thử lại.');
+            } else {
+              alert('Không thể đánh dấu tất cả thông báo. Vui lòng thử lại.');
+            }
+          } finally {
+            // Restore button
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+          }
+        }
+
+        // Expose ra global scope để onclick trong template gọi được
+        window.markAllNotificationsAsRead = markAllNotificationsAsRead;
+        
+        // Helper function để lấy CSRF token từ cookie
+        function getCookie(name) {
+          let cookieValue = null;
+          if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+              const cookie = cookies[i].trim();
+              if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+              }
+            }
+          }
+          return cookieValue;
+        }
+
+        // Load notifications when modal opens
+        const modalEl = document.getElementById("notificationsModal");
+        if (modalEl) {
+          modalEl.addEventListener("shown.bs.modal", function () {
+            if (notificationSearch) notificationSearch.value = "";
+            loadNotifications();
+            setTimeout(
+              () => notificationSearch && notificationSearch.focus(),
+              50
+            );
+          });
+        }
+
+        // Load unread count once on page load
+        loadNotifications();
+      });
+    </script>
+
+    <!-- Global Notification Modal -->
+    <div
+      class="modal fade"
+      id="globalNotificationModal"
+      tabindex="-1"
+      aria-labelledby="globalNotificationModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header" id="globalNotificationModalHeader">
+            <h5 class="modal-title" id="globalNotificationModalLabel">
+              Thông báo
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body" id="globalNotificationModalBody">
+            <!-- Content will be inserted here -->
+          </div>
+          <div class="modal-footer" id="globalNotificationModalFooter">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Global Confirmation Modal -->
+    <div
+      class="modal fade"
+      id="globalConfirmModal"
+      tabindex="-1"
+      aria-labelledby="globalConfirmModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="globalConfirmModalLabel">Xác nhận</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body" id="globalConfirmModalBody">
+            <!-- Content will be inserted here -->
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+              id="globalConfirmCancelBtn"
+            >
+              Hủy
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="globalConfirmOkBtn"
+            >
+              Xác nhận
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Global Notification Modal Utility
+      window.showNotification = function(type, message, title = null) {
+        const modal = document.getElementById('globalNotificationModal');
+        const modalHeader = document.getElementById('globalNotificationModalHeader');
+        const modalLabel = document.getElementById('globalNotificationModalLabel');
+        const modalBody = document.getElementById('globalNotificationModalBody');
+        const modalFooter = document.getElementById('globalNotificationModalFooter');
+
+        // Set title
+        if (!title) {
+          switch(type) {
+            case 'success':
+              title = 'Thành công';
+              break;
+            case 'error':
+            case 'danger':
+              title = 'Lỗi';
+              break;
+            case 'warning':
+              title = 'Cảnh báo';
+              break;
+            case 'info':
+              title = 'Thông tin';
+              break;
+            default:
+              title = 'Thông báo';
+          }
+        }
+        modalLabel.textContent = title;
+
+        // Set header color based on type
+        modalHeader.className = 'modal-header';
+        switch(type) {
+          case 'success':
+            modalHeader.classList.add('bg-success', 'text-white');
+            break;
+          case 'error':
+          case 'danger':
+            modalHeader.classList.add('bg-danger', 'text-white');
+            break;
+          case 'warning':
+            modalHeader.classList.add('bg-warning', 'text-dark');
+            break;
+          case 'info':
+            modalHeader.classList.add('bg-info', 'text-white');
+            break;
+        }
+
+        // Set icon
+        let icon = '';
+        switch(type) {
+          case 'success':
+            icon = '<i class="bi bi-check-circle-fill me-2"></i>';
+            break;
+          case 'error':
+          case 'danger':
+            icon = '<i class="bi bi-x-circle-fill me-2"></i>';
+            break;
+          case 'warning':
+            icon = '<i class="bi bi-exclamation-triangle-fill me-2"></i>';
+            break;
+          case 'info':
+            icon = '<i class="bi bi-info-circle-fill me-2"></i>';
+            break;
+        }
+
+        // Set body content
+        modalBody.innerHTML = `<div class="d-flex align-items-start">
+          <div style="font-size: 1.5rem;">${icon}</div>
+          <div class="flex-grow-1">${message.replace(/\n/g, '<br>')}</div>
+        </div>`;
+
+        // Show only close button
+        modalFooter.innerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>';
+
+        // Show modal
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+      };
+
+      // Global Confirm Modal Utility
+      window.showConfirm = function(message, title = 'Xác nhận', confirmText = 'Xác nhận', cancelText = 'Hủy') {
+        return new Promise((resolve) => {
+          const modal = document.getElementById('globalConfirmModal');
+          const modalBody = document.getElementById('globalConfirmModalBody');
+          const modalLabel = document.getElementById('globalConfirmModalLabel');
+          const confirmBtn = document.getElementById('globalConfirmOkBtn');
+          const cancelBtn = document.getElementById('globalConfirmCancelBtn');
+
+          modalLabel.textContent = title;
+          modalBody.innerHTML = `<p class="mb-0">${message.replace(/\n/g, '<br>')}</p>`;
+          confirmBtn.textContent = confirmText;
+          cancelBtn.textContent = cancelText;
+
+          // Remove previous event listeners by cloning
+          const newConfirmBtn = confirmBtn.cloneNode(true);
+          const newCancelBtn = cancelBtn.cloneNode(true);
+          confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+          cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+          // Add new event listeners
+          newConfirmBtn.addEventListener('click', function() {
+            const bsModal = bootstrap.Modal.getInstance(modal);
+            bsModal.hide();
+            resolve(true);
+          });
+
+          newCancelBtn.addEventListener('click', function() {
+            const bsModal = bootstrap.Modal.getInstance(modal);
+            bsModal.hide();
+            resolve(false);
+          });
+
+          // Also handle close button and backdrop
+          modal.addEventListener('hidden.bs.modal', function handler() {
+            resolve(false);
+            modal.removeEventListener('hidden.bs.modal', handler);
+          }, { once: true });
+
+          // Show modal
+          const bsModal = new bootstrap.Modal(modal);
+          bsModal.show();
+        });
+      };
+
+      // Replace window.alert with modal
+      window.originalAlert = window.alert;
+      window.alert = function(message) {
+        showNotification('info', message);
+      };
+
+      // Replace window.confirm with modal
+      window.originalConfirm = window.confirm;
+      window.confirm = function(message) {
+        // Note: confirm() is synchronous, but our modal is async
+        // We'll keep original confirm for now, but recommend using showConfirm() directly
+        return originalConfirm(message);
+      };
+
+      // Show Django messages in modal on page load
+      document.addEventListener('DOMContentLoaded', function() {
+        {% if messages %}
+          {% for message in messages %}
+            showNotification('{{ message.tags }}', '{{ message|escapejs }}');
+          {% endfor %}
+        {% endif %}
+
+        // Xử lý active state cho menu items khi click
+        const menuItems = document.querySelectorAll('.sidebar-menu .menu-item');
+        menuItems.forEach(item => {
+          item.addEventListener('click', function() {
+            // Remove active từ tất cả menu items
+            menuItems.forEach(mi => mi.classList.remove('active'));
+            // Add active cho item được click
+            this.classList.add('active');
+          });
+        });
+
+        // Đảm bảo active state được giữ dựa trên URL hiện tại
+        const currentPath = window.location.pathname;
+        menuItems.forEach(item => {
+          const href = item.getAttribute('href');
+          if (href) {
+            const hrefPath = href.split('?')[0];
+            // Kiểm tra xem URL hiện tại có match với href không
+            if (currentPath === hrefPath ||
+                (hrefPath.includes('/projects/') && currentPath.startsWith('/projects/') ||
+                (hrefPath.includes('/budgeting/') && currentPath.startsWith('/budgeting/')) ||
+                (hrefPath.includes('/resources/') && currentPath.startsWith('/resources/') && !currentPath.includes('/salary-tracking')) ||
+                (hrefPath.includes('/clients/') && currentPath.startsWith('/clients/')) ||
+                (hrefPath.includes('/projects/tasks') && currentPath.includes('/projects/tasks'))) {
+              // Remove active từ tất cả trước
+              menuItems.forEach(mi => mi.classList.remove('active'));
+              // Add active cho item phù hợp
+              item.classList.add('active');
+            }
+          }
+        });
+      });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+  </body>
+</html>

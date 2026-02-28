@@ -1,0 +1,127 @@
+{% extends 'admin_custom/base.html' %}
+{% load static %}
+
+{% block title %}{% if object %}Chỉnh sửa{% else %}Tạo mới{% endif %} Dự án - Admin Panel{% endblock %}
+
+{% block page_title %}{% if object %}Chỉnh sửa Dự án{% else %}Tạo Dự án Mới{% endif %}{% endblock %}
+
+{% block admin_content %}
+<div class="row">
+  <div class="col-md-8">
+    <div class="card border-0 shadow-lg">
+      <div class="card-header">
+        <h5 class="mb-0">Thông tin dự án</h5>
+      </div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          
+          <div class="mb-3">
+            <label class="form-label">{{ form.name.label }} <span class="text-danger">*</span></label>
+            {{ form.name }}
+            {% if form.name.errors %}
+            <div class="text-danger small">{{ form.name.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">{{ form.description.label }}</label>
+            {{ form.description }}
+            {% if form.description.errors %}
+            <div class="text-danger small">{{ form.description.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">{{ form.client.label }} <span class="text-danger">*</span></label>
+              {{ form.client }}
+              {% if form.client.errors %}
+              <div class="text-danger small">{{ form.client.errors }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">{{ form.status.label }} <span class="text-danger">*</span></label>
+              {{ form.status }}
+              {% if form.status.errors %}
+              <div class="text-danger small">{{ form.status.errors }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">{{ form.priority.label }}</label>
+              {{ form.priority }}
+              {% if form.priority.errors %}
+              <div class="text-danger small">{{ form.priority.errors }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">{{ form.estimated_employees.label }}</label>
+              {{ form.estimated_employees }}
+              {% if form.estimated_employees.errors %}
+              <div class="text-danger small">{{ form.estimated_employees.errors }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">{{ form.start_date.label }}</label>
+              {{ form.start_date }}
+              {% if form.start_date.errors %}
+              <div class="text-danger small">{{ form.start_date.errors }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">{{ form.end_date.label }}</label>
+              {{ form.end_date }}
+              {% if form.end_date.errors %}
+              <div class="text-danger small">{{ form.end_date.errors }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">{{ form.estimated_budget.label }}</label>
+              {{ form.estimated_budget }}
+              {% if form.estimated_budget.errors %}
+              <div class="text-danger small">{{ form.estimated_budget.errors }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between mt-4">
+            <a href="{% url 'admin_custom:projects' %}" class="btn btn-secondary">
+              <i class="bi bi-arrow-left me-1"></i>Quay lại
+            </a>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-circle me-1"></i>{% if object %}Cập nhật{% else %}Tạo mới{% endif %}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-lg">
+      <div class="card-header">
+        <h5 class="mb-0">Hướng dẫn</h5>
+      </div>
+      <div class="card-body">
+        <p class="small text-muted">
+          <strong>Trạng thái:</strong> Chọn trạng thái hiện tại của dự án (Lên kế hoạch, Đang chạy, Tạm dừng, Hoàn thành, Đã hủy).
+        </p>
+        <p class="small text-muted">
+          <strong>Ưu tiên:</strong> Xác định mức độ ưu tiên của dự án (Thấp, Trung bình, Cao, Khẩn cấp).
+        </p>
+        <p class="small text-muted">
+          <strong>Ngân sách:</strong> Nhập số tiền dự kiến cho dự án (VNĐ).
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

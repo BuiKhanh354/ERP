@@ -1,0 +1,1056 @@
+{% extends 'base_sidebar.html' %} {% load static %} {% block title %} Tạo dự án
+- ERP System{% endblock %} {% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <a
+    href="{% url 'projects:list' %}"
+    class="btn btn-outline-secondary btn-sm"
+    style="border-radius: 8px; padding: 0.5rem 0.75rem"
+  >
+    <i class="bi bi-arrow-left me-1"></i>Quay lại
+  </a>
+  <span>{{ page_title }}</span>
+</div>
+{% endblock %} {% block extra_css %}
+<style>
+  .form-card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    padding: 2.5rem;
+    border: 1px solid #e2e8f0;
+  }
+
+  .form-section {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .form-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .form-section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .form-section-title i {
+    color: #0000cd;
+  }
+
+  .form-label {
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .form-label .text-danger {
+    color: #ef4444;
+  }
+
+  .form-control,
+  .form-select {
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    border-color: #0000cd;
+    box-shadow: 0 0 0 0.2rem rgba(0, 0, 205, 0.15);
+    outline: none;
+  }
+
+  .form-control::placeholder {
+    color: #94a3b8;
+  }
+
+  textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+  }
+
+  .input-group-text {
+    background-color: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-left: none;
+    border-radius: 0 8px 8px 0;
+    color: #64748b;
+    font-weight: 500;
+  }
+
+  .input-group .form-control {
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+  }
+
+  .input-group .form-control:focus {
+    border-right: none;
+  }
+
+  .input-group .form-control:focus + .input-group-text {
+    border-color: #0000cd;
+  }
+
+  .btn-primary {
+    background-color: #0000cd;
+    border-color: #0000cd;
+    color: #ffffff;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    min-width: 140px;
+  }
+
+  .btn-primary:hover {
+    background-color: #0000aa;
+    border-color: #0000aa;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 205, 0.3);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .btn-outline-secondary {
+    border-color: #64748b;
+    color: #64748b;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    min-width: 140px;
+  }
+
+  .btn-outline-secondary:hover {
+    background-color: #64748b;
+    border-color: #64748b;
+    color: #ffffff;
+    transform: translateY(-1px);
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+    border-top: 2px solid #e2e8f0;
+  }
+
+  .text-danger.small {
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+    display: block;
+  }
+
+  .alert-danger {
+    background-color: #fee2e2;
+    border-color: #fecaca;
+    color: #991b1b;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px 12px;
+    padding-right: 2.5rem;
+  }
+
+  .form-select:focus {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%230000cd' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+  }
+
+  /* Cursor pointer cho tất cả input và select */
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  textarea {
+    cursor: pointer;
+  }
+
+  .department-selector {
+    margin-top: 0.5rem;
+    position: relative;
+  }
+
+  .department-input-wrapper {
+    position: relative;
+  }
+
+  .department-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    padding-right: 3rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background-color: #ffffff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+    color: #0f172a;
+  }
+
+  .department-input:focus {
+    border-color: #0000cd;
+    box-shadow: 0 0 0 0.2rem rgba(0, 0, 205, 0.15);
+    outline: none;
+  }
+
+  .department-input::placeholder {
+    color: #94a3b8;
+  }
+
+  .department-dropdown-icon {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+    pointer-events: none;
+    transition: transform 0.3s ease;
+    font-size: 0.9rem;
+  }
+
+  .department-selector.active .department-dropdown-icon {
+    transform: translateY(-50%) rotate(180deg);
+  }
+
+  .department-checkbox-container {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    width: 100%;
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.5rem;
+    max-height: 300px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    margin-top: 0.25rem;
+    display: none;
+    animation: slideDown 0.3s ease;
+    box-sizing: border-box;
+  }
+
+  .department-selector.active .department-checkbox-container {
+    display: block;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .department-checkbox-container::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .department-checkbox-container::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.06);
+    border-radius: 3px;
+  }
+
+  .department-checkbox-container::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.18);
+    border-radius: 3px;
+  }
+
+  .department-checkbox-container::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .department-checkbox-container::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.06);
+    border-radius: 3px;
+  }
+
+  .department-checkbox-container::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.18);
+    border-radius: 3px;
+  }
+
+  .department-checkbox-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(15, 23, 42, 0.3);
+  }
+
+  .department-item {
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    margin-bottom: 0.25rem;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .department-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .department-item:hover {
+    background-color: #f1f5f9;
+  }
+
+  .department-item .form-check {
+    margin: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .department-item .form-check-input {
+    cursor: pointer;
+    margin-top: 0.25rem;
+    flex-shrink: 0;
+    width: 1.1rem;
+    height: 1.1rem;
+    min-width: 1.1rem;
+    border: 2px solid #cbd5e1;
+    transition: all 0.2s ease;
+  }
+
+  .department-item .form-check-input:checked {
+    background-color: #0000cd;
+    border-color: #0000cd;
+  }
+
+  .department-item .form-check-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 0, 205, 0.15);
+  }
+
+  .department-item .form-check-label {
+    cursor: pointer;
+    user-select: none;
+    font-weight: 500;
+    color: #0f172a;
+    flex: 1;
+    line-height: 1.5;
+    min-width: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    overflow: hidden;
+  }
+
+  .department-item .form-check-label strong {
+    display: block;
+    margin-bottom: 0.25rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  .department-item .form-check-label small {
+    display: block;
+    font-weight: 400;
+    color: #64748b;
+    line-height: 1.4;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  @media (max-width: 768px) {
+    .form-card {
+      padding: 1.5rem;
+    }
+
+    .form-actions {
+      flex-direction: column;
+    }
+
+    .form-actions .btn {
+      width: 100%;
+    }
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-10 col-xl-8">
+    <div class="form-card">
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <!-- Thông tin cơ bản -->
+        <div class="form-section">
+          <div class="form-section-title">
+            <i class="bi bi-info-circle"></i>
+            Thông tin cơ bản
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-12">
+              <label for="{{ form.name.id_for_label }}" class="form-label">
+                Tên dự án <span class="text-danger">*</span>
+              </label>
+              {{ form.name }} {% if form.name.errors %}
+              <span class="text-danger small">{{ form.name.errors.0 }}</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-12">
+              <label
+                for="{{ form.description.id_for_label }}"
+                class="form-label"
+                >Mô tả</label
+              >
+              {{ form.description }} {% if form.description.errors %}
+              <span class="text-danger small"
+                >{{ form.description.errors.0 }}</span
+              >
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Thông tin khách hàng và trạng thái -->
+        <div class="form-section">
+          <div class="form-section-title">
+            <i class="bi bi-building"></i>
+            Khách hàng & Trạng thái
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="{{ form.client.id_for_label }}" class="form-label">
+                Khách hàng <span class="text-danger">*</span>
+              </label>
+              {{ form.client }} {% if form.client.errors %}
+              <span class="text-danger small">{{ form.client.errors.0 }}</span>
+              {% endif %}
+            </div>
+            <div class="col-md-3">
+              <label for="{{ form.status.id_for_label }}" class="form-label"
+                >Trạng thái</label
+              >
+              {{ form.status }} {% if form.status.errors %}
+              <span class="text-danger small">{{ form.status.errors.0 }}</span>
+              {% endif %}
+            </div>
+            <div class="col-md-3">
+              <label for="{{ form.priority.id_for_label }}" class="form-label"
+                >Ưu tiên</label
+              >
+              {{ form.priority }} {% if form.priority.errors %}
+              <span class="text-danger small"
+                >{{ form.priority.errors.0 }}</span
+              >
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Phòng ban phụ trách -->
+        <div class="form-section">
+          <div class="form-section-title">
+            <i class="bi bi-building"></i>
+            Phòng ban phụ trách
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-12">
+              <label class="form-label">Chọn phòng ban</label>
+              <div class="department-selector" id="departmentSelector">
+                <div class="department-input-wrapper">
+                  <input
+                    type="text"
+                    id="department-input"
+                    class="department-input"
+                    placeholder="Chọn phòng ban..."
+                    readonly
+                    autocomplete="off"
+                  />
+                  <i class="bi bi-chevron-down department-dropdown-icon"></i>
+                </div>
+                <div class="department-checkbox-container">
+                  <div
+                    class="input-group mb-2 p-2"
+                    style="
+                      position: sticky;
+                      top: 0;
+                      background: white;
+                      z-index: 10;
+                      border-bottom: 1px solid #e2e8f0;
+                      margin: -0.5rem -0.5rem 0.5rem -0.5rem;
+                      padding: 0.5rem;
+                      width: calc(100% + 1rem);
+                      box-sizing: border-box;
+                    "
+                  >
+                    <span
+                      class="input-group-text bg-white border-end-0"
+                      style="flex-shrink: 0"
+                    >
+                      <i class="bi bi-search text-muted"></i>
+                    </span>
+                    <input
+                      type="text"
+                      id="department-search"
+                      class="form-control border-start-0"
+                      placeholder="Tìm kiếm phòng ban..."
+                      autocomplete="off"
+                      style="box-shadow: none; min-width: 0"
+                    />
+                  </div>
+                  <div
+                    id="department-list"
+                    style="
+                      width: 100%;
+                      box-sizing: border-box;
+                      overflow: hidden;
+                    "
+                  >
+                    {% if departments %} {% for department in departments %}
+                    <div
+                      class="form-check department-item"
+                      data-name="{{ department.name|lower }}"
+                    >
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        name="departments"
+                        value="{{ department.id }}"
+                        id="dept_{{ department.id }}"
+                        {%
+                        if
+                        department.id
+                        in
+                        selected_departments
+                        %}checked{%
+                        endif
+                        %}
+                      />
+                      <label
+                        class="form-check-label"
+                        for="dept_{{ department.id }}"
+                      >
+                        <strong>{{ department.name }}</strong>
+                        {% if department.description %}
+                        <small class="text-muted d-block"
+                          >{{ department.description|truncatewords:15 }}</small
+                        >
+                        {% endif %}
+                      </label>
+                    </div>
+                    {% endfor %} {% else %}
+                    <p class="text-muted mb-0 text-center py-3">
+                      <i class="bi bi-info-circle me-2"></i>
+                      Chưa có phòng ban nào. Vui lòng tạo phòng ban trong phần
+                      Quản lý Nhân sự trước.
+                    </p>
+                    {% endif %}
+                  </div>
+                </div>
+                <small class="text-muted mt-2 d-block">
+                  <i class="bi bi-info-circle me-1"></i>
+                  Khi chọn phòng ban, tất cả nhân sự thuộc phòng ban đó sẽ được
+                  tự động gán vào dự án.
+                </small>
+              </div>
+              {% if form.departments.errors %}
+              <span class="text-danger small"
+                >{{ form.departments.errors.0 }}</span
+              >
+              {% endif %}
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-12">
+              <label class="form-label">Phòng ban bắt buộc</label>
+              <div class="department-selector" id="requiredDepartmentSelector">
+                <div class="department-input-wrapper">
+                  <input
+                    type="text"
+                    id="required-department-input"
+                    class="department-input"
+                    placeholder="Chọn phòng ban bắt buộc..."
+                    readonly
+                    autocomplete="off"
+                  />
+                  <i class="bi bi-chevron-down department-dropdown-icon"></i>
+                </div>
+                <div class="department-checkbox-container">
+                  <div
+                    class="input-group mb-2 p-2"
+                    style="
+                      position: sticky;
+                      top: 0;
+                      background: white;
+                      z-index: 10;
+                      border-bottom: 1px solid #e2e8f0;
+                      margin: -0.5rem -0.5rem 0.5rem -0.5rem;
+                      padding: 0.5rem;
+                      width: calc(100% + 1rem);
+                      box-sizing: border-box;
+                    "
+                  >
+                    <span
+                      class="input-group-text bg-white border-end-0"
+                      style="flex-shrink: 0"
+                    >
+                      <i class="bi bi-search text-muted"></i>
+                    </span>
+                    <input
+                      type="text"
+                      id="required-department-search"
+                      class="form-control border-start-0"
+                      placeholder="Tìm kiếm phòng ban..."
+                      autocomplete="off"
+                      style="box-shadow: none; min-width: 0"
+                    />
+                  </div>
+                  <div
+                    id="required-department-list"
+                    style="
+                      width: 100%;
+                      box-sizing: border-box;
+                      overflow: hidden;
+                    "
+                  >
+                    {% if departments %} {% for department in departments %}
+                    <div
+                      class="form-check department-item"
+                      data-name="{{ department.name|lower }}"
+                    >
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        name="required_departments"
+                        value="{{ department.id }}"
+                        id="req_dept_{{ department.id }}"
+                        {%
+                        if
+                        department.id
+                        in
+                        selected_required_departments
+                        %}checked{%
+                        endif
+                        %}
+                      />
+                      <label
+                        class="form-check-label"
+                        for="req_dept_{{ department.id }}"
+                      >
+                        <strong>{{ department.name }}</strong>
+                        {% if department.description %}
+                        <small class="text-muted d-block"
+                          >{{ department.description|truncatewords:15 }}</small
+                        >
+                        {% endif %}
+                      </label>
+                    </div>
+                    {% endfor %} {% else %}
+                    <p class="text-muted mb-0 text-center py-3">
+                      <i class="bi bi-info-circle me-2"></i>
+                      Chưa có phòng ban nào. Vui lòng tạo phòng ban trong phần
+                      Quản lý Nhân sự trước.
+                    </p>
+                    {% endif %}
+                  </div>
+                </div>
+                <small class="text-muted mt-2 d-block">
+                  <i class="bi bi-info-circle me-1"></i>
+                  Các phòng ban bắt buộc phải tham gia dự án này (dùng cho đề xuất nhân sự).
+                </small>
+              </div>
+              {% if form.required_departments.errors %}
+              <span class="text-danger small"
+                >{{ form.required_departments.errors.0 }}</span
+              >
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Thời gian và ngân sách -->
+        <div class="form-section">
+          <div class="form-section-title">
+            <i class="bi bi-calendar-range"></i>
+            Thời gian & Ngân sách
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-3">
+              <label for="{{ form.start_date.id_for_label }}" class="form-label"
+                >Ngày bắt đầu</label
+              >
+              {{ form.start_date }} {% if form.start_date.errors %}
+              <span class="text-danger small"
+                >{{ form.start_date.errors.0 }}</span
+              >
+              {% endif %}
+            </div>
+            <div class="col-md-3">
+              <label for="{{ form.end_date.id_for_label }}" class="form-label"
+                >Ngày kết thúc</label
+              >
+              {{ form.end_date }} {% if form.end_date.errors %}
+              <span class="text-danger small"
+                >{{ form.end_date.errors.0 }}</span
+              >
+              {% endif %}
+            </div>
+            <div class="col-md-3">
+              <label
+                for="{{ form.estimated_budget.id_for_label }}"
+                class="form-label"
+                >Ngân sách dự kiến</label
+              >
+              <div style="position: relative">
+                {{ form.estimated_budget }}
+                <span
+                  style="
+                    position: absolute;
+                    right: 12px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: #64748b;
+                    pointer-events: none;
+                    font-weight: 500;
+                  "
+                  >VNĐ</span
+                >
+              </div>
+              {% if form.estimated_budget.errors %}
+              <span class="text-danger small"
+                >{{ form.estimated_budget.errors.0 }}</span
+              >
+              {% endif %}
+            </div>
+            <div class="col-md-3">
+              <label
+                for="{{ form.estimated_employees.id_for_label }}"
+                class="form-label"
+                >Số nhân sự dự kiến</label
+              >
+              {{ form.estimated_employees }}
+              {% if form.estimated_employees.errors %}
+              <span class="text-danger small">
+                {{ form.estimated_employees.errors.0 }}
+              </span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label
+                for="{{ form.budget_for_personnel.id_for_label }}"
+                class="form-label"
+                >Ngân sách nhân sự</label
+              >
+              <div style="position: relative">
+                {{ form.budget_for_personnel }}
+                <span
+                  style="
+                    position: absolute;
+                    right: 12px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: #64748b;
+                    pointer-events: none;
+                    font-weight: 500;
+                  "
+                  >VNĐ</span
+                >
+              </div>
+              {% if form.budget_for_personnel.errors %}
+              <span class="text-danger small"
+                >{{ form.budget_for_personnel.errors.0 }}</span
+              >
+              {% endif %}
+              <small class="text-muted d-block mt-1">
+                <i class="bi bi-info-circle me-1"></i>
+                Ngân sách dành riêng cho nhân sự của dự án này
+              </small>
+            </div>
+          </div>
+        </div>
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          {{ form.non_field_errors.0 }}
+        </div>
+        {% endif %}
+
+        <div class="form-actions">
+          <a href="{% url 'projects:list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-x-circle me-1"></i>Hủy
+          </a>
+          {% if object and user_profile.is_manager %}
+          <a href="{% url 'projects:recommend_personnel' object.pk %}" class="btn btn-outline-info me-2">
+            <i class="bi bi-people me-1"></i>Đề xuất Nhân sự
+          </a>
+          {% endif %}
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle me-1"></i>{{ submit_text }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const departmentSelector = document.getElementById("departmentSelector");
+    const departmentInput = document.getElementById("department-input");
+    const departmentSearch = document.getElementById("department-search");
+    const departmentItems = document.querySelectorAll(".department-item");
+    const checkboxes = document.querySelectorAll('input[name="departments"]');
+
+    // Mở/đóng dropdown
+    if (departmentInput && departmentSelector) {
+      departmentInput.addEventListener("click", function (e) {
+        e.preventDefault();
+        departmentSelector.classList.toggle("active");
+        if (departmentSelector.classList.contains("active")) {
+          setTimeout(() => {
+            departmentSearch?.focus();
+          }, 100);
+        }
+      });
+
+      // Đóng dropdown khi click bên ngoài
+      document.addEventListener("click", function (e) {
+        if (!departmentSelector.contains(e.target)) {
+          departmentSelector.classList.remove("active");
+        }
+      });
+
+      // Ngăn đóng dropdown khi click vào dropdown container
+      const dropdownContainer = departmentSelector.querySelector(
+        ".department-checkbox-container"
+      );
+      if (dropdownContainer) {
+        dropdownContainer.addEventListener("click", function (e) {
+          e.stopPropagation();
+        });
+      }
+    }
+
+    // Tìm kiếm phòng ban
+    if (departmentSearch) {
+      departmentSearch.addEventListener("input", function (e) {
+        const searchTerm = e.target.value.toLowerCase().trim();
+
+        departmentItems.forEach((item) => {
+          const departmentName = item.getAttribute("data-name") || "";
+          const labelText =
+            item
+              .querySelector(".form-check-label")
+              ?.textContent.toLowerCase() || "";
+
+          if (
+            departmentName.includes(searchTerm) ||
+            labelText.includes(searchTerm)
+          ) {
+            item.style.display = "block";
+          } else {
+            item.style.display = "none";
+          }
+        });
+      });
+    }
+
+    // Cập nhật input text khi chọn/bỏ chọn phòng ban
+    function updateDepartmentInput() {
+      const checked = Array.from(checkboxes).filter((cb) => cb.checked);
+      const checkedNames = checked
+        .map((cb) => {
+          const label = document.querySelector(`label[for="${cb.id}"]`);
+          return label
+            ? label.querySelector("strong")?.textContent ||
+                label.textContent.trim()
+            : "";
+        })
+        .filter((name) => name);
+
+      if (checkedNames.length > 0) {
+        if (checkedNames.length === 1) {
+          departmentInput.value = checkedNames[0];
+        } else if (checkedNames.length <= 3) {
+          departmentInput.value = checkedNames.join(", ");
+        } else {
+          departmentInput.value = `${checkedNames.slice(0, 3).join(", ")} và ${
+            checkedNames.length - 3
+          } phòng ban khác`;
+        }
+      } else {
+        departmentInput.value = "";
+        departmentInput.placeholder = "Chọn phòng ban...";
+      }
+    }
+
+    // Lắng nghe sự kiện thay đổi checkbox
+    checkboxes.forEach((checkbox) => {
+      checkbox.addEventListener("change", function () {
+        updateDepartmentInput();
+      });
+    });
+
+    // Cập nhật lần đầu
+    updateDepartmentInput();
+
+    // Ngăn form submit khi nhấn Enter trong search input
+    if (departmentSearch) {
+      departmentSearch.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+        }
+      });
+    }
+
+    // Required departments selector
+    const requiredDepartmentSelector = document.getElementById("requiredDepartmentSelector");
+    const requiredDepartmentInput = document.getElementById("required-department-input");
+    const requiredDepartmentSearch = document.getElementById("required-department-search");
+    const requiredDepartmentItems = document.querySelectorAll('#required-department-list .department-item');
+    const requiredCheckboxes = document.querySelectorAll('input[name="required_departments"]');
+
+    // Mở/đóng dropdown cho required departments
+    if (requiredDepartmentInput && requiredDepartmentSelector) {
+      requiredDepartmentInput.addEventListener("click", function (e) {
+        e.preventDefault();
+        requiredDepartmentSelector.classList.toggle("active");
+        if (requiredDepartmentSelector.classList.contains("active")) {
+          setTimeout(() => {
+            requiredDepartmentSearch?.focus();
+          }, 100);
+        }
+      });
+
+      // Đóng dropdown khi click bên ngoài
+      document.addEventListener("click", function (e) {
+        if (!requiredDepartmentSelector.contains(e.target)) {
+          requiredDepartmentSelector.classList.remove("active");
+        }
+      });
+
+      // Tìm kiếm required departments
+      if (requiredDepartmentSearch) {
+        requiredDepartmentSearch.addEventListener("input", function () {
+          const searchTerm = this.value.toLowerCase();
+          requiredDepartmentItems.forEach((item) => {
+            const name = item.dataset.name || "";
+            if (name.includes(searchTerm)) {
+              item.style.display = "block";
+            } else {
+              item.style.display = "none";
+            }
+          });
+        });
+      }
+
+      // Cập nhật input text khi chọn required departments
+      function updateRequiredDepartmentInput() {
+        const checked = Array.from(requiredCheckboxes)
+          .filter((cb) => cb.checked)
+          .map((cb) => {
+            const label = document.querySelector(
+              `label[for="${cb.id}"]`
+            );
+            return label ? label.textContent.trim().split("\n")[0] : "";
+          });
+        if (checked.length > 0) {
+          requiredDepartmentInput.value = checked.join(", ");
+        } else {
+          requiredDepartmentInput.value = "";
+        }
+      }
+
+      // Lắng nghe thay đổi checkbox
+      requiredCheckboxes.forEach((checkbox) => {
+        checkbox.addEventListener("change", updateRequiredDepartmentInput);
+      });
+
+      // Khởi tạo giá trị ban đầu
+      updateRequiredDepartmentInput();
+    }
+
+    // Format số tiền cho input Ngân sách dự kiến
+    const estimatedBudgetInput = document.getElementById("id_estimated_budget");
+
+    if (estimatedBudgetInput) {
+      function formatNumber(value) {
+        if (!value) return "";
+        // Remove all non-digit characters except for a potential decimal point
+        let cleanedValue = value.toString().replace(/[^\d.]/g, "");
+        // Handle decimal part
+        const parts = cleanedValue.split(".");
+        let integerPart = parts[0];
+        let decimalPart =
+          parts.length > 1 ? "." + parts[1].substring(0, 2) : "";
+
+        // Add commas to the integer part
+        integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        return integerPart + decimalPart;
+      }
+
+      function unformatNumber(value) {
+        if (!value) return "";
+        return value.toString().replace(/,/g, "");
+      }
+
+      // Format on initial load (for edit forms)
+      if (estimatedBudgetInput.value) {
+        estimatedBudgetInput.value = formatNumber(estimatedBudgetInput.value);
+      }
+
+      // Format on input
+      estimatedBudgetInput.addEventListener("input", function (e) {
+        const start = this.selectionStart;
+        const end = this.selectionEnd;
+        const oldLength = this.value.length;
+
+        this.value = formatNumber(this.value);
+
+        const newLength = this.value.length;
+        const cursorOffset = newLength - oldLength;
+        this.setSelectionRange(start + cursorOffset, end + cursorOffset);
+      });
+
+      // Unformat before form submission
+      estimatedBudgetInput
+        .closest("form")
+        .addEventListener("submit", function () {
+          if (estimatedBudgetInput) {
+            estimatedBudgetInput.value = unformatNumber(
+              estimatedBudgetInput.value
+            );
+          }
+        });
+    }
+  });
+</script>
+{% endblock %}

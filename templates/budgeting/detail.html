@@ -1,0 +1,247 @@
+{% extends 'base_sidebar.html' %}
+{% load static %}
+{% load custom_filters %}
+{% load humanize %}
+
+{% block title %}Chi tiết Ngân sách - ERP System{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <a href="{% url 'budgeting:list' %}" class="btn btn-outline-secondary btn-sm" style="border-radius: 8px; padding: 0.5rem 0.75rem;">
+    <i class="bi bi-arrow-left me-1"></i>Quay lại
+  </a>
+  <span>Chi tiết Ngân sách: {{ budget.category.name }}</span>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .utilization-bar {
+    height: 12px;
+    border-radius: 6px;
+    background-color: #e2e8f0;
+    overflow: hidden;
+    margin-top: 0.5rem;
+  }
+
+  .utilization-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+  }
+
+  .utilization-low { background-color: #22c55e; }
+  .utilization-medium { background-color: #f59e0b; }
+  .utilization-high { background-color: #ef4444; }
+
+  .expense-item {
+    border-left: 3px solid #0000cd;
+    padding-left: 1rem;
+    margin-bottom: 1rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-4 mb-4">
+    <div class="card">
+      <div class="card-header bg-white border-bottom">
+        <h5 class="mb-0">Thông tin Ngân sách</h5>
+      </div>
+      <div class="card-body">
+        <p class="mb-2">
+          <strong>Dự án:</strong><br>
+          <a href="{% url 'projects:detail' budget.project.pk %}" class="text-decoration-none">
+            {{ budget.project.name }}
+          </a>
+        </p>
+        <p class="mb-2">
+          <strong>Danh mục:</strong><br>
+          {{ budget.category.name }}
+        </p>
+        <p class="mb-2">
+          <strong>Năm tài chính:</strong><br>
+          {{ budget.fiscal_year }}
+        </p>
+        <p class="mb-2">
+          <strong>Số tiền phân bổ:</strong><br>
+          <span class="text-primary fw-bold">{{ budget.allocated_amount|floatformat:0|intcomma }} VNĐ</span>
+        </p>
+        <p class="mb-2">
+          <strong>Đã chi tiêu:</strong><br>
+          <span class="text-danger fw-bold">{{ budget.spent_amount|floatformat:0|intcomma }} VNĐ</span>
+        </p>
+        <p class="mb-2">
+          <strong>Còn lại:</strong><br>
+          <span class="text-success fw-bold">{{ budget.remaining_amount|floatformat:0|intcomma }} VNĐ</span>
+        </p>
+        <div class="mt-3">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <small class="text-muted fw-semibold">Tỷ lệ sử dụng</small>
+            <small class="fw-semibold">{{ utilization_percentage|floatformat:1 }}%</small>
+          </div>
+          <div class="utilization-bar">
+            <div 
+              class="utilization-fill {% if utilization_percentage < 70 %}utilization-low{% elif utilization_percentage < 90 %}utilization-medium{% else %}utilization-high{% endif %}"
+              style="width: {{ utilization_percentage }}%"
+            ></div>
+          </div>
+        </div>
+        {% if budget.notes %}
+        <div class="mt-3">
+          <strong>Ghi chú:</strong><br>
+          <small class="text-muted">{{ budget.notes }}</small>
+        </div>
+        {% endif %}
+        <div class="mt-3">
+          <a href="{% url 'budgeting:edit' budget.pk %}" class="btn btn-sm btn-primary w-100">
+            <i class="bi bi-pencil me-1"></i>Chỉnh sửa
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-8">
+    <!-- Thống kê chi tiêu theo user -->
+    {% if expense_stats_by_user %}
+    <div class="card mb-4">
+      <div class="card-header bg-white border-bottom">
+        <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Thống kê chi tiêu theo người dùng</h5>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th>Người dùng</th>
+                <th>Số lượng chi phí</th>
+                <th>Tổng số tiền</th>
+                <th>Tỷ lệ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for stat in expense_stats_by_user %}
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <i class="bi bi-person-circle me-2 text-primary"></i>
+                    <div>
+                      <strong>{{ stat.full_name }}</strong>
+                      {% if stat.email %}
+                      <br><small class="text-muted">{{ stat.email }}</small>
+                      {% endif %}
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge bg-info">{{ stat.expense_count }}</span>
+                </td>
+                <td class="fw-bold text-primary">{{ stat.total_amount|floatformat:0|intcomma }} VNĐ</td>
+                <td>
+                  {% if total_expenses > 0 %}
+                  {% widthratio stat.total_amount total_expenses 100 as percentage %}
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="progress" style="width: 100px; height: 8px;">
+                      <div class="progress-bar bg-primary" role="progressbar" style="width: {{ percentage }}%"></div>
+                    </div>
+                    <small class="text-muted">{{ percentage|floatformat:1 }}%</small>
+                  </div>
+                  {% else %}
+                  <small class="text-muted">-</small>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr class="table-primary">
+                <td class="fw-bold">Tổng cộng</td>
+                <td class="fw-bold">{{ expenses|length }}</td>
+                <td class="fw-bold">{{ total_expenses|floatformat:0|intcomma }} VNĐ</td>
+                <td class="fw-bold">100%</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Danh sách chi phí -->
+    <div class="card">
+      <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Chi phí</h5>
+        <a href="{% url 'budgeting:expense_create' %}?budget={{ budget.pk }}" class="btn btn-sm btn-primary">
+          <i class="bi bi-plus-circle me-1"></i>Thêm chi phí
+        </a>
+      </div>
+      <div class="card-body">
+        {% if expenses %}
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Ngày</th>
+                <th>Mô tả</th>
+                <th>Loại</th>
+                <th>Số tiền</th>
+                <th>Người thêm</th>
+                <th>Nhà cung cấp</th>
+                <th>Hóa đơn</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for expense in expenses %}
+              <tr>
+                <td>{{ expense.expense_date|date:"d/m/Y" }}</td>
+                <td>{{ expense.description|truncatewords:10 }}</td>
+                <td>
+                  <span class="badge bg-secondary">
+                    {{ expense.get_expense_type_display }}
+                  </span>
+                </td>
+                <td class="fw-bold">{{ expense.amount|floatformat:0|intcomma }} VNĐ</td>
+                <td>
+                  {% if expense.created_by %}
+                  <div class="d-flex align-items-center">
+                    <i class="bi bi-person-circle me-1 text-primary"></i>
+                    <div>
+                      <strong>{{ expense.created_by.get_full_name|default:expense.created_by.username }}</strong>
+                      {% if expense.created_by.email %}
+                      <br><small class="text-muted">{{ expense.created_by.email }}</small>
+                      {% endif %}
+                    </div>
+                  </div>
+                  {% else %}
+                  <span class="text-muted">-</span>
+                  {% endif %}
+                </td>
+                <td>{{ expense.vendor|default:"-" }}</td>
+                <td>{{ expense.invoice_number|default:"-" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr class="table-primary">
+                <td colspan="3" class="fw-bold">Tổng cộng</td>
+                <td class="fw-bold">{{ total_expenses|floatformat:0|intcomma }} VNĐ</td>
+                <td colspan="3"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+          <i class="bi bi-receipt" style="font-size: 3rem; color: #cbd5e1;"></i>
+          <p class="text-muted mt-3">Chưa có chi phí nào.</p>
+          <a href="{% url 'budgeting:expense_create' %}?budget={{ budget.pk }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>Thêm chi phí đầu tiên
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

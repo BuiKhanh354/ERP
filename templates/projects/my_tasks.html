@@ -1,0 +1,521 @@
+{% extends 'base_sidebar.html' %}
+{% load static %}
+
+{% block title %}Công việc của tôi - ERP System{% endblock %}
+
+{% block page_title %}Công việc của tôi{% endblock %}
+
+{% block extra_css %}
+<style>
+  .task-item-card {
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    margin-bottom: 1rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+  }
+
+  .task-item-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    border-color: #0000cd;
+  }
+
+  .task-item-card.done {
+    opacity: 1;
+    border-color: #cbd5e1;
+  }
+
+  .task-item-card.done .task-title {
+    text-decoration: line-through;
+    color: #475569;
+  }
+
+  .task-item-card.done .task-description {
+    color: #64748b;
+  }
+
+  .task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+  }
+
+  .task-title-section {
+    flex: 1;
+  }
+
+  .task-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 0.25rem;
+  }
+
+  .task-description {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin-bottom: 0.5rem;
+  }
+
+  .task-status-badge {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .status-todo { background-color: #f1f5f9; color: #64748b; }
+  .status-in_progress { background-color: #dbeafe; color: #1e40af; }
+  .status-review { background-color: #fef3c7; color: #92400e; }
+  .status-done { background-color: #d1fae5; color: #065f46; }
+
+  .status-assigned { background-color: #e0e7ff; color: #3730a3; }
+  .status-accepted { background-color: #dbeafe; color: #1e40af; }
+  .status-in_progress-assignment { background-color: #fef3c7; color: #92400e; }
+  .status-completed { background-color: #d1fae5; color: #065f46; }
+  .status-rejected { background-color: #fee2e2; color: #991b1b; }
+
+  .task-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: #475569;
+    margin-bottom: 0.75rem;
+  }
+
+  .task-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .task-meta-item i {
+    color: #334155;
+  }
+
+  .task-meta-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+  }
+
+  .task-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    font-size: 0.78rem;
+    color: #334155;
+    white-space: nowrap;
+  }
+
+  .task-pill.danger {
+    border-color: rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.06);
+    color: #991b1b;
+  }
+
+  .task-pill.warning {
+    border-color: rgba(245, 158, 11, 0.35);
+    background: rgba(245, 158, 11, 0.08);
+    color: #92400e;
+  }
+
+  .task-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .stats-mini {
+    text-align: center;
+    padding: 1rem;
+    border-radius: 8px;
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+  }
+
+  .stats-mini-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0.25rem 0;
+  }
+
+  .stats-mini-label {
+    font-size: 0.85rem;
+    color: #64748b;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">Lọc theo trạng thái</label>
+        <select name="status" class="form-select" onchange="this.form.submit()">
+          <option value="">-- Tất cả trạng thái --</option>
+          <option value="todo" {% if status_filter == 'todo' %}selected{% endif %}>Cần làm</option>
+          <option value="in_progress" {% if status_filter == 'in_progress' %}selected{% endif %}>Đang thực hiện</option>
+          <option value="review" {% if status_filter == 'review' %}selected{% endif %}>Đang xem xét</option>
+          <option value="done" {% if status_filter == 'done' %}selected{% endif %}>Hoàn thành</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">Lọc theo trạng thái giao/nhận</label>
+        <select name="assignment_status" class="form-select" onchange="this.form.submit()">
+          <option value="">-- Tất cả --</option>
+          <option value="assigned" {% if assignment_status_filter == 'assigned' %}selected{% endif %}>Đã giao</option>
+          <option value="accepted" {% if assignment_status_filter == 'accepted' %}selected{% endif %}>Đã nhận</option>
+          <option value="in_progress" {% if assignment_status_filter == 'in_progress' %}selected{% endif %}>Đang thực hiện</option>
+          <option value="completed" {% if assignment_status_filter == 'completed' %}selected{% endif %}>Hoàn thành</option>
+          <option value="rejected" {% if assignment_status_filter == 'rejected' %}selected{% endif %}>Từ chối</option>
+        </select>
+      </div>
+      <div class="col-md-4 d-flex align-items-end">
+        <a href="{% url 'projects:my_tasks' %}" class="btn btn-outline-secondary w-100">
+          <i class="bi bi-x-circle me-1"></i>Xóa bộ lọc
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="row mb-4">
+  <div class="col-md-3 mb-3">
+    <div class="stats-mini">
+      <div class="stats-mini-value" style="color: #64748b;">{{ total_tasks }}</div>
+      <div class="stats-mini-label">Tổng công việc</div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="stats-mini">
+      <div class="stats-mini-value" style="color: #3b82f6;">{{ assigned_tasks }}</div>
+      <div class="stats-mini-label">Đã giao</div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="stats-mini">
+      <div class="stats-mini-value" style="color: #f59e0b;">{{ in_progress_tasks }}</div>
+      <div class="stats-mini-label">Đang thực hiện</div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="stats-mini">
+      <div class="stats-mini-value" style="color: #22c55e;">{{ completed_tasks }}</div>
+      <div class="stats-mini-label">Hoàn thành</div>
+    </div>
+  </div>
+</div>
+
+<!-- Tasks List -->
+<div class="card">
+  <div class="card-header bg-white border-bottom">
+    <h5 class="mb-0">Danh sách công việc được gán cho tôi</h5>
+  </div>
+  <div class="card-body">
+    {% if tasks %}
+    {% for task in tasks %}
+    <div class="task-item-card {% if task.status == 'done' %}done{% endif %}" id="task-{{ task.pk }}">
+      <div class="task-header">
+        <div class="task-title-section">
+          <div class="task-title">
+            <a href="{% url 'projects:detail' task.project.pk %}" class="text-decoration-none text-primary">
+              {{ task.project.name }}
+            </a>
+            - {{ task.name }}
+          </div>
+          {% if task.description %}
+          <div class="task-description">{{ task.description|truncatewords:30 }}</div>
+          {% endif %}
+        </div>
+        <div class="d-flex gap-2 flex-column align-items-end">
+          <span class="task-status-badge status-{{ task.assignment_status }}">
+            {% if task.assignment_status == 'assigned' %}Đã giao
+            {% elif task.assignment_status == 'accepted' %}Đã nhận
+            {% elif task.assignment_status == 'in_progress' %}Đang thực hiện
+            {% elif task.assignment_status == 'completed' %}Hoàn thành
+            {% elif task.assignment_status == 'rejected' %}Từ chối
+            {% endif %}
+          </span>
+          {% comment %}Chỉ hiển thị status badge nếu khác với assignment_status để tránh duplicate{% endcomment %}
+          {% if task.status == 'review' %}
+          <span class="task-status-badge status-review">
+            Đang xem xét
+          </span>
+          {% elif task.status == 'done' and task.assignment_status != 'completed' %}
+          <span class="task-status-badge status-done">
+            Hoàn thành
+          </span>
+          {% endif %}
+        </div>
+      </div>
+      
+      <div class="task-meta">
+        <div class="task-meta-pills">
+          {% if task.department %}
+          <span class="task-pill"><i class="bi bi-building"></i>{{ task.department.name }}</span>
+          {% endif %}
+          {% if task.due_date %}
+          <span class="task-pill"><i class="bi bi-calendar"></i>{{ task.due_date|date:"d/m/Y" }}</span>
+          {% endif %}
+          {% if task.estimated_hours %}
+          <span class="task-pill"><i class="bi bi-clock"></i>{{ task.estimated_hours }}h</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="task-actions">
+        <a href="{% url 'projects:task_edit' task.pk %}" class="btn btn-sm btn-outline-primary">
+          <i class="bi bi-pencil me-1"></i>Xem chi tiết
+        </a>
+        {% if task.assignment_status == 'assigned' %}
+        <button type="button" class="btn btn-sm btn-success" onclick="updateAssignmentStatus({{ task.pk }}, 'accepted')">
+          <i class="bi bi-check-circle me-1"></i>Nhận việc
+        </button>
+        <button type="button" class="btn btn-sm btn-danger" onclick="updateAssignmentStatus({{ task.pk }}, 'rejected')">
+          <i class="bi bi-x-circle me-1"></i>Từ chối
+        </button>
+        {% elif task.assignment_status == 'accepted' %}
+        <button type="button" class="btn btn-sm btn-primary" onclick="updateAssignmentStatus({{ task.pk }}, 'in_progress')">
+          <i class="bi bi-play-circle me-1"></i>Bắt đầu
+        </button>
+        {% elif task.assignment_status == 'in_progress' %}
+        <button type="button" class="btn btn-sm btn-info" onclick="showLogTimeModal({{ task.pk }}, '{{ task.name|escapejs }}')">
+          <i class="bi bi-clock me-1"></i>Ghi chép thời gian
+        </button>
+        <button type="button" class="btn btn-sm btn-success" onclick="completeTaskWithTimeLog({{ task.pk }})">
+          <i class="bi bi-check-circle me-1"></i>Hoàn thành
+        </button>
+        {% endif %}
+        {% if task.assignment_status in 'accepted,in_progress' %}
+        <a href="{% url 'projects:time_entry_create' %}?task={{ task.pk }}" class="btn btn-sm btn-outline-info">
+          <i class="bi bi-plus-circle me-1"></i>Ghi chép chi tiết
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="text-center py-4">
+      <i class="bi bi-check-square" style="font-size: 3rem; color: #cbd5e1;"></i>
+      <p class="text-muted mt-3">Bạn chưa có công việc nào được gán.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Modal Ghi chép thời gian nhanh -->
+<div class="modal fade" id="quickLogTimeModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Ghi chép thời gian</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="quickLogTimeForm">
+          <input type="hidden" id="logTaskId" name="task_id">
+          <div class="mb-3">
+            <label class="form-label">Công việc</label>
+            <input type="text" class="form-control" id="logTaskName" readonly>
+          </div>
+          <div class="mb-3">
+            <label for="logHours" class="form-label">Số giờ làm việc</label>
+            <input type="number" class="form-control" id="logHours" name="hours" step="0.25" min="0.1" required>
+            <small class="form-text text-muted">Nhập số giờ (ví dụ: 7.5, 8, 4.25)</small>
+          </div>
+          <div class="mb-3">
+            <label for="logDate" class="form-label">Ngày làm việc</label>
+            <input type="date" class="form-control" id="logDate" name="date" required>
+          </div>
+          <div class="mb-3">
+            <label for="logDescription" class="form-label">Mô tả (tùy chọn)</label>
+            <textarea class="form-control" id="logDescription" name="description" rows="2"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+        <button type="button" class="btn btn-primary" onclick="submitQuickLogTime()">Lưu</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Set ngày mặc định là hôm nay
+document.addEventListener('DOMContentLoaded', function() {
+  const today = new Date().toISOString().split('T')[0];
+  const logDateInput = document.getElementById('logDate');
+  if (logDateInput) {
+    logDateInput.value = today;
+  }
+});
+
+function showLogTimeModal(taskId, taskName) {
+  document.getElementById('logTaskId').value = taskId;
+  document.getElementById('logTaskName').value = taskName;
+  const modal = new bootstrap.Modal(document.getElementById('quickLogTimeModal'));
+  modal.show();
+}
+
+function submitQuickLogTime() {
+  const taskId = document.getElementById('logTaskId').value;
+  const hours = document.getElementById('logHours').value;
+  const date = document.getElementById('logDate').value;
+  const description = document.getElementById('logDescription').value;
+  
+  if (!hours || parseFloat(hours) <= 0) {
+    window.showNotification('error', 'Vui lòng nhập số giờ hợp lệ.');
+    return;
+  }
+  
+  const formData = new FormData();
+  formData.append('hours', hours);
+  formData.append('date', date);
+  formData.append('description', description);
+  
+  fetch(`/projects/tasks/${taskId}/quick-log-time/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': '{{ csrf_token }}',
+    },
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      window.showNotification('success', data.message);
+      bootstrap.Modal.getInstance(document.getElementById('quickLogTimeModal')).hide();
+      // Reset form
+      document.getElementById('quickLogTimeForm').reset();
+      document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      window.showNotification('error', data.error || 'Có lỗi xảy ra.');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    window.showNotification('error', 'Có lỗi xảy ra.');
+  });
+}
+
+function completeTaskWithTimeLog(taskId) {
+  window.showConfirm(
+    'Bạn có chắc muốn hoàn thành công việc này? Hệ thống sẽ tự động ghi chép thời gian làm việc từ khi bắt đầu đến bây giờ.',
+    'Xác nhận hoàn thành',
+    'Hoàn thành',
+    'Hủy'
+  )
+  .then((confirmed) => {
+    if (!confirmed) return;
+    
+    // Cập nhật assignment_status thành completed
+    return fetch(`/projects/tasks/${taskId}/update-assignment-status/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ assignment_status: 'completed' })
+    });
+  })
+  .then((response) => {
+    if (!response) return null;
+    return response.json();
+  })
+  .then(data => {
+    if (!data || !data.success) {
+      if (data && data.error) {
+        window.showNotification('error', data.error);
+      }
+      return;
+    }
+    
+    // Sau khi cập nhật assignment_status thành công, tự động ghi chép thời gian
+    return fetch(`/projects/tasks/${taskId}/auto-log-time/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}',
+      }
+    });
+  })
+  .then((response) => {
+    if (!response) return null;
+    return response.json();
+  })
+  .then(data => {
+    if (!data) return;
+    if (data.success) {
+      window.showNotification('success', `Đã hoàn thành công việc. ${data.message}`);
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      window.showNotification('warning', `Đã hoàn thành công việc nhưng ${data.error || 'không thể ghi chép thời gian tự động.'}`);
+      setTimeout(() => location.reload(), 1500);
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    window.showNotification('error', 'Có lỗi xảy ra.');
+  });
+}
+
+function updateAssignmentStatus(taskId, status) {
+  const statusText = {
+    'accepted': 'nhận việc',
+    'rejected': 'từ chối',
+    'in_progress': 'bắt đầu',
+    'completed': 'hoàn thành'
+  };
+
+  window.showConfirm(`Bạn có chắc muốn ${statusText[status]} công việc này?`, 'Xác nhận', 'Đồng ý', 'Hủy')
+    .then((confirmed) => {
+      if (!confirmed) return;
+      return fetch(`/projects/tasks/${taskId}/update-assignment-status/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': '{{ csrf_token }}',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ assignment_status: status })
+      });
+    })
+    .then((response) => {
+      if (!response) return null;
+      return response.json();
+    })
+    .then(data => {
+      if (!data) return;
+      if (data.success) {
+        window.showNotification('success', `Đã ${statusText[status]} công việc thành công.`);
+        setTimeout(() => location.reload(), 1000);
+      } else {
+        window.showNotification('error', data.error || 'Có lỗi xảy ra.');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      window.showNotification('error', 'Có lỗi xảy ra.');
+    });
+}
+</script>
+{% endblock %}

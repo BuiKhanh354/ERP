@@ -1,0 +1,360 @@
+Muc luc:
+1. Cai dat moi truong
+2. Cau hinh Database (SQL Server)
+3. Cai dat Dependencies
+4. Chay Migrations
+5. Tao Superuser (Admin)
+6. Tao User Quan ly
+7. Tao User Nhan vien
+8. Chay Project
+9. Import Data Mau (Tuy chon)
+10. Kiem tra va Su dung
+
+1. CAI DAT MOI TRUONG
+
+1.1. Kiem tra Python
+   - Can Python 3.11 tro len
+   - Kiem tra: python --version
+
+1.2. Tao Virtual Environment (khuyen nghi)
+   
+   Windows:
+   python -m venv venv
+   venv\Scripts\activate
+   
+   Linux/Mac:
+   python3 -m venv venv
+   source venv/bin/activate
+
+1.3. Cai dat ODBC Driver cho SQL Server
+   - Windows: Download "ODBC Driver 17 for SQL Server" tu Microsoft
+   - Linux: sudo apt-get install unixodbc-dev
+   - Mac: brew install unixodbc
+
+2. CAU HINH DATABASE (SQL SERVER)
+
+2.1. Cai dat SQL Server
+   - Cai dat SQL Server 2019+ hoac SQL Server Express
+   - Hoac su dung Docker:
+     docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=YourPassword123" -p 1433:1433 -d mcr.microsoft.com/mssql/server:2019-latest
+
+2.2. Tao file .env (neu chua co)
+   - Copy tu .env.example (neu co) hoac tao moi
+   - Noi dung .env:
+   
+   SECRET_KEY=django-insecure-change-this-in-production
+   DEBUG=True
+   ALLOWED_HOSTS=localhost,127.0.0.1
+   
+   DB_NAME=ERP_DB
+   DB_USER=sa
+   DB_PASSWORD=YourPassword123
+   DB_HOST=localhost
+   DB_PORT=1433
+   
+   GEMINI_API_KEY=your-gemini-api-key-here
+   
+   EMAIL_SERVICE=gmail
+   EMAIL_USER=your-email@gmail.com
+   EMAIL_PASSWORD=your-app-password
+   ADMIN_EMAIL=admin@example.com
+
+2.3. Kiem tra ket noi Database
+   - Mo SQL Server Management Studio (SSMS)
+   - Ket noi voi server bang thong tin trong .env
+   - Database se duoc tao tu dong khi chay project (neu chua co)
+
+
+3. CAI DAT DEPENDENCIES
+
+
+3.1. Cai dat Python packages
+   pip install -r requirements.txt
+
+3.2. Kiem tra cac package quan trong
+   - Django>=5.0.0
+   - mssql-django>=1.4.0
+   - pyodbc>=5.0.0
+   - python-dotenv>=1.0.0
+   - google-genai>=0.2.0 (cho AI features)
+
+
+4. CHAY MIGRATIONS
+
+
+4.1. Tao migrations (neu co thay doi models)
+   python manage.py makemigrations
+
+4.2. Chay migrations de tao/cap nhat bang
+   python manage.py migrate
+
+Luu y: Neu su dung script runserver.py, migrations se duoc chay tu dong.
+
+
+5. TAO SUPERUSER (ADMIN)
+
+
+5.1. Tao superuser bang Django command
+   python manage.py createsuperuser
+   
+   - Nhap username (vi du: admin)
+   - Nhap email (vi du: admin@example.com)
+   - Nhap password (toi thieu 8 ky tu)
+   - Xac nhan password
+
+5.2. Kiem tra superuser
+   - Mo trinh duyet: http://localhost:8000/admin
+   - Dang nhap bang tai khoan vua tao
+   - Neu dang nhap thanh cong, ban la superuser
+
+
+6. TAO USER QUAN LY
+
+
+6.1. Cach 1: Su dung Management Command (KHUYEN NGHI)
+   
+   python manage.py create_manager_user --email thanhhung111120021@gmail.com --username thanhhung --password YourPassword123
+   
+   Hoac chi nhap email, username va password se tu dong:
+   python manage.py create_manager_user --email manager@example.com
+   
+   Script se:
+   - Tao User moi neu chua ton tai
+   - Tao UserProfile voi role='manager'
+   - Hien thi thong tin user da tao
+
+6.2. Cach 2: Su dung Django Shell
+   
+   python manage.py shell
+   
+   Trong shell, chay:
+   
+   from django.contrib.auth.models import User
+   from core.models import UserProfile
+   
+   # Tao user
+   user = User.objects.create_user(
+       username='thanhhung',
+       email='thanhhung111120021@gmail.com',
+       password='YourPassword123',
+       first_name='Thanh',
+       last_name='Hung'
+   )
+   
+   # Tao profile voi role manager
+   profile = UserProfile.objects.create(
+       user=user,
+       role=UserProfile.ROLE_MANAGER
+   )
+   
+   print(f"Da tao user quan ly: {user.username} ({user.email})")
+
+6.3. Cach 3: Su dung Django Admin
+   - Dang nhap vao http://localhost:8000/admin
+   - Vao "Users" -> "Add user"
+   - Nhap thong tin user
+   - Sau khi tao user, vao "User profiles" -> "Add user profile"
+   - Chon user vua tao va set role = "Quan ly"
+
+
+7. TAO USER NHAN VIEN
+
+
+7.1. Cach 1: Su dung Management Command
+   
+   python manage.py create_employee_user --email nthung.viettin@gmail.com --username nthung --password YourPassword123
+   
+   Hoac:
+   python manage.py create_employee_user --email employee@example.com
+
+7.2. Cach 2: Su dung Django Shell
+   
+   python manage.py shell
+   
+   from django.contrib.auth.models import User
+   from core.models import UserProfile
+   
+   # Tao user
+   user = User.objects.create_user(
+       username='nthung',
+       email='nthung.viettin@gmail.com',
+       password='YourPassword123',
+       first_name='Nguyen',
+       last_name='Thi Hung'
+   )
+   
+   # Tao profile voi role employee
+   profile = UserProfile.objects.create(
+       user=user,
+       role=UserProfile.ROLE_EMPLOYEE
+   )
+   
+   print(f"Da tao user nhan vien: {user.username} ({user.email})")
+
+7.3. Cach 3: Su dung Django Admin
+   - Tuong tu nhu tao user quan ly
+   - Set role = "Nhan vien" trong User Profile
+
+
+8. CHAY PROJECT
+
+
+8.1. Cach 1: Su dung script runserver.py (KHUYEN NGHI)
+   
+   # Chay tren localhost:8000 (mac dinh)
+   python runserver.py
+   
+   # Hoac chi dinh port
+   python runserver.py 8000
+   python runserver.py localhost:8000
+   
+   # Hoac cho phep truy cap tu may khac
+   python runserver.py 0.0.0.0:8000
+   
+   # Bo qua tao user mau (neu khong muon)
+   python runserver.py --no-sample-users
+   
+   Script nay se tu dong:
+   - Tao database neu chua ton tai (SQL Server)
+   - Tao migrations neu co thay doi
+   - Chay migrations
+   - Tao user mau tu scripts/create_sample_users.py (chi tao user chua ton tai)
+   - Khoi dong development server
+   
+   Luu y: 
+   - Script se tu dong kiem tra va tao cac user trong danh sach neu chua ton tai
+   - Password mac dinh cho user mau: 12345678
+   - Neu user da ton tai (theo username hoac email), se bo qua hoac cap nhat role
+   - Su dung flag --no-sample-users de bo qua buoc tao user mau
+
+8.2. Cach 2: Su dung Django command truc tiep
+   
+   py -3.10 manage.py runserver localhost:8000
+   ## tạo user quản lý
+   py -3.10 scripts/create_sample_users.py
+
+8.3. Truy cap ung dung
+   - Web Interface: http://localhost:8000
+   - API Root: http://localhost:8000/api/
+
+
+9. IMPORT DATA MAU (TUY CHON)
+
+
+9.1. Import data thuc (cho 2 user chinh)
+   
+   # Can tao 2 user truoc:
+   # - thanhhung111120021@gmail.com (quan ly)
+   # - nthung.viettin@gmail.com (nhan vien)
+   
+   # Import data (se xoa data mau cu va import data moi)
+   python manage.py reset_and_import_data --confirm
+   
+   Hoac import rieng le:
+   python manage.py import_real_data --confirm
+
+9.2. Import data mau (sample data)
+   
+   python manage.py load_sample_data
+
+9.3. Xoa data mau
+   
+   python manage.py clear_sample_data --confirm
+
+
+10. KIEM TRA VA SU DUNG
+
+
+10.1. Kiem tra User Roles
+   
+   python manage.py shell
+   
+   from django.contrib.auth.models import User
+   from core.models import UserProfile
+   
+   # Kiem tra user quan ly
+   manager = User.objects.get(email='thanhhung111120021@gmail.com')
+   print(f"Manager: {manager.username}, Role: {manager.profile.role}")
+   
+   # Kiem tra user nhan vien
+   employee = User.objects.get(email='nthung.viettin@gmail.com')
+   print(f"Employee: {employee.username}, Role: {employee.profile.role}")
+
+10.2. Cap nhat Role cho User
+   
+   python manage.py update_user_role --email user@example.com --role manager
+   python manage.py update_user_role --email user@example.com --role employee
+
+10.3. Dang nhap va su dung
+   
+   - Dang nhap voi user quan ly:
+     + Co the xem tat ca du an, nhan vien, ngân sach
+     + Co the tao/sua/xoa du an, nhan vien, ngân sach
+     + Co the xem phan tich va AI insights
+   
+   - Dang nhap voi user nhan vien:
+     + Chi xem du an duoc phan bo
+     + Chi xem cong viec duoc giao
+     + Co the ghi chep thoi gian
+     + Co the cap nhat trang thai cong viec
+     + KHONG the tao/sua/xoa du an, nhan vien
+
+
+CAC LENH QUAN TRONG
+
+
+# Tao database va chay migrations
+python manage.py makemigrations
+python manage.py migrate
+
+# Tao superuser
+python manage.py createsuperuser
+
+# Tao user quan ly
+python manage.py create_manager_user --email manager@example.com --username manager --password Password123
+
+# Tao user nhan vien
+python manage.py create_employee_user --email employee@example.com --username employee --password Password123
+
+# Cap nhat role
+python manage.py update_user_role --email user@example.com --role manager
+
+# Chay server (tu dong tao DB, migrations va user mau)
+python runserver.py
+python runserver.py --no-sample-users  # Bo qua tao user mau
+
+# Import data thuc
+python manage.py reset_and_import_data --confirm
+
+# Xoa data mau
+python manage.py clear_sample_data --confirm
+
+
+TROUBLESHOOTING
+
+
+1. Loi ket noi Database
+   - Kiem tra SQL Server dang chay
+   - Kiem tra thong tin trong .env
+   - Kiem tra ODBC Driver da cai dat
+   - Kiem tra firewall cho port 1433
+
+2. Loi "Database does not exist"
+   - Chay: python runserver.py (se tu dong tao database)
+   - Hoac tao database thu cong trong SSMS
+
+3. Loi "User already exists"
+   - User da ton tai, khong can tao lai
+   - Su dung: python manage.py update_user_role de cap nhat role
+
+4. Loi "Permission denied"
+   - User SQL Server can quyen CREATE DATABASE
+   - Hoac tao database thu cong truoc
+
+5. Loi "Module not found"
+   - Chay: pip install -r requirements.txt
+   - Kiem tra virtual environment da activate
+
+6. Loi Unicode khi chay script
+   - Windows: Set console encoding UTF-8
+   - Hoac chay trong Git Bash / PowerShell

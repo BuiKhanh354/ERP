@@ -1,0 +1,139 @@
+{% extends 'base_sidebar.html' %}
+{% load static %}
+{% load humanize %}
+{% load custom_filters %}
+
+{% block title %}Chi tiết Đề xuất Nhân sự - {{ recommendation.project.name }} - ERP System{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+  <a href="{% url 'projects:recommend_personnel' recommendation.project.pk %}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Quay lại
+  </a>
+  <span>Chi tiết Đề xuất Nhân sự: {{ recommendation.project.name }}</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-lg-10">
+      <!-- Recommendation Info -->
+      <div class="card mb-4">
+        <div class="card-header bg-white">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Thông tin Đề xuất</h5>
+            {% if recommendation.is_applied %}
+            <span class="badge bg-success">Đã áp dụng</span>
+            {% else %}
+            <span class="badge bg-warning">Chưa áp dụng</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>Dự án:</strong> <a href="{% url 'projects:detail' recommendation.project.pk %}">{{ recommendation.project.name }}</a></p>
+              <p><strong>Mục tiêu tối ưu hóa:</strong> {{ recommendation.get_optimization_goal_display }}</p>
+              <p><strong>Tổng chi phí ước tính:</strong> <span class="text-primary fw-bold">{{ recommendation.total_estimated_cost|intcomma }} VNĐ</span></p>
+            </div>
+            <div class="col-md-6">
+              <p><strong>Ngày tạo:</strong> {{ recommendation.created_at|date:"d/m/Y H:i" }}</p>
+              {% if recommendation.is_applied %}
+              <p><strong>Ngày áp dụng:</strong> {{ recommendation.applied_at|date:"d/m/Y H:i" }}</p>
+              {% endif %}
+              <p><strong>Người tạo:</strong> {{ recommendation.created_by.get_full_name|default:recommendation.created_by.username }}</p>
+            </div>
+          </div>
+          {% if recommendation.reasoning %}
+          <div class="mt-3">
+            <strong>Lý do và phân tích:</strong>
+            <p class="text-muted mt-2">{{ recommendation.reasoning|linebreaks }}</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Recommended Employees -->
+      <div class="card">
+        <div class="card-header bg-white">
+          <h5 class="mb-0"><i class="bi bi-people me-2"></i>Danh sách Nhân sự Đề xuất</h5>
+        </div>
+        <div class="card-body">
+          {% if recommendation.personnelrecommendationdetail_set.all %}
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Nhân sự</th>
+                  <th>Phòng ban</th>
+                  <th>Tỷ lệ phân bổ</th>
+                  <th>Số giờ ước tính</th>
+                  <th>Chi phí ước tính</th>
+                  <th>Lý do</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for detail in recommendation.personnelrecommendationdetail_set.all %}
+                <tr>
+                  <td>
+                    <a href="{% url 'resources:detail' detail.employee.pk %}">
+                      <strong>{{ detail.employee.full_name }}</strong>
+                    </a>
+                    <br>
+                    <small class="text-muted">{{ detail.employee.position|default:"-" }}</small>
+                  </td>
+                  <td>{{ detail.employee.department.name|default:"-" }}</td>
+                  <td>
+                    <span class="badge bg-info">{{ detail.allocation_percentage }}%</span>
+                  </td>
+                  <td>{{ detail.estimated_hours|hours_format }} giờ</td>
+                  <td class="text-primary fw-semibold">{{ detail.estimated_cost|intcomma }} VNĐ</td>
+                  <td>
+                    {% if detail.reasoning %}
+                    <small class="text-muted">{{ detail.reasoning|linebreaks }}</small>
+                    {% else %}
+                    <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              <tfoot>
+                <tr class="table-primary">
+                  <td colspan="4" class="text-end"><strong>Tổng cộng:</strong></td>
+                  <td class="fw-bold">{{ recommendation.total_estimated_cost|intcomma }} VNĐ</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted">Không có nhân sự nào được đề xuất.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Actions -->
+      {% if not recommendation.is_applied %}
+      <div class="card mt-4">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="mb-1">Áp dụng đề xuất này?</h6>
+              <p class="text-muted mb-0 small">Đề xuất sẽ tạo các phân bổ nhân sự cho dự án.</p>
+            </div>
+            <form method="post" action="{% url 'projects:apply_recommendation' recommendation.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-success">
+                <i class="bi bi-check-circle me-1"></i>Áp dụng Đề xuất
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

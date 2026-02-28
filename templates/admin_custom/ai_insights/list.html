@@ -1,0 +1,81 @@
+{% extends 'admin_custom/base.html' %}
+{% load static %}
+
+{% block title %}Quản lý AI Insights - Admin Panel{% endblock %}
+
+{% block page_title %}Quản lý AI Insights{% endblock %}
+
+{% block admin_content %}
+<!-- AI Insights List -->
+<div class="card border-0 shadow-lg">
+  <div class="card-header">
+    <h5 class="mb-0">Danh sách AI Insights</h5>
+  </div>
+  <div class="card-body">
+    {% if insights %}
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Loại</th>
+            <th>Tiêu đề</th>
+            <th>Ngày tạo</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for insight in insights %}
+          <tr>
+            <td>{{ insight.id }}</td>
+            <td>{{ insight.insight_type }}</td>
+            <td>{{ insight.title|truncatewords:10 }}</td>
+            <td>{{ insight.created_at|date:"d/m/Y H:i" }}</td>
+            <td>
+              <a href="/admin/ai/aiinsight/{{ insight.pk }}/change/" class="btn btn-sm btn-outline-secondary" target="_blank" title="Sửa trong Django Admin">
+                <i class="bi bi-pencil"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <nav aria-label="Page navigation" class="mt-4">
+      <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Trước</a>
+        </li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+          <li class="page-item active">
+            <span class="page-link">{{ num }}</span>
+          </li>
+          {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+          </li>
+          {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.next_page_number }}">Sau</a>
+        </li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+    {% else %}
+    <div class="text-center py-5">
+      <i class="bi bi-robot" style="font-size: 3rem; color: #cbd5e1;"></i>
+      <p class="text-muted mt-3">Chưa có AI insights nào.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

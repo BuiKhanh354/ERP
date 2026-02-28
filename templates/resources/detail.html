@@ -1,0 +1,380 @@
+{% extends 'base_sidebar.html' %}
+{% load static %}
+{% load humanize %}
+{% load custom_filters %}
+
+{% block title %}Chi tiết Nhân sự - ERP System{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center">
+    <a href="{% url 'resources:list' %}" class="btn btn-outline-secondary me-3">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    Chi tiết: {{ employee.full_name }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Thông tin Nhân sự</h5>
+                <div>
+                    {% if user.profile.is_manager %}
+                    <a href="{% url 'core:ai-salary-recommendation' %}?employee_id={{ employee.id }}" class="btn btn-sm btn-outline-info me-2">
+                        <i class="bi bi-lightbulb me-1"></i>AI Đề xuất Lương
+                    </a>
+                    <a href="{% url 'resources:edit' employee.pk %}" class="btn btn-sm btn-outline-secondary me-2">
+                        <i class="bi bi-pencil me-1"></i>Chỉnh sửa
+                    </a>
+                    <a href="{% url 'resources:delete' employee.pk %}" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash me-1"></i>Xóa
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <strong>Mã nhân viên:</strong><br>
+                        {{ employee.employee_id }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>Họ và tên:</strong><br>
+                        {{ employee.full_name }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>Email:</strong><br>
+                        {{ employee.email }}
+                    </div>
+                    {% if employee.phone %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Số điện thoại:</strong><br>
+                        {{ employee.phone }}
+                    </div>
+                    {% endif %}
+                    {% if employee.department %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Phòng ban:</strong><br>
+                        {{ employee.department.name }}
+                    </div>
+                    {% endif %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Chức vụ:</strong><br>
+                        {{ employee.position }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>Loại hợp đồng:</strong><br>
+                        {{ employee.get_employment_type_display }}
+                    </div>
+                    {% if employee.hire_date %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Ngày tuyển dụng:</strong><br>
+                        {{ employee.hire_date|date:"d/m/Y" }}
+                    </div>
+                    {% endif %}
+                    {% if employee.hourly_rate %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Mức lương/giờ (hiện tại):</strong><br>
+                        <span class="badge bg-info">{{ employee.hourly_rate|add_thousand_sep }} VNĐ/giờ</span>
+                    </div>
+                    {% endif %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Trạng thái:</strong><br>
+                        {% if employee.is_active %}
+                        <span class="badge bg-success">Hoạt động</span>
+                        {% else %}
+                        <span class="badge bg-danger">Không hoạt động</span>
+                        {% endif %}
+                    </div>
+                    {% if avg_performance %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Điểm hiệu suất trung bình:</strong><br>
+                        <span class="badge bg-{% if avg_performance >= 90 %}success{% elif avg_performance >= 75 %}info{% elif avg_performance >= 60 %}warning{% else %}danger{% endif %}">
+                            {{ avg_performance|floatformat:1 }}/100
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if hourly_rate_history %}
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Lịch sử Lương/Giờ</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Tháng/Năm</th>
+                                <th>Lương/giờ (VNĐ)</th>
+                                <th>Số giờ làm việc</th>
+                                <th>Lương tháng (VNĐ)</th>
+                                {% if user.profile.is_manager %}
+                                <th>Ghi chú</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for rate in hourly_rate_history %}
+                            <tr>
+                                <td><strong>{{ rate.month }}/{{ rate.year }}</strong></td>
+                                <td><span class="badge bg-info">{{ rate.hourly_rate|add_thousand_sep }}</span></td>
+                                <td>{{ rate.working_hours_per_month|hours_format }}h</td>
+                                <td>{{ rate.monthly_salary|add_thousand_sep }}</td>
+                                {% if user.profile.is_manager %}
+                                <td><small class="text-muted">{{ rate.notes|default:"-" }}</small></td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Phân bổ Dự án</h5>
+            </div>
+            <div class="card-body">
+                {% if allocations %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Dự án</th>
+                                <th>Tỷ lệ phân bổ</th>
+                                <th>Ngày bắt đầu</th>
+                                <th>Ngày kết thúc</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for allocation in allocations %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'projects:detail' allocation.project.pk %}" class="text-decoration-none">
+                                        {{ allocation.project.name }}
+                                    </a>
+                                </td>
+                                <td>{{ allocation.allocation_percentage }}%</td>
+                                <td>{{ allocation.start_date|date:"d/m/Y" }}</td>
+                                <td>{{ allocation.end_date|date:"d/m/Y"|default:"-" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">Chưa có phân bổ dự án nào.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Lịch sử Đánh giá Hiệu suất</h5>
+                {% if user.profile.is_manager %}
+                <a href="{% url 'performance:score_create' %}?employee={{ employee.pk }}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i>Thêm đánh giá
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if scores %}
+                <div class="list-group">
+                    {% for score in scores %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">
+                                    Điểm tổng thể: {{ score.overall_score|floatformat:2 }}/100
+                                    {% if score.project %}
+                                    <small class="text-muted">({{ score.project.name }})</small>
+                                    {% endif %}
+                                </h6>
+                                <p class="mb-1 small text-muted">
+                                    <i class="bi bi-calendar me-1"></i>{{ score.period_start|date:"d/m/Y" }} - {{ score.period_end|date:"d/m/Y" }}
+                                </p>
+                                {% if score.efficiency_score or score.quality_score or score.productivity_score %}
+                                <div class="small text-muted mt-1">
+                                    {% if score.efficiency_score %}
+                                    <span class="me-2">Hiệu quả: {{ score.efficiency_score|floatformat:1 }}</span>
+                                    {% endif %}
+                                    {% if score.quality_score %}
+                                    <span class="me-2">Chất lượng: {{ score.quality_score|floatformat:1 }}</span>
+                                    {% endif %}
+                                    {% if score.productivity_score %}
+                                    <span class="me-2">Năng suất: {{ score.productivity_score|floatformat:1 }}</span>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                                {% if score.notes %}
+                                <p class="mb-0 small text-muted mt-1">
+                                    <i class="bi bi-file-text me-1"></i>{{ score.notes|truncatewords:20 }}
+                                </p>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-{% if score.overall_score >= 90 %}success{% elif score.overall_score >= 75 %}info{% elif score.overall_score >= 60 %}warning{% else %}danger{% endif %}">
+                                    {{ score.overall_score|floatformat:1 }}
+                                </span>
+                                {% if user.profile.is_manager %}
+                                <a href="{% url 'performance:score_edit' score.pk %}" class="btn btn-sm btn-outline-secondary" title="Chỉnh sửa">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="#" class="btn btn-sm btn-outline-danger" onclick="handleDeleteScore({{ score.pk }}, event); return false;" title="Xóa">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">Chưa có đánh giá hiệu suất nào.</p>
+                {% if user.profile.is_manager %}
+                <a href="{% url 'performance:score_create' %}?employee={{ employee.pk }}" class="btn btn-primary mt-3">
+                    <i class="bi bi-plus-circle me-1"></i>Tạo đánh giá đầu tiên
+                </a>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Đảm bảo luôn có showNotification/showConfirm (polyfill)
+(function ensureGlobalModals() {
+  function fallbackNotify(type, message, title) {
+    const full = (title ? (title + ': ') : '') + (message || '');
+    window.alert(full);
+  }
+  function fallbackConfirm(message) {
+    return Promise.resolve(window.confirm(message || 'Xác nhận?'));
+  }
+  if (typeof window.showNotification !== 'function') {
+    window.showNotification = function(type, message, title = null) {
+      try {
+        const modal = document.getElementById('globalNotificationModal');
+        if (!modal || typeof bootstrap === 'undefined') {
+          return fallbackNotify(type, message, title);
+        }
+        const header = document.getElementById('globalNotificationModalHeader');
+        const label = document.getElementById('globalNotificationModalLabel');
+        const body = document.getElementById('globalNotificationModalBody');
+        const footer = document.getElementById('globalNotificationModalFooter');
+        const resolvedTitle = title || (type === 'success' ? 'Thành công' : type === 'warning' ? 'Cảnh báo' : type === 'info' ? 'Thông tin' : 'Lỗi');
+        if (label) label.textContent = resolvedTitle;
+        if (header) {
+          header.className = 'modal-header';
+          if (type === 'success') header.classList.add('bg-success', 'text-white');
+          else if (type === 'warning') header.classList.add('bg-warning', 'text-dark');
+          else if (type === 'info') header.classList.add('bg-info', 'text-white');
+          else header.classList.add('bg-danger', 'text-white');
+        }
+        if (body) {
+          body.innerHTML = `<div>${String(message || '').replace(/\n/g, '<br>')}</div>`;
+        }
+        if (footer) {
+          footer.innerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>';
+        }
+        new bootstrap.Modal(modal).show();
+      } catch (e) {
+        fallbackNotify(type, message, title);
+      }
+    };
+  }
+  if (typeof window.showConfirm !== 'function') {
+    window.showConfirm = function(message, title = 'Xác nhận', confirmText = 'Xác nhận', cancelText = 'Hủy') {
+      try {
+        const modal = document.getElementById('globalConfirmModal');
+        if (!modal || typeof bootstrap === 'undefined') {
+          return fallbackConfirm(message);
+        }
+        const label = document.getElementById('globalConfirmModalLabel');
+        const body = document.getElementById('globalConfirmModalBody');
+        const okBtn = document.getElementById('globalConfirmOkBtn');
+        const cancelBtn = document.getElementById('globalConfirmCancelBtn');
+        if (label) label.textContent = title || 'Xác nhận';
+        if (body) body.innerHTML = `<div>${String(message || '').replace(/\n/g, '<br>')}</div>`;
+        if (okBtn) okBtn.textContent = confirmText || 'Xác nhận';
+        if (cancelBtn) cancelBtn.textContent = cancelText || 'Hủy';
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+        return new Promise((resolve) => {
+          const cleanup = () => {
+            if (okBtn) okBtn.removeEventListener('click', onOk);
+            if (cancelBtn) cancelBtn.removeEventListener('click', onCancel);
+            modal.removeEventListener('hidden.bs.modal', onHidden);
+          };
+          const onOk = () => { cleanup(); bsModal.hide(); resolve(true); };
+          const onCancel = () => { cleanup(); bsModal.hide(); resolve(false); };
+          const onHidden = () => { cleanup(); resolve(false); };
+          if (okBtn) okBtn.addEventListener('click', onOk, { once: true });
+          if (cancelBtn) cancelBtn.addEventListener('click', onCancel, { once: true });
+          modal.addEventListener('hidden.bs.modal', onHidden, { once: true });
+        });
+      } catch (e) {
+        return fallbackConfirm(message);
+      }
+    };
+  }
+})();
+
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+async function handleDeleteScore(scoreId, event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  
+  const confirmed = await window.showConfirm(
+    'Bạn có chắc chắn muốn xóa đánh giá hiệu suất này?<br><small class="text-muted">Hành động này không thể hoàn tác.</small>',
+    'Xác nhận xóa đánh giá',
+    'Xóa',
+    'Hủy'
+  );
+  if (!confirmed) return;
+
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = `/performance/scores/${scoreId}/delete/`;
+
+  const csrftoken = getCookie('csrftoken');
+  if (csrftoken) {
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrfmiddlewaretoken';
+    csrfInput.value = csrftoken;
+    form.appendChild(csrfInput);
+  }
+
+  document.body.appendChild(form);
+  form.submit();
+}
+</script>
+{% endblock %}
