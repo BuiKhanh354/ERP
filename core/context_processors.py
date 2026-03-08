@@ -7,12 +7,17 @@ from projects.services import TaskNotificationService
 
 def user_profile(request):
     """
-    Cung cấp user_profile cho mọi template.
+    Cung cấp user_profile + RBAC permissions cho mọi template.
     Tránh lỗi RelatedObjectDoesNotExist khi truy cập user.profile trong template.
     """
 
     if not getattr(request, "user", None) or not request.user.is_authenticated:
-        return {"user_profile": None, "pending_tasks_count": 0}
+        return {
+            "user_profile": None,
+            "pending_tasks_count": 0,
+            "user_permissions": set(),
+            "user_role_names": set(),
+        }
 
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
@@ -47,8 +52,20 @@ def user_profile(request):
                 project__created_by=request.user
             ).exclude(status='done').count()
     
+    # RBAC: lấy permissions + role names cho template
+    from core.rbac import get_user_permissions, get_user_role_names
+    user_permissions = get_user_permissions(request.user)
+    user_role_names = get_user_role_names(request.user)
+
+    # Superuser có mọi quyền
+    if request.user.is_superuser:
+        user_permissions.add('__superuser__')
+
     return {
         "user_profile": profile,
-        "pending_tasks_count": pending_tasks_count
+        "pending_tasks_count": pending_tasks_count,
+        "user_permissions": user_permissions,
+        "user_role_names": user_role_names,
     }
+
 

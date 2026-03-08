@@ -1,0 +1,92 @@
+{% extends "shared/layouts/base_role.html" %}
+{% load static %}
+{% block title %}Nhật ký Hệ thống{% endblock %}
+{% block page_title %}Nhật ký Hệ thống{% endblock %}
+{% block breadcrumb_title %}Audit Logs{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/admin-audit-logs.css' %}" />
+
+{% endblock %}
+
+{% block content %}
+<div class="log-stat"><strong>{{ total_logs }}</strong> bản ghi</div>
+
+<div class="log-toolbar">
+  <div class="search-box">
+    <i class="bi bi-search"></i>
+    <form method="get">
+      <input type="text" name="q" value="{{ search_query }}" placeholder="Tìm kiếm trong nhật ký..." autocomplete="off">
+      {% if current_action %}<input type="hidden" name="action" value="{{ current_action }}">{% endif %}
+    </form>
+  </div>
+  <select class="form-select" style="width:auto; min-width:140px;" onchange="applyFilter(this.value)">
+    <option value="" {% if not current_action %}selected{% endif %}>Tất cả hành động</option>
+    <option value="CREATE" {% if current_action == 'CREATE' %}selected{% endif %}>Tạo mới</option>
+    <option value="UPDATE" {% if current_action == 'UPDATE' %}selected{% endif %}>Cập nhật</option>
+    <option value="DELETE" {% if current_action == 'DELETE' %}selected{% endif %}>Xóa</option>
+    <option value="APPROVE" {% if current_action == 'APPROVE' %}selected{% endif %}>Phê duyệt</option>
+  </select>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    {% if logs %}
+    <div class="table-responsive">
+      <table class="log-table">
+        <thead>
+          <tr>
+            <th>Thời gian</th>
+            <th>Người dùng</th>
+            <th>Hành động</th>
+            <th>Bảng dữ liệu</th>
+            <th>ID</th>
+            <th>IP</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+          <tr>
+            <td style="white-space:nowrap; font-size:0.82rem; color:var(--text-secondary);">{{ log.created_at|date:"d/m/Y H:i:s" }}</td>
+            <td style="font-weight:600;">{{ log.user.username|default:"System" }}</td>
+            <td>
+              <span class="action-badge action-{{ log.action_type|lower }}">
+                {% if log.action_type == 'CREATE' %}Tạo mới{% elif log.action_type == 'UPDATE' %}Cập nhật{% elif log.action_type == 'DELETE' %}Xóa{% elif log.action_type == 'APPROVE' %}Phê duyệt{% else %}{{ log.action_type }}{% endif %}
+              </span>
+            </td>
+            <td><code style="font-size:0.82rem;">{{ log.table_name }}</code></td>
+            <td>{{ log.record_id|default:"—" }}</td>
+            <td style="font-size:0.8rem; color:var(--text-secondary);">{{ log.ip_address|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if is_paginated %}
+    <div class="d-flex justify-content-center p-3">
+      <nav><ul class="pagination pagination-sm mb-0">
+        {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_action %}&action={{ current_action }}{% endif %}">‹</a></li>{% endif %}
+        {% for num in page_obj.paginator.page_range %}
+          {% if num == page_obj.number %}<li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}<li class="page-item"><a class="page-link" href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_action %}&action={{ current_action }}{% endif %}">{{ num }}</a></li>{% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_action %}&action={{ current_action }}{% endif %}">›</a></li>{% endif %}
+      </ul></nav>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div style="text-align:center; padding:4rem; color:var(--text-secondary);">
+      <i class="bi bi-journal-text d-block" style="font-size:4rem; opacity:0.3;"></i>
+      <p class="mt-2">Không tìm thấy bản ghi nào.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/admin-audit-logs.js' %}"></script>
+
+{% endblock %}

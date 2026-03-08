@@ -1,0 +1,11 @@
+.report-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
+  .report-card { border-radius: 12px; border: 1px solid var(--border-color); padding: 1.5rem; transition: all 0.2s; cursor: pointer; background: var(--card-bg); }
+  .report-card:hover { border-color: #0000cd; box-shadow: 0 4px 15px rgba(0,0,205,0.1); transform: translateY(-2px); }
+  .report-card.selected { border-color: #0000cd; background: rgba(0,0,205,0.04); }
+  .report-card .icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; margin-bottom: 1rem; }
+  .report-card h5 { font-weight: 600; margin-bottom: 0.5rem; }
+  .report-card p { font-size: 0.85rem; color: var(--text-secondary); margin: 0; }
+  .icon-pl { background: rgba(59,130,246,0.12); color: #3b82f6; }
+  .icon-rev { background: rgba(16,185,129,0.12); color: #10b981; }
+  .icon-exp { background: rgba(239,68,68,0.12); color: #ef4444; }
+  .icon-cf { background: rgba(245,158,11,0.12); color: #f59e0b; }

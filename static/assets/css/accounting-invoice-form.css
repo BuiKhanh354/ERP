@@ -1,0 +1,5 @@
+.formset-row { display: flex; gap: 0.75rem; align-items: flex-end; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color); }
+  .formset-row:last-child { border-bottom: none; }
+  .formset-row .form-group { flex: 1; }
+  .formset-row .form-group.desc { flex: 3; }
+  .formset-row .remove-btn { align-self: center; }

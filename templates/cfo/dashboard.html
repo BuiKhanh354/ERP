@@ -1,0 +1,378 @@
+{% extends "base_sidebar.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}CFO Dashboard - ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/cfo-dashboard.css' %}" />
+
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">CFO Dashboard</h1>
+  <ul class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">Trang chủ</a></li>
+    <li class="breadcrumb-separator"><i class="bi bi-chevron-right"></i></li>
+    <li class="breadcrumb-item active">CFO Dashboard</li>
+  </ul>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-xl-2 col-md-4 col-sm-6">
+    <div class="kpi-card">
+      <div class="kpi-icon icon-revenue"><i class="bi bi-currency-dollar"></i></div>
+      <div class="kpi-value text-success">{{ total_revenue|intcomma }}</div>
+      <div class="kpi-label">Tổng Doanh thu</div>
+    </div>
+  </div>
+  <div class="col-xl-2 col-md-4 col-sm-6">
+    <div class="kpi-card">
+      <div class="kpi-icon icon-profit"><i class="bi bi-graph-up-arrow"></i></div>
+      <div class="kpi-value {% if net_profit >= 0 %}text-primary{% else %}text-danger{% endif %}">{{ net_profit|intcomma }}</div>
+      <div class="kpi-label">Lợi nhuận ròng</div>
+    </div>
+  </div>
+  <div class="col-xl-2 col-md-4 col-sm-6">
+    <div class="kpi-card">
+      <div class="kpi-icon icon-cost"><i class="bi bi-arrow-down-circle"></i></div>
+      <div class="kpi-value text-danger">{{ total_cost|intcomma }}</div>
+      <div class="kpi-label">Chi phí Hoạt động</div>
+    </div>
+  </div>
+  <div class="col-xl-2 col-md-4 col-sm-6">
+    <div class="kpi-card">
+      <div class="kpi-icon icon-cash"><i class="bi bi-safe2"></i></div>
+      <div class="kpi-value {% if cash_balance >= 0 %}text-success{% else %}text-danger{% endif %}">{{ cash_balance|intcomma }}</div>
+      <div class="kpi-label">Số dư Tiền mặt</div>
+    </div>
+  </div>
+  <div class="col-xl-2 col-md-4 col-sm-6">
+    <div class="kpi-card" style="background: rgba(139,92,246,0.03);">
+      <div class="kpi-icon"><i class="bi bi-activity text-primary"></i></div>
+      <div class="kpi-value {% if ebitda >= 0 %}text-primary{% else %}text-danger{% endif %}">{{ ebitda|intcomma }}</div>
+      <div class="kpi-label fw-bold">EBITDA</div>
+    </div>
+  </div>
+  <div class="col-xl-2 col-md-4 col-sm-6">
+    <div class="kpi-card">
+      <div class="kpi-icon icon-margin"><i class="bi bi-percent"></i></div>
+      <div class="kpi-value {% if operating_margin >= 0 %}text-warning{% else %}text-danger{% endif %}">{{ operating_margin }}%</div>
+      <div class="kpi-label">Biên EBIT</div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Links -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <a href="{% url 'cfo:project_finance' %}" class="quick-link">
+      <i class="bi bi-briefcase"></i> <span>Tài chính Dự án</span>
+    </a>
+  </div>
+  <div class="col-md-3">
+    <a href="{% url 'cfo:budget_monitoring' %}" class="quick-link">
+      <i class="bi bi-piggy-bank"></i> <span>Giám sát Ngân sách</span>
+    </a>
+  </div>
+  <div class="col-md-3">
+    <a href="{% url 'cfo:approval_center' %}" class="quick-link">
+      <i class="bi bi-check2-square"></i> <span>Phê duyệt</span>
+      {% if pending_expense_count or pending_budget_count %}
+      <span class="badge">{{ pending_expense_count|add:pending_budget_count }}</span>
+      {% endif %}
+    </a>
+  </div>
+  <div class="col-md-3">
+    <a href="{% url 'cfo:reports' %}" class="quick-link">
+      <i class="bi bi-file-earmark-bar-graph"></i> <span>Báo cáo Tài chính</span>
+    </a>
+  </div>
+</div>
+
+<!-- Main Charts Row -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-water me-2"></i>Dòng tiền (Cash Flow)</div>
+      <div class="card-body"><div class="chart-container"><canvas id="cashFlowChart"></canvas></div></div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-pie-chart me-2"></i>Doanh thu theo Vùng</div>
+      <div class="card-body"><div class="chart-container"><canvas id="revenueByRegionChart"></canvas></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- P&L and Budget vs Actual -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-5">
+    <div class="card h-100 table-section">
+      <div class="card-header"><i class="bi bi-file-earmark-spreadsheet me-2 text-success"></i>Báo cáo P&L (Lỗ Lãi) Tóm tắt</div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <tbody>
+            <tr><td><strong>Doanh thu (Revenue)</strong></td><td class="text-end text-success fw-bold">{{ pnl_summary.revenue|intcomma }}</td></tr>
+            <tr><td>Giá vốn hàng bán (COGS)</td><td class="text-end text-danger">{{ pnl_summary.cogs|intcomma }}</td></tr>
+            <tr class="table-light"><td><strong>Lợi nhuận gộp (Gross Profit)</strong></td><td class="text-end fw-bold">{{ pnl_summary.gross_profit|intcomma }}</td></tr>
+            <tr><td>Chi phí hoạt động (OPEX)</td><td class="text-end text-danger">{{ pnl_summary.opex|intcomma }}</td></tr>
+            <tr class="table-light"><td><strong>EBITDA</strong></td><td class="text-end text-primary fw-bold">{{ pnl_summary.ebitda|intcomma }}</td></tr>
+            <tr><td><strong>Lợi nhuận ròng (Net)</strong></td><td class="text-end {% if pnl_summary.net_profit >= 0 %}text-success{% else %}text-danger{% endif %} fw-bold">{{ pnl_summary.net_profit|intcomma }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-bar-chart-steps me-2"></i>Ngân sách vs Thực chi (Budget vs Actual)</div>
+      <div class="card-body"><div class="chart-container"><canvas id="budgetVsActualChart"></canvas></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Analytics Row -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-briefcase me-2"></i>Lợi nhuận theo Dự án</div>
+      <div class="card-body"><div class="chart-container" style="height:260px;"><canvas id="profitByProjectChart"></canvas></div></div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-pie-chart-fill me-2 text-warning"></i>Phân bổ Chi phí</div>
+      <div class="card-body"><div class="chart-container" style="height:260px;"><canvas id="expenseBreakdownChart"></canvas></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Tables -->
+<div class="row g-4 mb-4">
+  <!-- Top Profitable Projects -->
+  <div class="col-lg-6">
+    <div class="card table-section">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-trophy me-2"></i>Dự án Lợi nhuận Cao</span>
+        <a href="{% url 'cfo:project_finance' %}" class="btn btn-sm btn-outline-primary">Xem tất cả</a>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead><tr><th>Dự án</th><th class="text-end">Doanh thu</th><th class="text-end">Lợi nhuận</th><th class="text-end">Margin</th></tr></thead>
+            <tbody>
+              {% for pf in top_profitable %}
+              <tr>
+                <td><a href="{% url 'cfo:project_finance_detail' pf.project.pk %}">{{ pf.project.name }}</a></td>
+                <td class="text-end">{{ pf.revenue|intcomma }}</td>
+                <td class="text-end {% if pf.profit >= 0 %}text-success{% else %}text-danger{% endif %}">{{ pf.profit|intcomma }}</td>
+                <td class="text-end">{{ pf.margin }}%</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-4">Chưa có dữ liệu</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- High Risk Projects -->
+  <div class="col-lg-6">
+    <div class="card table-section">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-exclamation-triangle me-2 text-danger"></i>Dự án Rủi ro</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead><tr><th>Dự án</th><th class="text-end">Chi phí</th><th class="text-end">Lợi nhuận</th><th class="text-end">Margin</th></tr></thead>
+            <tbody>
+              {% for pf in high_risk_projects %}
+              <tr>
+                <td><a href="{% url 'cfo:project_finance_detail' pf.project.pk %}">{{ pf.project.name }}</a></td>
+                <td class="text-end">{{ pf.cost|intcomma }}</td>
+                <td class="text-end text-danger">{{ pf.profit|intcomma }}</td>
+                <td class="text-end"><span class="badge-alert badge-danger-soft">{{ pf.margin }}%</span></td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-4">Không có dự án rủi ro</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Accounts Receivable -->
+  <div class="col-lg-6">
+    <div class="card table-section">
+      <div class="card-header"><i class="bi bi-box-arrow-in-right me-2 text-primary"></i>Khoản phải thu (Khách hàng)</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead><tr><th>Số HĐ</th><th>Khách hàng</th><th class="text-end">Số tiền</th><th>Tình trạng</th></tr></thead>
+            <tbody>
+              {% for inv in accounts_receivable %}
+              <tr>
+                <td>{{ inv.invoice_number }}</td>
+                <td>{{ inv.client.name }}</td>
+                <td class="text-end fw-semibold">{{ inv.amount_due|intcomma }}</td>
+                <td>
+                  {% if inv.is_overdue %}
+                  <span class="badge-alert badge-danger-soft">Quá hạn</span>
+                  {% else %}
+                  <span class="badge-alert badge-warning-soft">Chưa thu</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-4">Tất cả khoản phải thu đã hoàn tất</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Accounts Payable -->
+  <div class="col-lg-6">
+    <div class="card table-section">
+      <div class="card-header"><i class="bi bi-box-arrow-right me-2 text-danger"></i>Khoản phải trả (Nhà cung cấp)</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead><tr><th>Số HĐ</th><th>Nhà CC</th><th class="text-end">Số tiền</th><th>Tình trạng</th></tr></thead>
+            <tbody>
+              {% for bill in accounts_payable %}
+              <tr>
+                <td>{{ bill.bill_number }}</td>
+                <td>{{ bill.vendor_name }}</td>
+                <td class="text-end fw-semibold">{{ bill.amount_due|intcomma }}</td>
+                <td>
+                  {% if bill.is_overdue %}
+                  <span class="badge-alert badge-danger-soft">Quá hạn</span>
+                  {% else %}
+                  <span class="badge-alert badge-warning-soft">Chưa trả</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-4">Không có hóa đơn nhà cung cấp nào tồn đọng</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Forecast Row -->
+<div class="row g-4 mb-4">
+  <div class="col-12">
+    <div class="card table-section">
+      <div class="card-header"><i class="bi bi-graph-up-arrow me-2 text-info"></i>Dự phóng Tài chính (Forecast)</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead><tr><th>Loại dự phóng</th><th>Thời gian</th><th class="text-end">Giá trị dự phóng</th><th>Ghi chú</th></tr></thead>
+            <tbody>
+              {% for fc in forecasts %}
+              <tr>
+                <td><span class="badge bg-secondary">{{ fc.get_forecast_type_display }}</span></td>
+                <td>Tháng {{ fc.period_month }}/{{ fc.period_year }}</td>
+                <td class="text-end fw-semibold">{{ fc.amount|intcomma }}</td>
+                <td class="text-muted small">{{ fc.notes }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-4">Chưa có dữ liệu dự phóng tương lai</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const COLORS = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4','#84cc16'];
+  const chartOpts = { responsive: true, maintainAspectRatio: false };
+  const tickFmt = { callback: v => v.toLocaleString() };
+
+  // Cash Flow
+  const cf = {{ cash_flow_json|safe }};
+  new Chart(document.getElementById('cashFlowChart'), {
+    type: 'bar',
+    data: {
+      labels: cf.labels,
+      datasets: [
+        { label: 'Dòng tiền vào', data: cf.inflow, backgroundColor: 'rgba(16,185,129,0.7)', borderRadius: 4 },
+        { label: 'Dòng tiền ra', data: cf.outflow, backgroundColor: 'rgba(239,68,68,0.7)', borderRadius: 4 },
+        { label: 'Net Cash Flow', type: 'line', data: cf.net, borderColor: '#8b5cf6', backgroundColor: '#8b5cf6', tension: 0.3, borderWidth: 2, fill: false }
+      ]
+    },
+    options: { ...chartOpts, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }, scales: { y: { beginAtZero: true, ticks: tickFmt } } }
+  });
+
+  // Revenue By Region Doughnut
+  const rr = {{ revenue_by_region_json|safe }};
+  new Chart(document.getElementById('revenueByRegionChart'), {
+    type: 'doughnut',
+    data: { labels: rr.labels, datasets: [{ data: rr.data, backgroundColor: COLORS.slice(0, rr.labels.length), borderWidth: 0 }] },
+    options: { ...chartOpts, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10 } } }, cutout: '65%' }
+  });
+
+  // Expense Breakdown
+  const eb = {{ expense_breakdown_json|safe }};
+  new Chart(document.getElementById('expenseBreakdownChart'), {
+    type: 'doughnut',
+    data: { labels: eb.labels, datasets: [{ data: eb.data, backgroundColor: COLORS.slice(0, eb.labels.length), borderWidth: 0 }] },
+    options: { ...chartOpts, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10 } } }, cutout: '60%' }
+  });
+
+  // Budget vs Actual
+  const bva = {{ budget_vs_actual_json|safe }};
+  new Chart(document.getElementById('budgetVsActualChart'), {
+    type: 'bar',
+    data: {
+      labels: bva.labels,
+      datasets: [
+        { label: 'Ngân sách', data: bva.budget, backgroundColor: 'rgba(59,130,246,0.7)', borderRadius: 4 },
+        { label: 'Thực tế', data: bva.actual, backgroundColor: 'rgba(245,158,11,0.7)', borderRadius: 4 },
+      ]
+    },
+    options: { ...chartOpts, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }, scales: { y: { beginAtZero: true, ticks: tickFmt } } }
+  });
+
+  // Profit by Project (horizontal bar)
+  const pp = {{ profit_by_project_json|safe }};
+  new Chart(document.getElementById('profitByProjectChart'), {
+    type: 'bar',
+    data: {
+      labels: pp.labels,
+      datasets: [{
+        label: 'Lợi nhuận',
+        data: pp.data,
+        backgroundColor: pp.data.map(v => v >= 0 ? 'rgba(16,185,129,0.7)' : 'rgba(239,68,68,0.7)'),
+        borderRadius: 4,
+      }]
+    },
+    options: { ...chartOpts, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: tickFmt } } }
+  });
+</script>
+
+{% endblock %}

@@ -1,0 +1,177 @@
+{% extends "shared/layouts/base_role.html" %}
+{% load static %}
+{% block title %}{{ department.name }} — Chi tiết phòng ban{% endblock %}
+{% block page_title %}{{ department.name }}{% endblock %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'admin_module:dashboard' %}">Admin</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'admin_module:department_list' %}">Phòng ban</a></li>
+    <li class="breadcrumb-item active">{{ department.name }}</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/admin-department-detail.css' %}" />
+
+{% endblock %}
+
+{% block content %}
+<!-- Actions -->
+<div class="detail-actions">
+  <a href="{% url 'admin_module:department_edit' department.pk %}" class="btn btn-primary btn-sm">
+    <i class="bi bi-pencil me-1"></i>Chỉnh sửa
+  </a>
+  <form method="post" action="{% url 'admin_module:department_toggle_status' department.pk %}" style="display:inline;">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-sm {% if department.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}">
+      <i class="bi bi-{% if department.is_active %}toggle-off{% else %}toggle-on{% endif %} me-1"></i>
+      {% if department.is_active %}Vô hiệu hóa{% else %}Kích hoạt{% endif %}
+    </button>
+  </form>
+  <a href="{% url 'admin_module:department_list' %}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Quay lại
+  </a>
+</div>
+
+<!-- Info Cards -->
+<div class="detail-grid">
+  <div class="info-card">
+    <h6><i class="bi bi-info-circle me-1"></i>Thông tin chung</h6>
+    <div class="info-row">
+      <span class="info-label">Tên phòng ban</span>
+      <span class="info-value">{{ department.name }}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Mã phòng ban</span>
+      <span class="info-value">{{ department.code|default:"—" }}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Trạng thái</span>
+      <span>{% if department.is_active %}<span class="badge-active">Hoạt động</span>{% else %}<span class="badge-inactive">Ngưng</span>{% endif %}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Mô tả</span>
+      <span class="info-value" style="max-width:60%; text-align:right;">{{ department.description|default:"—" }}</span>
+    </div>
+  </div>
+
+  <div class="info-card">
+    <h6><i class="bi bi-people me-1"></i>Quản lý & Tổ chức</h6>
+    <div class="info-row">
+      <span class="info-label">Trưởng phòng</span>
+      <span class="info-value">{{ department.manager.full_name|default:"Chưa chỉ định" }}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Phòng ban cha</span>
+      <span class="info-value">
+        {% if department.parent %}
+          <a href="{% url 'admin_module:department_detail' department.parent.pk %}" style="text-decoration:none;">{{ department.parent.name }}</a>
+        {% else %}
+          — (Phòng ban gốc)
+        {% endif %}
+      </span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Phòng ban con</span>
+      <span class="info-value">{{ sub_departments.count }}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Số nhân viên</span>
+      <span class="info-value">{{ employees.count }}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Ngày tạo</span>
+      <span class="info-value">{{ department.created_at|date:"d/m/Y H:i" }}</span>
+    </div>
+  </div>
+</div>
+
+<!-- Breadcrumb Path -->
+{% if ancestors %}
+<div class="card mb-4">
+  <div class="card-body py-2 px-3">
+    <small class="text-muted">Đường dẫn tổ chức: </small>
+    {% for a in ancestors reversed %}
+      <a href="{% url 'admin_module:department_detail' a.pk %}" style="font-size:.85rem; text-decoration:none;">{{ a.name }}</a>
+      <i class="bi bi-chevron-right" style="font-size:.7rem; color:var(--text-secondary); margin:0 .25rem;"></i>
+    {% endfor %}
+    <strong style="font-size:.85rem;">{{ department.name }}</strong>
+  </div>
+</div>
+{% endif %}
+
+<!-- Sub-departments -->
+{% if sub_departments %}
+<div class="section-title"><i class="bi bi-diagram-3"></i>Phòng ban con</div>
+<div class="card mb-4">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="emp-table">
+        <thead>
+          <tr>
+            <th>Tên</th>
+            <th>Mã</th>
+            <th>Trưởng phòng</th>
+            <th>Nhân viên</th>
+            <th>Trạng thái</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sub in sub_departments %}
+          <tr>
+            <td><a href="{% url 'admin_module:department_detail' sub.pk %}" style="text-decoration:none; font-weight:600;">{{ sub.name }}</a></td>
+            <td><code>{{ sub.code|default:"—" }}</code></td>
+            <td>{{ sub.manager.full_name|default:"—" }}</td>
+            <td>{{ sub.num_employees }}</td>
+            <td>{% if sub.is_active %}<span class="badge-active">Hoạt động</span>{% else %}<span class="badge-inactive">Ngưng</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Employees -->
+<div class="section-title"><i class="bi bi-people"></i>Danh sách nhân viên ({{ employees.count }})</div>
+<div class="card">
+  <div class="card-body p-0">
+    {% if employees %}
+    <div class="table-responsive">
+      <table class="emp-table">
+        <thead>
+          <tr>
+            <th>Mã NV</th>
+            <th>Họ tên</th>
+            <th>Email</th>
+            <th>Chức vụ</th>
+            <th>Loại HĐ</th>
+            <th>Trạng thái</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for emp in employees %}
+          <tr>
+            <td><code>{{ emp.employee_id }}</code></td>
+            <td style="font-weight:600;">{{ emp.full_name }}</td>
+            <td>{{ emp.email }}</td>
+            <td>{{ emp.position|default:"—" }}</td>
+            <td>{{ emp.get_employment_type_display }}</td>
+            <td>{% if emp.is_active %}<span class="badge-active">Hoạt động</span>{% else %}<span class="badge-inactive">Nghỉ</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-4 text-muted">
+      <i class="bi bi-people d-block" style="font-size:2rem; opacity:0.3;"></i>
+      <p class="mb-0 mt-2">Chưa có nhân viên nào trong phòng ban này.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

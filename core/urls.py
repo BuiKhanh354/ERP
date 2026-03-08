@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .role_views.dashboard_router import DashboardRouterView
 from .analytics_views import AnalyticsView
 from . import ai_chat_views
 from . import ai_insights_views
@@ -13,8 +14,8 @@ urlpatterns = [
     path("forgot-password/", views.ForgotPasswordView.as_view(), name="forgot-password"),
     path("otp-verify/", views.OTPVerifyView.as_view(), name="otp-verify"),
 
-    # Dashboard (yêu cầu đăng nhập)
-    path("", views.DashboardView.as_view(), name="dashboard"),
+    # Dashboard Router (Role-based)
+    path("", DashboardRouterView.as_view(), name="dashboard"),
     path("analytics/", AnalyticsView.as_view(), name="analytics"),
 
     # Notifications (JSON)

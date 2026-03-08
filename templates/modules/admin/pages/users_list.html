@@ -1,0 +1,154 @@
+{% extends "shared/layouts/base_role.html" %}
+{% load static %}
+{% block title %}Quản lý Người dùng{% endblock %}
+{% block page_title %}Quản lý Người dùng{% endblock %}
+{% block breadcrumb_title %}Người dùng{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/admin-users-list.css' %}" />
+
+{% endblock %}
+
+{% block content %}
+<!-- Stats -->
+<div class="user-stats">
+  <div class="user-stat-card">
+    <div class="user-stat-icon total"><i class="bi bi-people-fill"></i></div>
+    <div><div class="user-stat-value">{{ total_users }}</div><div class="user-stat-label">Tổng người dùng</div></div>
+  </div>
+  <div class="user-stat-card">
+    <div class="user-stat-icon active"><i class="bi bi-check-circle-fill"></i></div>
+    <div><div class="user-stat-value">{{ active_users }}</div><div class="user-stat-label">Đang hoạt động</div></div>
+  </div>
+  <div class="user-stat-card">
+    <div class="user-stat-icon inactive"><i class="bi bi-x-circle-fill"></i></div>
+    <div><div class="user-stat-value">{{ inactive_users }}</div><div class="user-stat-label">Vô hiệu hóa</div></div>
+  </div>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <div class="search-box">
+    <i class="bi bi-search"></i>
+    <form method="get" id="searchForm">
+      <input type="text" name="q" value="{{ search_query }}" placeholder="Tìm kiếm người dùng..." autocomplete="off">
+      {% if current_status %}<input type="hidden" name="status" value="{{ current_status }}">{% endif %}
+      {% if current_role %}<input type="hidden" name="role" value="{{ current_role }}">{% endif %}
+    </form>
+  </div>
+  <select class="form-select" style="width:auto; min-width:140px;" onchange="applyFilter('status', this.value)">
+    <option value="" {% if not current_status %}selected{% endif %}>Tất cả trạng thái</option>
+    <option value="active" {% if current_status == 'active' %}selected{% endif %}>Hoạt động</option>
+    <option value="inactive" {% if current_status == 'inactive' %}selected{% endif %}>Vô hiệu hóa</option>
+  </select>
+  <select class="form-select" style="width:auto; min-width:140px;" onchange="applyFilter('role', this.value)">
+    <option value="" {% if not current_role %}selected{% endif %}>Tất cả vai trò</option>
+    {% for r in roles %}
+    <option value="{{ r.pk }}" {% if current_role == r.pk|stringformat:"d" %}selected{% endif %}>{{ r.name }}</option>
+    {% endfor %}
+  </select>
+  <a href="{% url 'admin_module:user_create' %}" class="btn btn-primary">
+    <i class="bi bi-person-plus me-1"></i>Thêm người dùng
+  </a>
+</div>
+
+<!-- Table -->
+<div class="card">
+  <div class="card-body p-0">
+    {% if users %}
+    <div class="table-responsive">
+      <table class="u-table">
+        <thead>
+          <tr>
+            <th>Người dùng</th>
+            <th>Vai trò</th>
+            <th>Phòng ban</th>
+            <th>Trạng thái</th>
+            <th>Đăng nhập lần cuối</th>
+            <th style="width:130px;">Hành động</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td>
+              <div class="user-info-cell">
+                <div class="user-avatar-sm">{{ u.username|first|upper }}</div>
+                <div>
+                  <div class="user-name-text">{{ u.get_full_name|default:u.username }}</div>
+                  <div class="user-email-text">{{ u.email|default:"—" }}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              {% for ur in u.user_roles.all %}
+                <span class="badge-role">{{ ur.role.name }}</span>
+              {% empty %}
+                {% if u.is_superuser %}<span class="badge-superuser">Superuser</span>{% else %}—{% endif %}
+              {% endfor %}
+            </td>
+            <td>
+              {% with emp=u.employee_set.first %}
+                {% if emp and emp.department %}{{ emp.department.name }}{% else %}—{% endif %}
+              {% endwith %}
+            </td>
+            <td>
+              {% if u.is_active %}
+                <span class="badge-status badge-active">Hoạt động</span>
+              {% else %}
+                <span class="badge-status badge-inactive">Vô hiệu</span>
+              {% endif %}
+            </td>
+            <td style="font-size:0.82rem; color: var(--text-secondary);">
+              {% if u.last_login %}{{ u.last_login|timesince }} trước{% else %}Chưa đăng nhập{% endif %}
+            </td>
+            <td>
+              <a href="{% url 'admin_module:user_edit' u.pk %}" class="btn-action edit" title="Chỉnh sửa">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <form method="post" action="{% url 'admin_module:user_toggle_status' u.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn-action toggle" title="{% if u.is_active %}Vô hiệu{% else %}Kích hoạt{% endif %}">
+                  <i class="bi bi-{% if u.is_active %}toggle-on text-success{% else %}toggle-off text-danger{% endif %}"></i>
+                </button>
+              </form>
+              <form method="post" action="{% url 'admin_module:user_reset_password' u.pk %}" style="display:inline;" onsubmit="return confirm('Đặt lại mật khẩu cho {{ u.username }}?')">
+                {% csrf_token %}
+                <button type="submit" class="btn-action reset" title="Reset mật khẩu">
+                  <i class="bi bi-key"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if is_paginated %}
+    <div class="d-flex justify-content-center p-3">
+      <nav><ul class="pagination pagination-sm mb-0">
+        {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}">‹</a></li>{% endif %}
+        {% for num in page_obj.paginator.page_range %}
+          {% if num == page_obj.number %}<li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}<li class="page-item"><a class="page-link" href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}">{{ num }}</a></li>{% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}">›</a></li>{% endif %}
+      </ul></nav>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+      <i class="bi bi-people d-block"></i>
+      <p class="mb-2"><strong>Không tìm thấy người dùng.</strong></p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/admin-users-list.js' %}"></script>
+
+{% endblock %}

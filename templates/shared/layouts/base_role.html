@@ -1,0 +1,908 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="icon"
+      type="image/png"
+      href="{% static 'assets/logo/logo.png' %}"
+    />
+    <title>{% block title %}Hệ thống ERP{% endblock %}</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
+    />
+    <link rel="stylesheet" href="{% static 'css/custom.css' %}" />
+    
+    <link rel="stylesheet" href="{% static 'assets/css/shared-base-role.css' %}" />
+    {% block extra_css %}{% endblock %}
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <img src="{% static 'assets/logo/logo.png' %}" alt="ERP Logo" />
+        <div class="brand-text">
+          <span class="brand-title">PRM System</span>
+          <span class="brand-subtitle">Quản lý dự án</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu">
+        {% if 'Admin' in user_role_names or '__superuser__' in user_permissions %}
+          {% include "shared/sidebars/sidebar_admin.html" %}
+        {% elif 'CFO' in user_role_names %}
+          {% include "shared/sidebars/sidebar_cfo.html" %}
+        {% elif 'HR' in user_role_names %}
+          {% include "shared/sidebars/sidebar_hr.html" %}
+        {% elif 'Project Manager' in user_role_names %}
+          {% include "shared/sidebars/sidebar_pm.html" %}
+        {% else %}
+          {% include "shared/sidebars/sidebar_employee.html" %}
+        {% endif %}
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="header-left">
+          <button
+            id="sidebar-toggle"
+            class="sidebar-toggle-btn"
+            type="button"
+            aria-label="Toggle sidebar"
+          >
+            <i class="bi bi-list"></i>
+          </button>
+
+          <div class="search-container">
+            <i class="bi bi-search search-icon"></i>
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Search (Ctrl + Q)"
+              id="global-search"
+            />
+            <div id="search-results" class="search-results d-none"></div>
+          </div>
+        </div>
+        <div class="header-right">
+          {% if user_profile and user_profile.is_manager %}
+          <a
+            href="{% url 'resources:payroll-schedule' %}"
+            class="header-icon-btn"
+            title="Cài đặt lịch phát lương"
+            style="text-decoration: none; display: flex; align-items: center; justify-content: center;"
+          >
+            <i class="bi bi-calendar-check"></i>
+          </a>
+          {% elif user.is_authenticated and user.profile.is_manager %}
+          <a
+            href="{% url 'resources:payroll-schedule' %}"
+            class="header-icon-btn"
+            title="Cài đặt lịch phát lương"
+            style="text-decoration: none; display: flex; align-items: center; justify-content: center;"
+          >
+            <i class="bi bi-calendar-check"></i>
+          </a>
+          {% endif %}
+          <button
+            class="header-icon-btn"
+            title="Notifications"
+            type="button"
+            data-bs-toggle="modal"
+            data-bs-target="#notificationsModal"
+          >
+            <i class="bi bi-bell"></i>
+            <span class="badge" id="notification-count">0</span>
+          </button>
+          <div class="user-profile dropdown-toggle" data-bs-toggle="dropdown">
+            <div class="user-avatar">
+              {% if user_profile and user_profile.avatar %}
+              <img src="{{ user_profile.avatar.url }}" alt="Avatar" />
+              {% else %} {% if user.get_full_name %}{{
+              user.get_full_name|first|upper }}{% else %}{{
+              user.username|first|upper }}{% endif %} {% endif %}
+            </div>
+            <div class="user-info">
+              <div class="user-name">
+                {% if user.get_full_name %} {{ user.get_full_name }} {% else %}
+                {{ user.username }} {% endif %}
+              </div>
+              <div class="user-role">
+                {% if user.profile.is_manager %} Quản lý {% else %} Nhân viên {% endif %}
+              </div>
+            </div>
+            <i class="bi bi-chevron-down"></i>
+          </div>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li>
+              <a class="dropdown-item" href="{% url 'core:profile' %}"
+                ><i class="bi bi-person me-2"></i>Hồ sơ</a
+              >
+            </li>
+            <li>
+              <a class="dropdown-item" href="{% url 'core:settings' %}"
+                ><i class="bi bi-gear me-2"></i>Cài đặt</a
+              >
+            </li>
+            <li><hr class="dropdown-divider" /></li>
+            <li>
+              <a class="dropdown-item" href="{% url 'core:logout' %}"
+                ><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</a
+              >
+            </li>
+          </ul>
+        </div>
+      </header>
+
+      <!-- Content Wrapper -->
+      <div class="content-wrapper">
+        {# Messages are now shown in modal - see globalNotificationModal #}
+
+        <div class="page-header">
+          <h1 class="page-title">
+            {% block page_title %}Dashboard{% endblock %}
+          </h1>
+          {% block breadcrumb %}
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item">
+                <a href="{% url 'core:dashboard' %}">Home</a>
+              </li>
+              <li class="breadcrumb-item active">
+                {% block breadcrumb_title %}{% endblock %}
+              </li>
+            </ol>
+          </nav>
+          {% endblock %}
+        </div>
+
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+
+    <!-- Notifications Modal -->
+    <div
+      class="modal fade notifications-modal"
+      id="notificationsModal"
+      tabindex="-1"
+      aria-labelledby="notificationsModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-end modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="notificationsModalLabel">Thông báo</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3 position-relative">
+              <i class="bi bi-search search-icon" style="left: 0.25rem"></i>
+              <input
+                type="text"
+                id="notification-search"
+                class="form-control ps-4 search-input"
+                placeholder="Tìm kiếm thông báo..."
+              />
+            </div>
+            <div class="mb-3">
+              <button
+                type="button"
+                id="mark-all-read-btn"
+                class="btn btn-outline-primary btn-sm w-100"
+                onclick="markAllNotificationsAsRead()"
+              >
+                <i class="bi bi-check-all me-2"></i>Đánh dấu đọc tất cả
+              </button>
+            </div>
+            <div id="notification-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+
+    <!-- Global Notification Modal -->
+    <div
+      class="modal fade"
+      id="globalNotificationModal"
+      tabindex="-1"
+      aria-labelledby="globalNotificationModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header" id="globalNotificationModalHeader">
+            <h5 class="modal-title" id="globalNotificationModalLabel">
+              Thông báo
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body" id="globalNotificationModalBody">
+            <!-- Content will be inserted here -->
+          </div>
+          <div class="modal-footer" id="globalNotificationModalFooter">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Global Confirmation Modal -->
+    <div
+      class="modal fade"
+      id="globalConfirmModal"
+      tabindex="-1"
+      aria-labelledby="globalConfirmModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="globalConfirmModalLabel">Xác nhận</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body" id="globalConfirmModalBody">
+            <!-- Content will be inserted here -->
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+              id="globalConfirmCancelBtn"
+            >
+              Hủy
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="globalConfirmOkBtn"
+            >
+              Xác nhận
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    
+
+    {% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+        const sidebarToggle = document.getElementById("sidebar-toggle");
+        const sidebar = document.getElementById("sidebar");
+        const mainContent = document.querySelector(".main-content");
+
+        function toggleSidebar() {
+          const isMobile = window.innerWidth <= 768;
+          if (isMobile) {
+            if (sidebar) {
+              sidebar.classList.toggle("show");
+            }
+          } else if (sidebar && mainContent) {
+            const hidden = document.body.classList.toggle("sidebar-hidden");
+            try {
+              localStorage.setItem(
+                "erp_client_sidebar_hidden",
+                hidden ? "1" : "0"
+              );
+            } catch (e) {}
+          }
+        }
+
+        if (sidebarToggle && sidebar && mainContent) {
+          sidebarToggle.addEventListener("click", toggleSidebar);
+
+          // Khôi phục trạng thái sidebar từ localStorage
+          try {
+            const saved =
+              localStorage.getItem("erp_client_sidebar_hidden") === "1";
+            if (saved && window.innerWidth > 768) {
+              document.body.classList.add("sidebar-hidden");
+            }
+          } catch (e) {}
+        }
+
+        // Global search (Ctrl + Q) + quick navigation
+        const searchInput = document.getElementById("global-search");
+        const searchResults = document.getElementById("search-results");
+        const notificationSearch = document.getElementById(
+          "notification-search"
+        );
+        const notificationList = document.getElementById("notification-list");
+        const notificationCountEl =
+          document.getElementById("notification-count");
+
+        const commands = [
+          {
+            label: "Dashboard",
+            group: "Điều hướng",
+            icon: "bi-speedometer2",
+            url: "{% url 'core:dashboard' %}",
+          },
+          {
+            label: "Dự án",
+            group: "Quản lý Dự án",
+            icon: "bi-folder",
+            url: "/projects/",
+          },
+          {
+            label: "Ngân sách",
+            group: "Quản lý Dự án",
+            icon: "bi-cash-stack",
+            url: "/budgeting/",
+          },
+          {
+            label: "Công việc",
+            group: "Quản lý Dự án",
+            icon: "bi-check-square",
+            url: "/projects/tasks/",
+          },
+          {
+            label: "Phân tích",
+            group: "Quản lý Dự án",
+            icon: "bi-graph-up",
+            url: "/analytics/",
+          },
+          {
+            label: "Nhân sự",
+            group: "Quản lý Nhân sự & Khách hàng",
+            icon: "bi-people",
+            url: "/resources/",
+          },
+          {
+            label: "Khách hàng",
+            group: "Quản lý Nhân sự & Khách hàng",
+            icon: "bi-building",
+            url: "/clients/",
+          },
+          {
+            label: "Chat với PRM AI",
+            group: "Trí tuệ nhân tạo",
+            icon: "bi-chat-dots",
+            url: "/ai/",
+          },
+        ];
+
+        let activeIndex = -1;
+
+        function renderResults(items) {
+          if (!searchResults) return;
+
+          if (!items.length) {
+            searchResults.classList.add("d-none");
+            searchResults.innerHTML = "";
+            activeIndex = -1;
+            return;
+          }
+
+          searchResults.classList.remove("d-none");
+          searchResults.innerHTML = items
+            .map(
+              (item, index) => `
+              <div class="search-result-item${
+                index === activeIndex ? " active" : ""
+              }" data-url="${item.url}">
+                <i class="bi ${item.icon}"></i>
+                <span>${item.label}</span>
+                <small>${item.group}</small>
+              </div>
+            `
+            )
+            .join("");
+
+          Array.from(
+            searchResults.querySelectorAll(".search-result-item")
+          ).forEach((el) => {
+            el.addEventListener("click", () => {
+              const url = el.getAttribute("data-url");
+              if (url) {
+                window.location.href = url;
+              }
+            });
+          });
+        }
+
+        function performSearch(query) {
+          const q = query.trim().toLowerCase();
+          if (q.length < 2) {
+            renderResults([]);
+            return;
+          }
+          const matches = commands.filter((cmd) =>
+            (cmd.label + " " + cmd.group).toLowerCase().includes(q)
+          );
+          activeIndex = 0;
+          renderResults(matches.slice(0, 8));
+        }
+
+        if (searchInput) {
+          document.addEventListener("keydown", function (e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === "q") {
+              e.preventDefault();
+              searchInput.focus();
+              searchInput.select();
+            }
+          });
+
+          searchInput.addEventListener("input", function (e) {
+            performSearch(e.target.value || "");
+          });
+
+          searchInput.addEventListener("keydown", function (e) {
+            const items = searchResults
+              ? Array.from(
+                  searchResults.querySelectorAll(".search-result-item")
+                )
+              : [];
+            if (!items.length) return;
+
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              activeIndex = (activeIndex + 1) % items.length;
+              items.forEach((el, idx) =>
+                el.classList.toggle("active", idx === activeIndex)
+              );
+            } else if (e.key === "ArrowUp") {
+              e.preventDefault();
+              activeIndex = (activeIndex - 1 + items.length) % items.length;
+              items.forEach((el, idx) =>
+                el.classList.toggle("active", idx === activeIndex)
+              );
+            } else if (e.key === "Enter") {
+              e.preventDefault();
+              const target = items[activeIndex] || items[0];
+              if (target) {
+                const url = target.getAttribute("data-url");
+                if (url) {
+                  window.location.href = url;
+                }
+              }
+            } else if (e.key === "Escape") {
+              renderResults([]);
+              searchInput.blur();
+            }
+          });
+
+          document.addEventListener("click", function (e) {
+            if (
+              searchResults &&
+              !searchResults.contains(e.target) &&
+              e.target !== searchInput
+            ) {
+              renderResults([]);
+            }
+          });
+        }
+
+        function getCookie(name) {
+          const value = `; ${document.cookie}`;
+          const parts = value.split(`; ${name}=`);
+          if (parts.length === 2) return parts.pop().split(";").shift();
+          return "";
+        }
+
+        function iconForLevel(level) {
+          if (level === "success") return "bi-check-circle";
+          if (level === "warning") return "bi-exclamation-triangle";
+          if (level === "danger") return "bi-exclamation-octagon";
+          return "bi-info-circle";
+        }
+
+        function renderNotifications(items) {
+          if (!notificationList) return;
+          if (!items || !items.length) {
+            notificationList.innerHTML =
+              '<div class="text-muted px-2">Không có thông báo.</div>';
+            return;
+          }
+
+          notificationList.innerHTML = items
+            .map((n) => {
+              const level = n.level || "info";
+              const icon = iconForLevel(level);
+              const unreadClass = n.is_read ? "" : "unread";
+              const url = n.url || "";
+              return `
+                <div class="notification-item level-${level} ${unreadClass}" data-id="${
+                n.id
+              }" data-url="${url}" data-title="${(n.title || "").replaceAll(
+                '"',
+                "&quot;"
+              )}" data-body="${(n.message || "").replaceAll('"', "&quot;")}">
+                  <div class="notification-icon">
+                    <i class="bi ${icon}"></i>
+                  </div>
+                  <div style="min-width:0;">
+                    <div class="notification-title">${n.title || ""}</div>
+                    <div class="notification-meta">${n.message || ""} · ${
+                n.created_at || ""
+              }</div>
+                  </div>
+                </div>
+              `;
+            })
+            .join("");
+
+          Array.from(
+            notificationList.querySelectorAll(".notification-item")
+          ).forEach((el) => {
+            el.addEventListener("click", async () => {
+              const id = el.getAttribute("data-id");
+              const url = el.getAttribute("data-url") || "";
+              try {
+                const csrftoken = getCookie("csrftoken");
+                await fetch(
+                  `{% url 'core:notification-read' 0 %}`.replace(
+                    "/0/read/",
+                    `/${id}/read/`
+                  ),
+                  {
+                    method: "POST",
+                    headers: {
+                      "X-CSRFToken": csrftoken,
+                      "X-Requested-With": "XMLHttpRequest",
+                    },
+                    credentials: "same-origin",
+                  }
+                );
+              } catch (e) {}
+
+              if (url) {
+                window.location.href = url;
+              }
+            });
+          });
+        }
+
+        async function loadNotifications() {
+          try {
+            const res = await fetch(`{% url 'core:notifications' %}?limit=30`, {
+              credentials: "same-origin",
+              headers: { "X-Requested-With": "XMLHttpRequest" },
+            });
+            const data = await res.json();
+            if (notificationCountEl) {
+              const c = Number(data.unread_count || 0);
+              notificationCountEl.textContent = String(c);
+              notificationCountEl.style.display = c > 0 ? "flex" : "none";
+            }
+            renderNotifications(data.items || []);
+
+            // Hook search after render
+            if (notificationSearch && notificationList) {
+              const items = Array.from(
+                notificationList.querySelectorAll(".notification-item")
+              );
+              notificationSearch.addEventListener("input", function (e) {
+                const q = (e.target.value || "").trim().toLowerCase();
+                items.forEach((item) => {
+                  const text = (
+                    (item.dataset.title || "") +
+                    " " +
+                    (item.dataset.body || "") +
+                    " " +
+                    item.innerText
+                  )
+                    .toLowerCase()
+                    .trim()
+                  const matched = !q || text.includes(q);
+                  item.style.display = matched ? "flex" : "none";
+                });
+              });
+            }
+          } catch (e) {
+            if (notificationList) {
+              notificationList.innerHTML =
+                '<div class="text-muted px-2">Không tải được thông báo.</div>';
+            }
+          }
+        }
+
+        // Function để đánh dấu tất cả thông báo là đã đọc
+        async function markAllNotificationsAsRead() {
+          const btn = document.getElementById("mark-all-read-btn");
+          if (!btn) return;
+          
+          // Disable button và hiển thị loading
+          const originalText = btn.innerHTML;
+          btn.disabled = true;
+          btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Đang xử lý...';
+          
+          try {
+            // Lấy CSRF token
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                            getCookie('csrftoken') || '';
+            
+            const res = await fetch(`{% url 'core:notification-mark-all-read' %}`, {
+              method: "POST",
+              credentials: "same-origin",
+              headers: {
+                "X-Requested-With": "XMLHttpRequest",
+                "X-CSRFToken": csrftoken,
+                "Content-Type": "application/json",
+              },
+            });
+            
+            const data = await res.json();
+            
+            if (data.ok) {
+              // Reload notifications để cập nhật UI
+              await loadNotifications();
+              
+              // Hiển thị thông báo thành công
+              if (typeof window.showNotification === 'function') {
+                window.showNotification('success', data.message || 'Đã đánh dấu tất cả thông báo là đã đọc.');
+              } else {
+                alert(data.message || 'Đã đánh dấu tất cả thông báo là đã đọc.');
+              }
+            } else {
+              throw new Error(data.message || 'Có lỗi xảy ra.');
+            }
+          } catch (e) {
+            console.error('Error marking all as read:', e);
+            if (typeof window.showNotification === 'function') {
+              window.showNotification('error', 'Không thể đánh dấu tất cả thông báo. Vui lòng thử lại.');
+            } else {
+              alert('Không thể đánh dấu tất cả thông báo. Vui lòng thử lại.');
+            }
+          } finally {
+            // Restore button
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+          }
+        }
+
+        // Expose ra global scope để onclick trong template gọi được
+        window.markAllNotificationsAsRead = markAllNotificationsAsRead;
+        
+        // Helper function để lấy CSRF token từ cookie
+        function getCookie(name) {
+          let cookieValue = null;
+          if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+              const cookie = cookies[i].trim();
+              if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+              }
+            }
+          }
+          return cookieValue;
+        }
+
+        // Load notifications when modal opens
+        const modalEl = document.getElementById("notificationsModal");
+        if (modalEl) {
+          modalEl.addEventListener("shown.bs.modal", function () {
+            if (notificationSearch) notificationSearch.value = "";
+            loadNotifications();
+            setTimeout(
+              () => notificationSearch && notificationSearch.focus(),
+              50
+            );
+          });
+        }
+
+        // Load unread count once on page load
+        loadNotifications();
+      });
+
+// Global Notification Modal Utility
+      window.showNotification = function(type, message, title = null) {
+        const modal = document.getElementById('globalNotificationModal');
+        const modalHeader = document.getElementById('globalNotificationModalHeader');
+        const modalLabel = document.getElementById('globalNotificationModalLabel');
+        const modalBody = document.getElementById('globalNotificationModalBody');
+        const modalFooter = document.getElementById('globalNotificationModalFooter');
+
+        // Set title
+        if (!title) {
+          switch(type) {
+            case 'success':
+              title = 'Thành công';
+              break;
+            case 'error':
+            case 'danger':
+              title = 'Lỗi';
+              break;
+            case 'warning':
+              title = 'Cảnh báo';
+              break;
+            case 'info':
+              title = 'Thông tin';
+              break;
+            default:
+              title = 'Thông báo';
+          }
+        }
+        modalLabel.textContent = title;
+
+        // Set header color based on type
+        modalHeader.className = 'modal-header';
+        switch(type) {
+          case 'success':
+            modalHeader.classList.add('bg-success', 'text-white');
+            break;
+          case 'error':
+          case 'danger':
+            modalHeader.classList.add('bg-danger', 'text-white');
+            break;
+          case 'warning':
+            modalHeader.classList.add('bg-warning', 'text-dark');
+            break;
+          case 'info':
+            modalHeader.classList.add('bg-info', 'text-white');
+            break;
+        }
+
+        // Set icon
+        let icon = '';
+        switch(type) {
+          case 'success':
+            icon = '<i class="bi bi-check-circle-fill me-2"></i>';
+            break;
+          case 'error':
+          case 'danger':
+            icon = '<i class="bi bi-x-circle-fill me-2"></i>';
+            break;
+          case 'warning':
+            icon = '<i class="bi bi-exclamation-triangle-fill me-2"></i>';
+            break;
+          case 'info':
+            icon = '<i class="bi bi-info-circle-fill me-2"></i>';
+            break;
+        }
+
+        // Set body content
+        modalBody.innerHTML = `<div class="d-flex align-items-start">
+          <div style="font-size: 1.5rem;">${icon}</div>
+          <div class="flex-grow-1">${message.replace(/\n/g, '<br>')}</div>
+        </div>`;
+
+        // Show only close button
+        modalFooter.innerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>';
+
+        // Show modal
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+      };
+
+      // Global Confirm Modal Utility
+      window.showConfirm = function(message, title = 'Xác nhận', confirmText = 'Xác nhận', cancelText = 'Hủy') {
+        return new Promise((resolve) => {
+          const modal = document.getElementById('globalConfirmModal');
+          const modalBody = document.getElementById('globalConfirmModalBody');
+          const modalLabel = document.getElementById('globalConfirmModalLabel');
+          const confirmBtn = document.getElementById('globalConfirmOkBtn');
+          const cancelBtn = document.getElementById('globalConfirmCancelBtn');
+
+          modalLabel.textContent = title;
+          modalBody.innerHTML = `<p class="mb-0">${message.replace(/\n/g, '<br>')}</p>`;
+          confirmBtn.textContent = confirmText;
+          cancelBtn.textContent = cancelText;
+
+          // Remove previous event listeners by cloning
+          const newConfirmBtn = confirmBtn.cloneNode(true);
+          const newCancelBtn = cancelBtn.cloneNode(true);
+          confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+          cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+          // Add new event listeners
+          newConfirmBtn.addEventListener('click', function() {
+            const bsModal = bootstrap.Modal.getInstance(modal);
+            bsModal.hide();
+            resolve(true);
+          });
+
+          newCancelBtn.addEventListener('click', function() {
+            const bsModal = bootstrap.Modal.getInstance(modal);
+            bsModal.hide();
+            resolve(false);
+          });
+
+          // Also handle close button and backdrop
+          modal.addEventListener('hidden.bs.modal', function handler() {
+            resolve(false);
+            modal.removeEventListener('hidden.bs.modal', handler);
+          }, { once: true });
+
+          // Show modal
+          const bsModal = new bootstrap.Modal(modal);
+          bsModal.show();
+        });
+      };
+
+      // Replace window.alert with modal
+      window.originalAlert = window.alert;
+      window.alert = function(message) {
+        showNotification('info', message);
+      };
+
+      // Replace window.confirm with modal
+      window.originalConfirm = window.confirm;
+      window.confirm = function(message) {
+        // Note: confirm() is synchronous, but our modal is async
+        // We'll keep original confirm for now, but recommend using showConfirm() directly
+        return originalConfirm(message);
+      };
+
+      // Show Django messages in modal on page load
+      document.addEventListener('DOMContentLoaded', function() {
+        {% if messages %}
+          {% for message in messages %}
+            showNotification('{{ message.tags }}', '{{ message|escapejs }}');
+          {% endfor %}
+        {% endif %}
+
+        // Xử lý active state cho menu items khi click
+        const menuItems = document.querySelectorAll('.sidebar-menu .menu-item');
+        menuItems.forEach(item => {
+          item.addEventListener('click', function() {
+            // Remove active từ tất cả menu items
+            menuItems.forEach(mi => mi.classList.remove('active'));
+            // Add active cho item được click
+            this.classList.add('active');
+          });
+        });
+
+        // Đảm bảo active state được giữ dựa trên URL hiện tại
+        const currentPath = window.location.pathname;
+        menuItems.forEach(item => {
+          const href = item.getAttribute('href');
+          if (href) {
+            const hrefPath = href.split('?')[0];
+            // Kiểm tra xem URL hiện tại có match với href không
+            if (currentPath === hrefPath ||
+                (hrefPath.includes('/projects/') && currentPath.startsWith('/projects/') ||
+                (hrefPath.includes('/budgeting/') && currentPath.startsWith('/budgeting/')) ||
+                (hrefPath.includes('/resources/') && currentPath.startsWith('/resources/') && !currentPath.includes('/salary-tracking')) ||
+                (hrefPath.includes('/clients/') && currentPath.startsWith('/clients/')) ||
+                (hrefPath.includes('/projects/tasks') && currentPath.includes('/projects/tasks'))) {
+              // Remove active từ tất cả trước
+              menuItems.forEach(mi => mi.classList.remove('active'));
+              // Add active cho item phù hợp
+              item.classList.add('active');
+            }
+          }
+        });
+      });
+</script>
+{% endblock %}
+  </body>
+</html>

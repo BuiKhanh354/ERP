@@ -1,0 +1,135 @@
+{% load static %}
+{% extends "base_sidebar.html" %}
+
+{% block title %}{{ title }} - ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/accounting-invoice-form.css' %}" />
+
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">{{ title }}</h1>
+  <ul class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'accounting:dashboard' %}">Kế toán</a></li>
+    <li class="breadcrumb-separator"><i class="bi bi-chevron-right"></i></li>
+    <li class="breadcrumb-item"><a href="{% url 'accounting:invoice_list' %}">Hoá đơn</a></li>
+    <li class="breadcrumb-separator"><i class="bi bi-chevron-right"></i></li>
+    <li class="breadcrumb-item active">{{ title }}</li>
+  </ul>
+</div>
+
+<form method="post" id="invoice-form">
+  {% csrf_token %}
+
+  <!-- Invoice Info -->
+  <div class="card mb-4">
+    <div class="card-header">Thông tin hoá đơn</div>
+    <div class="card-body">
+      {% if form.errors %}
+      <div class="alert alert-danger">
+        <ul class="mb-0">
+          {% for field, errors in form.errors.items %}
+            {% for error in errors %}<li>{{ field }}: {{ error }}</li>{% endfor %}
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Mã hoá đơn <span class="text-danger">*</span></label>
+          {{ form.invoice_number }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Dự án <span class="text-danger">*</span></label>
+          {{ form.project }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Khách hàng <span class="text-danger">*</span></label>
+          {{ form.client }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Ngày phát hành <span class="text-danger">*</span></label>
+          {{ form.issue_date }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Hạn thanh toán <span class="text-danger">*</span></label>
+          {{ form.due_date }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Thuế (%)</label>
+          {{ form.tax }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Trạng thái</label>
+          {{ form.status }}
+        </div>
+        <div class="col-12">
+          <label class="form-label">Ghi chú</label>
+          {{ form.notes }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Invoice Items (Inline Formset) -->
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span>Hạng mục hoá đơn</span>
+      <button type="button" class="btn btn-success btn-sm" id="add-item-btn"><i class="bi bi-plus-lg me-1"></i>Thêm hạng mục</button>
+    </div>
+    <div class="card-body">
+      {{ formset.management_form }}
+      {% if formset.errors %}
+      <div class="alert alert-danger">
+        <ul class="mb-0">
+          {% for form_errors in formset.errors %}
+            {% for field, errors in form_errors.items %}
+              {% for error in errors %}<li>{{ field }}: {{ error }}</li>{% endfor %}
+            {% endfor %}
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+      <div id="formset-container">
+        {% for item_form in formset %}
+        <div class="formset-row" data-index="{{ forloop.counter0 }}">
+          {{ item_form.id }}
+          <div class="form-group desc">
+            <label class="form-label small">Mô tả</label>
+            {{ item_form.description }}
+          </div>
+          <div class="form-group">
+            <label class="form-label small">Số lượng</label>
+            {{ item_form.quantity }}
+          </div>
+          <div class="form-group">
+            <label class="form-label small">Đơn giá</label>
+            {{ item_form.unit_price }}
+          </div>
+          <div class="remove-btn">
+            {% if item_form.instance.pk %}
+            <div class="d-none">{{ item_form.DELETE }}</div>
+            <button type="button" class="btn btn-outline-danger btn-sm delete-item-btn" title="Xoá"><i class="bi bi-trash"></i></button>
+            {% else %}
+            <button type="button" class="btn btn-outline-danger btn-sm remove-row-btn" title="Xoá"><i class="bi bi-x-lg"></i></button>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2 justify-content-end">
+    <a href="{% url 'accounting:invoice_list' %}" class="btn btn-outline-secondary">Huỷ</a>
+    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Lưu hoá đơn</button>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/accounting-invoice-form.js' %}"></script>
+
+{% endblock %}

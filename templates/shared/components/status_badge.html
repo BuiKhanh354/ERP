@@ -1,0 +1,12 @@
+{# 
+  Usage: 
+  {% include "shared/components/status_badge.html" with status=item.status status_display=item.get_status_display %}
+#}
+<span class="badge 
+    {% if status == 'PENDING' %}bg-warning
+    {% elif status == 'IN_PROGRESS' %}bg-primary
+    {% elif status == 'COMPLETED' or status == 'PAID' or status == 'ACTIVE' %}bg-success
+    {% elif status == 'CANCELLED' or status == 'OVERDUE' or status == 'FAILED' %}bg-danger
+    {% else %}bg-secondary{% endif %}">
+    {{ status_display|default:status }}
+</span>

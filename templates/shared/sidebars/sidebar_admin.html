@@ -1,0 +1,83 @@
+        <div class="menu-section">
+          <div class="menu-section-title">Dashboard</div>
+          <a
+            href="{% url 'admin_module:dashboard' %}"
+            class="menu-item {% if 'admin_module' in request.resolver_match.namespace and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+          >
+            <i class="bi bi-speedometer2"></i>
+            <span>Bảng điều khiển</span>
+          </a>
+          <a href="{% url 'core:dashboard' %}" class="menu-item">
+            <i class="bi bi-box-arrow-up-right"></i>
+            <span>Client Site</span>
+          </a>
+        </div>
+
+        <div class="menu-section">
+          <div class="menu-section-title">Quản lý Người dùng</div>
+          <a
+            href="{% url 'admin_module:user_list' %}"
+            class="menu-item {% if 'admin_module' in request.resolver_match.namespace and 'user_list' in request.resolver_match.url_name %}active{% endif %}"
+          >
+            <i class="bi bi-people"></i>
+            <span>Người dùng</span>
+          </a>
+          <a
+            href="{% url 'admin_module:user_create' %}"
+            class="menu-item {% if 'admin_module' in request.resolver_match.namespace and 'user_create' in request.resolver_match.url_name %}active{% endif %}"
+          >
+            <i class="bi bi-person-plus"></i>
+            <span>Thêm người dùng</span>
+          </a>
+        </div>
+
+        <div class="menu-section">
+          <div class="menu-section-title">Tổ chức</div>
+          <a
+            href="{% url 'admin_module:department_list' %}"
+            class="menu-item {% if 'admin_module' in request.resolver_match.namespace and 'department' in request.resolver_match.url_name and 'hierarchy' not in request.resolver_match.url_name %}active{% endif %}"
+          >
+            <i class="bi bi-diagram-3"></i>
+            <span>Phòng ban</span>
+          </a>
+          <a
+            href="{% url 'admin_module:department_hierarchy' %}"
+            class="menu-item {% if 'admin_module' in request.resolver_match.namespace and 'department_hierarchy' in request.resolver_match.url_name %}active{% endif %}"
+          >
+            <i class="bi bi-list-nested"></i>
+            <span>Sơ đồ tổ chức</span>
+          </a>
+        </div>
+
+        <div class="menu-section">
+          <div class="menu-section-title">Hệ thống</div>
+          <a
+            href="{% url 'admin_custom:dashboard' %}"
+            class="menu-item {% if 'admin_custom' in request.resolver_match.namespace and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+          >
+            <i class="bi bi-gear"></i>
+            <span>Cài đặt</span>
+          </a>
+          <a
+            href="{% url 'admin_module:audit_logs' %}"
+            class="menu-item {% if 'admin_module' in request.resolver_match.namespace and 'audit_logs' in request.resolver_match.url_name %}active{% endif %}"
+          >
+            <i class="bi bi-journal-text"></i>
+            <span>Nhật ký hệ thống</span>
+          </a>
+          <a
+            href="{% url 'admin_module:dashboard' %}"
+            class="menu-item {% if 'admin_custom' in request.resolver_match.namespace and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+          >
+            <i class="bi-graph-up"></i>
+            <span>Phân tích</span>
+          </a>
+          <a
+            href="{% url 'core:ai-chat' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'ai-chat' or request.resolver_match.url_name == 'ai-chat-history' %}active{% endif %}"
+          >
+            <i class="bi bi-chat-dots"></i>
+            <span>Trợ lý AI</span>
+          </a>
+
+        </div>

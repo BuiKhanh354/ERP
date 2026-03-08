@@ -1,0 +1,53 @@
+<div class="menu-section">
+  <div class="menu-section-title">Tổng quan</div>
+  <a
+    href="{% url 'accounting:dashboard' %}"
+    class="menu-item {% if 'accounting' in request.resolver_match.namespace and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+  >
+    <i class="bi bi-speedometer2"></i>
+    <span>Bảng điều khiển</span>
+  </a>
+</div>
+
+<div class="menu-section">
+  <div class="menu-section-title">Thu chi</div>
+  <a
+    href="{% url 'accounting:invoice_list' %}"
+    class="menu-item {% if 'accounting' in request.resolver_match.namespace and 'invoice' in request.resolver_match.url_name %}active{% endif %}"
+  >
+    <i class="bi bi-receipt"></i>
+    <span>Hoá đơn</span>
+  </a>
+  <a
+    href="{% url 'accounting:expense_list' %}"
+    class="menu-item {% if 'accounting' in request.resolver_match.namespace and 'expense' in request.resolver_match.url_name %}active{% endif %}"
+  >
+    <i class="bi bi-wallet2"></i>
+    <span>Chi phí</span>
+  </a>
+  <a
+    href="{% url 'accounting:payment_list' %}"
+    class="menu-item {% if 'accounting' in request.resolver_match.namespace and 'payment' in request.resolver_match.url_name %}active{% endif %}"
+  >
+    <i class="bi bi-credit-card"></i>
+    <span>Thanh toán</span>
+  </a>
+</div>
+
+<div class="menu-section">
+  <div class="menu-section-title">Kiểm soát</div>
+  <a
+    href="{% url 'accounting:budget_summary' %}"
+    class="menu-item {% if 'accounting' in request.resolver_match.namespace and 'budget' in request.resolver_match.url_name %}active{% endif %}"
+  >
+    <i class="bi bi-pie-chart"></i>
+    <span>Ngân sách</span>
+  </a>
+  <a
+    href="{% url 'accounting:reports' %}"
+    class="menu-item {% if 'accounting' in request.resolver_match.namespace and 'report' in request.resolver_match.url_name %}active{% endif %}"
+  >
+    <i class="bi bi-file-earmark-bar-graph"></i>
+    <span>Báo cáo</span>
+  </a>
+</div>

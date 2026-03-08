@@ -13,26 +13,8 @@
 {% endblock %}
 
 {% block extra_css %}
-<style>
-    .form-card {
-        background-color: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        padding: 2rem;
-    }
+<link rel="stylesheet" href="{% static 'assets/css/resources-form.css' %}" />
 
-    .form-label {
-        font-weight: 600;
-        color: #0f172a;
-        margin-bottom: 0.5rem;
-    }
-
-    .form-control:focus,
-    .form-select:focus {
-        border-color: #0000cd;
-        box-shadow: 0 0 0 0.2rem rgba(0, 0, 205, 0.15);
-    }
-</style>
 {% endblock %}
 
 {% block content %}
@@ -202,38 +184,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- Modal tạo chức vụ mới -->
-<div class="modal fade" id="createPositionModal" tabindex="-1" aria-labelledby="createPositionModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title" id="createPositionModalLabel">
-          <i class="bi bi-briefcase me-2"></i>Thêm chức vụ mới
-        </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <form id="createPositionForm">
-          <div class="mb-3">
-            <label for="positionName" class="form-label">Tên chức vụ <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" id="positionName" required placeholder="Ví dụ: Nhân viên Kế toán">
-          </div>
-          <div class="mb-3">
-            <label for="positionDescription" class="form-label">Mô tả</label>
-            <textarea class="form-control" id="positionDescription" rows="3" placeholder="Mô tả chức vụ (tùy chọn)"></textarea>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-        <button type="button" class="btn btn-primary" onclick="createPosition()">
-          <i class="bi bi-check-circle me-1"></i>Tạo chức vụ
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const salaryInput = document.getElementById('{{ form.hourly_rate.id_for_label }}');
@@ -368,4 +318,37 @@ function createPosition() {
     });
 }
 </script>
+
+<!-- Modal tạo chức vụ mới -->
+<div class="modal fade" id="createPositionModal" tabindex="-1" aria-labelledby="createPositionModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="createPositionModalLabel">
+          <i class="bi bi-briefcase me-2"></i>Thêm chức vụ mới
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="createPositionForm">
+          <div class="mb-3">
+            <label for="positionName" class="form-label">Tên chức vụ <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="positionName" required placeholder="Ví dụ: Nhân viên Kế toán">
+          </div>
+          <div class="mb-3">
+            <label for="positionDescription" class="form-label">Mô tả</label>
+            <textarea class="form-control" id="positionDescription" rows="3" placeholder="Mô tả chức vụ (tùy chọn)"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+        <button type="button" class="btn btn-primary" onclick="createPosition()">
+          <i class="bi bi-check-circle me-1"></i>Tạo chức vụ
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}

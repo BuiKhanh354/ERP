@@ -46,32 +46,41 @@ def create_database_if_not_exists():
         print('Vui lòng cài đặt: pip install pyodbc')
         return False
     
-    db_name = db_config['NAME']
-    db_user = db_config['USER']
-    db_password = db_config['PASSWORD']
-    db_host = db_config['HOST']
-    db_port = db_config['PORT']
-    driver = db_config['OPTIONS'].get('driver', 'ODBC Driver 17 for SQL Server')
+    db_name = db_config.get('NAME')
+    db_user = db_config.get('USER', '')
+    db_password = db_config.get('PASSWORD', '')
+    db_host = db_config.get('HOST', 'localhost')
+    db_port = db_config.get('PORT', '')
+    
+    options = db_config.get('OPTIONS', {})
+    driver = options.get('driver', 'ODBC Driver 17 for SQL Server')
     
     try:
         # Kết nối đến SQL Server (không chỉ định database cụ thể)
-        # Với ODBC Driver 18, cần thêm Encrypt=yes
-        if '18' in driver:
-            conn_str = (
-                f"DRIVER={{{driver}}};"
-                f"SERVER={db_host},{db_port};"
-                f"UID={db_user};"
-                f"PWD={db_password};"
-                f"Encrypt=yes;TrustServerCertificate=yes;"
-            )
-        else:
-            conn_str = (
-                f"DRIVER={{{driver}}};"
-                f"SERVER={db_host},{db_port};"
-                f"UID={db_user};"
-                f"PWD={db_password};"
-                f"TrustServerCertificate=yes;"
-            )
+        server_str = f"{db_host},{db_port}" if db_port else db_host
+        
+        conn_parts = [
+            f"DRIVER={{{driver}}}",
+            f"SERVER={server_str}"
+        ]
+        
+        if db_user:
+            conn_parts.append(f"UID={db_user}")
+        if db_password:
+            conn_parts.append(f"PWD={db_password}")
+            
+        for key, value in options.items():
+            if key.lower() != 'driver':
+                conn_parts.append(f"{key}={value}")
+                
+        # Hỗ trợ thêm các option bắt buộc với một số driver
+        options_lower = {k.lower(): v for k, v in options.items()}
+        if '18' in driver and 'encrypt' not in options_lower:
+            conn_parts.append("Encrypt=yes")
+        if 'trustservercertificate' not in options_lower:
+            conn_parts.append("TrustServerCertificate=yes")
+            
+        conn_str = ";".join(conn_parts) + ";"
         
         # Kết nối đến master database để kiểm tra/tạo database
         conn = pyodbc.connect(conn_str, autocommit=True)

@@ -1,0 +1,139 @@
+{% load static %}
+{% extends "base_sidebar.html" %}
+{% load humanize %}
+
+{% block title %}Hoá đơn {{ invoice.invoice_number }} - ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/accounting-invoice-detail.css' %}" />
+
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="invoice-header">
+    <div>
+      <h1 class="page-title">Hoá đơn {{ invoice.invoice_number }}</h1>
+      <ul class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'accounting:dashboard' %}">Kế toán</a></li>
+        <li class="breadcrumb-separator"><i class="bi bi-chevron-right"></i></li>
+        <li class="breadcrumb-item"><a href="{% url 'accounting:invoice_list' %}">Hoá đơn</a></li>
+        <li class="breadcrumb-separator"><i class="bi bi-chevron-right"></i></li>
+        <li class="breadcrumb-item active">{{ invoice.invoice_number }}</li>
+      </ul>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <span class="badge-status badge-{{ invoice.status }}">{{ invoice.get_status_display }}</span>
+      {% if invoice.status != 'paid' %}
+        {% if 'EDIT_INVOICE' in user_permissions or '__superuser__' in user_permissions %}
+        <form method="post" action="{% url 'accounting:invoice_mark_paid' invoice.pk %}" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-check-lg me-1"></i>Đánh dấu đã TT</button>
+        </form>
+        {% endif %}
+      {% endif %}
+      {% if 'EDIT_INVOICE' in user_permissions or '__superuser__' in user_permissions %}
+      <a href="{% url 'accounting:invoice_edit' invoice.pk %}" class="btn btn-warning btn-sm"><i class="bi bi-pencil me-1"></i>Sửa</a>
+      {% endif %}
+      {% if 'CREATE_PAYMENT' in user_permissions or '__superuser__' in user_permissions %}
+      <a href="{% url 'accounting:payment_create' %}?invoice={{ invoice.pk }}" class="btn btn-primary btn-sm"><i class="bi bi-credit-card me-1"></i>Ghi thanh toán</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Invoice Info -->
+<div class="card mb-4">
+  <div class="card-header">Thông tin hoá đơn</div>
+  <div class="card-body">
+    <div class="info-grid">
+      <div class="info-item"><div class="label">Dự án</div><div class="value">{{ invoice.project.name }}</div></div>
+      <div class="info-item"><div class="label">Khách hàng</div><div class="value">{{ invoice.client.name }}</div></div>
+      <div class="info-item"><div class="label">Ngày phát hành</div><div class="value">{{ invoice.issue_date|date:"d/m/Y" }}</div></div>
+      <div class="info-item"><div class="label">Hạn thanh toán</div><div class="value">{{ invoice.due_date|date:"d/m/Y" }}</div></div>
+      <div class="info-item"><div class="label">Thuế</div><div class="value">{{ invoice.tax }}%</div></div>
+      <div class="info-item"><div class="label">Ghi chú</div><div class="value">{{ invoice.notes|default:"—" }}</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Invoice Items -->
+<div class="card mb-4">
+  <div class="card-header">Danh sách hạng mục</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Mô tả</th>
+            <th class="text-end">Số lượng</th>
+            <th class="text-end">Đơn giá</th>
+            <th class="text-end">Thành tiền</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ item.description }}</td>
+            <td class="text-end">{{ item.quantity }}</td>
+            <td class="text-end">{{ item.unit_price|intcomma }}</td>
+            <td class="text-end fw-semibold">{{ item.total|intcomma }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center text-muted py-3">Chưa có hạng mục</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="p-3">
+      <div class="total-section ms-auto" style="max-width: 350px;">
+        <div class="total-row"><span>Tạm tính</span><span>{{ invoice.subtotal|intcomma }}</span></div>
+        <div class="total-row"><span>Thuế ({{ invoice.tax }}%)</span><span>{{ invoice.tax_amount|intcomma }}</span></div>
+        <div class="total-row grand"><span>Tổng cộng</span><span>{{ invoice.total_amount|intcomma }}</span></div>
+        <div class="total-row"><span>Đã thanh toán</span><span class="text-success">{{ invoice.amount_paid|intcomma }}</span></div>
+        <div class="total-row"><span>Còn lại</span><span class="text-danger fw-bold">{{ invoice.amount_due|intcomma }}</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Payments -->
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>Lịch sử thanh toán</span>
+    {% if 'CREATE_PAYMENT' in user_permissions or '__superuser__' in user_permissions %}
+    <a href="{% url 'accounting:payment_create' %}?invoice={{ invoice.pk }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Thêm thanh toán</a>
+    {% endif %}
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Ngày</th>
+            <th>Phương thức</th>
+            <th>Mã tham chiếu</th>
+            <th class="text-end">Số tiền</th>
+            <th>Ghi chú</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in payments %}
+          <tr>
+            <td>{{ p.payment_date|date:"d/m/Y" }}</td>
+            <td>{{ p.get_payment_method_display }}</td>
+            <td>{{ p.reference_number|default:"—" }}</td>
+            <td class="text-end fw-semibold">{{ p.amount|intcomma }}</td>
+            <td>{{ p.note|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center text-muted py-3">Chưa có thanh toán</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

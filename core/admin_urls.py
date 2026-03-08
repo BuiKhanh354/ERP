@@ -1,5 +1,6 @@
 """
-URLs cho Admin Panel với đầy đủ CRUD operations.
+URLs cho Admin Panel — System Administration only.
+Theo fixgiaodien.md: User, Role, Department, Project Access, Audit, Settings.
 """
 from django.urls import path
 from . import admin_views
@@ -12,37 +13,14 @@ urlpatterns = [
     
     # User Management
     path('users/', admin_views.AdminUserListView.as_view(), name='users'),
+    path('users/create/', admin_views.AdminUserCreateView.as_view(), name='user_create'),
     path('users/<int:pk>/', admin_views.AdminUserDetailView.as_view(), name='user_detail'),
+    path('users/<int:pk>/edit/', admin_views.AdminUserEditView.as_view(), name='user_edit'),
+    path('users/<int:pk>/deactivate/', admin_views.AdminUserDeactivateView.as_view(), name='user_deactivate'),
     
-    # Project Management
-    path('projects/', admin_views.AdminProjectListView.as_view(), name='projects'),
-    path('projects/create/', admin_views.AdminProjectCreateView.as_view(), name='project_create'),
-    path('projects/<int:pk>/edit/', admin_views.AdminProjectUpdateView.as_view(), name='project_edit'),
-    path('projects/<int:pk>/delete/', admin_views.AdminProjectDeleteView.as_view(), name='project_delete'),
-    
-    # Task Management
-    path('tasks/', admin_views.AdminTaskListView.as_view(), name='tasks'),
-    path('tasks/create/', admin_views.AdminTaskCreateView.as_view(), name='task_create'),
-    path('tasks/<int:pk>/edit/', admin_views.AdminTaskUpdateView.as_view(), name='task_edit'),
-    path('tasks/<int:pk>/delete/', admin_views.AdminTaskDeleteView.as_view(), name='task_delete'),
-    
-    # Employee Management
-    path('employees/', admin_views.AdminEmployeeListView.as_view(), name='employees'),
-    path('employees/create/', admin_views.AdminEmployeeCreateView.as_view(), name='employee_create'),
-    path('employees/<int:pk>/edit/', admin_views.AdminEmployeeUpdateView.as_view(), name='employee_edit'),
-    path('employees/<int:pk>/delete/', admin_views.AdminEmployeeDeleteView.as_view(), name='employee_delete'),
-    
-    # Client Management
-    path('clients/', admin_views.AdminClientListView.as_view(), name='clients'),
-    path('clients/create/', admin_views.AdminClientCreateView.as_view(), name='client_create'),
-    path('clients/<int:pk>/edit/', admin_views.AdminClientUpdateView.as_view(), name='client_edit'),
-    path('clients/<int:pk>/delete/', admin_views.AdminClientDeleteView.as_view(), name='client_delete'),
-    
-    # Budget Management
-    path('budgets/', admin_views.AdminBudgetListView.as_view(), name='budgets'),
-    path('budgets/create/', admin_views.AdminBudgetCreateView.as_view(), name='budget_create'),
-    path('budgets/<int:pk>/edit/', admin_views.AdminBudgetUpdateView.as_view(), name='budget_edit'),
-    path('budgets/<int:pk>/delete/', admin_views.AdminBudgetDeleteView.as_view(), name='budget_delete'),
+    # Role & Permission Management
+    path('roles/', admin_views.AdminRoleListView.as_view(), name='roles'),
+    path('roles/<int:pk>/', admin_views.AdminRoleDetailView.as_view(), name='role_detail'),
     
     # Department Management
     path('departments/', admin_views.AdminDepartmentListView.as_view(), name='departments'),
@@ -50,8 +28,12 @@ urlpatterns = [
     path('departments/<int:pk>/edit/', admin_views.AdminDepartmentUpdateView.as_view(), name='department_edit'),
     path('departments/<int:pk>/delete/', admin_views.AdminDepartmentDeleteView.as_view(), name='department_delete'),
     
-    # Export Functions
-    path('export/projects/', admin_views.export_projects_csv, name='export_projects'),
-    path('export/employees/', admin_views.export_employees_csv, name='export_employees'),
-    path('export/clients/', admin_views.export_clients_csv, name='export_clients'),
+    # Project Access Control
+    path('project-access/', admin_views.AdminProjectAccessView.as_view(), name='project_access'),
+    
+    # Audit Log
+    path('audit-log/', admin_views.AdminAuditLogView.as_view(), name='audit_log'),
+    
+    # System Settings
+    path('settings/', admin_views.AdminSystemSettingsView.as_view(), name='system_settings'),
 ]

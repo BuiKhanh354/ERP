@@ -1,0 +1,100 @@
+{% extends "base_sidebar.html" %}
+{% load humanize %}
+
+{% block title %}Quản lý Thanh toán - ERP{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div>
+    <h1 class="page-title">Quản lý Thanh toán</h1>
+    <ul class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'accounting:dashboard' %}">Kế toán</a></li>
+      <li class="breadcrumb-separator"><i class="bi bi-chevron-right"></i></li>
+      <li class="breadcrumb-item active">Thanh toán</li>
+    </ul>
+  </div>
+  {% if 'CREATE_PAYMENT' in user_permissions or '__superuser__' in user_permissions %}
+  <a href="{% url 'accounting:payment_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Ghi nhận thanh toán</a>
+  {% endif %}
+</div>
+
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <strong>Tổng thanh toán:</strong> <span class="text-success fw-bold">{{ total_payments|intcomma }}</span> VNĐ
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label small">Phương thức</label>
+        <select name="method" class="form-select form-select-sm">
+          <option value="">Tất cả</option>
+          {% for val, label in method_choices %}
+          <option value="{{ val }}" {% if current_method == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-sm flex-fill"><i class="bi bi-search me-1"></i>Lọc</button>
+        <a href="{% url 'accounting:payment_list' %}" class="btn btn-outline-secondary btn-sm">Xoá lọc</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Hoá đơn</th>
+            <th>Khách hàng</th>
+            <th>Dự án</th>
+            <th>Phương thức</th>
+            <th>Mã tham chiếu</th>
+            <th class="text-end">Số tiền</th>
+            <th>Ngày</th>
+            <th class="text-center">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in payments %}
+          <tr>
+            <td><a href="{% url 'accounting:invoice_detail' p.invoice.pk %}">{{ p.invoice.invoice_number }}</a></td>
+            <td>{{ p.invoice.client.name }}</td>
+            <td>{{ p.invoice.project.name }}</td>
+            <td>{{ p.get_payment_method_display }}</td>
+            <td>{{ p.reference_number|default:"—" }}</td>
+            <td class="text-end fw-semibold">{{ p.amount|intcomma }}</td>
+            <td>{{ p.payment_date|date:"d/m/Y" }}</td>
+            <td class="text-center">
+              {% if 'EDIT_PAYMENT' in user_permissions or '__superuser__' in user_permissions %}
+              <a href="{% url 'accounting:payment_edit' p.pk %}" class="btn btn-outline-warning btn-sm"><i class="bi bi-pencil"></i></a>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="text-center text-muted py-4">Chưa có thanh toán</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% if is_paginated %}
+<nav class="mt-3">
+  <ul class="pagination justify-content-center">
+    {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">‹</a></li>{% endif %}
+    {% for num in page_obj.paginator.page_range %}
+    <li class="page-item {% if page_obj.number == num %}active{% endif %}"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+    {% endfor %}
+    {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">›</a></li>{% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}

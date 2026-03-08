@@ -1,0 +1,220 @@
+{% extends "base_sidebar.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Báo cáo Tài chính - CFO{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/cfo-reports.css' %}" />
+
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Báo cáo Tài chính</h1>
+  <ul class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'cfo:dashboard' %}">CFO Dashboard</a></li>
+    <li class="breadcrumb-separator"><i class="bi bi-chevron-right"></i></li>
+    <li class="breadcrumb-item active">Báo cáo Tài chính</li>
+  </ul>
+</div>
+
+<!-- Filters -->
+<div class="filter-card mb-4">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-md-3">
+      <label class="form-label fw-semibold">Từ ngày</label>
+      <input type="date" name="date_from" class="form-control" value="{{ current_date_from }}">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label fw-semibold">Đến ngày</label>
+      <input type="date" name="date_to" class="form-control" value="{{ current_date_to }}">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label fw-semibold">Dự án</label>
+      <select name="project" class="form-select">
+        <option value="">Tất cả dự án</option>
+        {% for p in projects %}
+        <option value="{{ p.pk }}" {% if current_project == p.pk|stringformat:"d" %}selected{% endif %}>{{ p.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel me-1"></i>Lọc</button>
+    </div>
+  </form>
+</div>
+
+<!-- Reports Accordion -->
+<div class="accordion" id="reportsAccordion">
+
+  <!-- 1. Profit & Loss -->
+  <div class="accordion-item mb-3" style="border-radius:12px; overflow:hidden; border:1px solid var(--border-color);">
+    <h2 class="accordion-header">
+      <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#plCollapse" aria-expanded="true">
+        <i class="bi bi-graph-up-arrow me-2"></i>Lãi / Lỗ theo Dự án
+      </button>
+    </h2>
+    <div id="plCollapse" class="accordion-collapse collapse show" data-bs-parent="#reportsAccordion">
+      <div class="accordion-body p-0">
+        <div class="d-flex justify-content-end p-2">
+          <a href="{% url 'cfo:report_export' %}?type=profit_loss&date_from={{ current_date_from }}&date_to={{ current_date_to }}&project={{ current_project }}" class="btn btn-outline-success export-btn"><i class="bi bi-download me-1"></i>CSV</a>
+        </div>
+        <div class="table-responsive table-section">
+          <table class="table table-hover mb-0">
+            <thead><tr><th>Dự án</th><th class="text-end">Doanh thu</th><th class="text-end">Chi phí</th><th class="text-end">Lợi nhuận</th></tr></thead>
+            <tbody>
+              {% for d in pl_data %}
+              <tr>
+                <td class="fw-semibold">{{ d.project }}</td>
+                <td class="text-end text-success">{{ d.revenue|intcomma }}</td>
+                <td class="text-end text-danger">{{ d.cost|intcomma }}</td>
+                <td class="text-end {% if d.profit >= 0 %}text-success{% else %}text-danger{% endif %} fw-semibold">{{ d.profit|intcomma }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-3">Chưa có dữ liệu</td></tr>
+              {% endfor %}
+              {% if pl_data %}
+              <tr class="summary-row">
+                <td>Tổng cộng</td>
+                <td class="text-end">{{ pl_total_revenue|intcomma }}</td>
+                <td class="text-end">{{ pl_total_cost|intcomma }}</td>
+                <td class="text-end">{{ pl_total_profit|intcomma }}</td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Cash Flow -->
+  <div class="accordion-item mb-3" style="border-radius:12px; overflow:hidden; border:1px solid var(--border-color);">
+    <h2 class="accordion-header">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cfCollapse">
+        <i class="bi bi-arrow-left-right me-2"></i>Dòng tiền
+      </button>
+    </h2>
+    <div id="cfCollapse" class="accordion-collapse collapse" data-bs-parent="#reportsAccordion">
+      <div class="accordion-body p-0">
+        <div class="d-flex justify-content-end p-2">
+          <a href="{% url 'cfo:report_export' %}?type=cash_flow&date_from={{ current_date_from }}&date_to={{ current_date_to }}&project={{ current_project }}" class="btn btn-outline-success export-btn"><i class="bi bi-download me-1"></i>CSV</a>
+        </div>
+        <div class="table-responsive table-section">
+          <table class="table table-hover mb-0">
+            <thead><tr><th>Tháng</th><th class="text-end">Thu</th><th class="text-end">Chi</th><th class="text-end">Ròng</th></tr></thead>
+            <tbody>
+              {% for cf in cash_flow_data %}
+              <tr>
+                <td class="fw-semibold">{{ cf.month }}</td>
+                <td class="text-end text-success">{{ cf.inflow|intcomma }}</td>
+                <td class="text-end text-danger">{{ cf.outflow|intcomma }}</td>
+                <td class="text-end {% if cf.net >= 0 %}text-success{% else %}text-danger{% endif %} fw-semibold">{{ cf.net|intcomma }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-3">Chưa có dữ liệu</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Budget vs Actual -->
+  <div class="accordion-item mb-3" style="border-radius:12px; overflow:hidden; border:1px solid var(--border-color);">
+    <h2 class="accordion-header">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#bvaCollapse">
+        <i class="bi bi-bar-chart-steps me-2"></i>Ngân sách vs Thực tế
+      </button>
+    </h2>
+    <div id="bvaCollapse" class="accordion-collapse collapse" data-bs-parent="#reportsAccordion">
+      <div class="accordion-body p-0">
+        <div class="d-flex justify-content-end p-2">
+          <a href="{% url 'cfo:report_export' %}?type=budget_vs_actual" class="btn btn-outline-success export-btn"><i class="bi bi-download me-1"></i>CSV</a>
+        </div>
+        <div class="table-responsive table-section">
+          <table class="table table-hover mb-0">
+            <thead><tr><th>Dự án</th><th class="text-end">Ngân sách</th><th class="text-end">Chi tiêu</th><th class="text-end">Chênh lệch</th></tr></thead>
+            <tbody>
+              {% for b in budget_vs_actual %}
+              <tr>
+                <td class="fw-semibold">{{ b.project__name }}</td>
+                <td class="text-end">{{ b.total_budget|intcomma }}</td>
+                <td class="text-end">{{ b.total_spent|intcomma }}</td>
+                <td class="text-end {% if b.variance >= 0 %}text-success{% else %}text-danger{% endif %} fw-semibold">{{ b.variance|intcomma }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-3">Chưa có dữ liệu</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Revenue by Project -->
+  <div class="accordion-item mb-3" style="border-radius:12px; overflow:hidden; border:1px solid var(--border-color);">
+    <h2 class="accordion-header">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#rbpCollapse">
+        <i class="bi bi-bar-chart me-2"></i>Doanh thu theo Dự án
+      </button>
+    </h2>
+    <div id="rbpCollapse" class="accordion-collapse collapse" data-bs-parent="#reportsAccordion">
+      <div class="accordion-body p-0">
+        <div class="d-flex justify-content-end p-2">
+          <a href="{% url 'cfo:report_export' %}?type=revenue_by_project&date_from={{ current_date_from }}&date_to={{ current_date_to }}&project={{ current_project }}" class="btn btn-outline-success export-btn"><i class="bi bi-download me-1"></i>CSV</a>
+        </div>
+        <div class="table-responsive table-section">
+          <table class="table table-hover mb-0">
+            <thead><tr><th>Dự án</th><th class="text-end">Doanh thu</th></tr></thead>
+            <tbody>
+              {% for d in revenue_by_project %}
+              <tr>
+                <td class="fw-semibold">{{ d.project__name }}</td>
+                <td class="text-end text-success fw-semibold">{{ d.total|intcomma }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="2" class="text-center text-muted py-3">Chưa có dữ liệu</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Expense by Department -->
+  <div class="accordion-item mb-3" style="border-radius:12px; overflow:hidden; border:1px solid var(--border-color);">
+    <h2 class="accordion-header">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ebdCollapse">
+        <i class="bi bi-building me-2"></i>Chi phí theo Phòng ban
+      </button>
+    </h2>
+    <div id="ebdCollapse" class="accordion-collapse collapse" data-bs-parent="#reportsAccordion">
+      <div class="accordion-body p-0">
+        <div class="d-flex justify-content-end p-2">
+          <a href="{% url 'cfo:report_export' %}?type=expense_by_department&date_from={{ current_date_from }}&date_to={{ current_date_to }}&project={{ current_project }}" class="btn btn-outline-success export-btn"><i class="bi bi-download me-1"></i>CSV</a>
+        </div>
+        <div class="table-responsive table-section">
+          <table class="table table-hover mb-0">
+            <thead><tr><th>Phòng ban</th><th class="text-end">Chi phí</th></tr></thead>
+            <tbody>
+              {% for d in expense_by_department %}
+              <tr>
+                <td class="fw-semibold">{{ d.name }}</td>
+                <td class="text-end text-danger fw-semibold">{{ d.total|intcomma }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="2" class="text-center text-muted py-3">Chưa có dữ liệu</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

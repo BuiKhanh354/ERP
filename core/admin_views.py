@@ -1,34 +1,20 @@
 """
-Custom Admin Views với UI giống Client Site - Đầy đủ CRUD operations.
+Custom Admin Views — System Administration Only.
+Theo fixgiaodien.md: User, Role, Department, Project Access, Audit, Settings.
+Admin KHÔNG truy cập dữ liệu nghiệp vụ (Projects, Tasks, Clients, Budgets, HR, etc.).
 """
-from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import TemplateView, ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth.models import User
-from django.db.models import Q, Count, Sum, Avg
+from django.db.models import Q, Count
 from django.utils import timezone
-from django.http import JsonResponse, HttpResponse
-from django.views.decorators.http import require_http_methods
-from datetime import timedelta
-import csv
 import json
 
-from core.models import UserProfile, Notification, AIChatHistory
-from projects.models import Project, Task, TimeEntry
-from budgeting.models import BudgetCategory, Budget, Expense
-from resources.models import Department, Employee, ResourceAllocation
-from clients.models import Client, Contact, ClientInteraction
-from performance.models import PerformanceScore, PerformanceMetric
-from ai.models import AIInsight
-
-# Import forms
-from projects.forms import ProjectForm, TaskForm
-from clients.forms import ClientForm, ContactForm, ClientInteractionForm
-from resources.forms import DepartmentForm, EmployeeForm, ResourceAllocationForm
-from budgeting.forms import BudgetForm, ExpenseForm
+from resources.models import Department
+from resources.forms import DepartmentForm
 
 
 def is_staff_user(user):
@@ -43,32 +29,50 @@ class AdminRequiredMixin(UserPassesTestMixin):
 
 
 class AdminDashboardView(LoginRequiredMixin, AdminRequiredMixin, TemplateView):
-    """Trang dashboard admin với quick actions thực sự hoạt động."""
+    """Trang dashboard admin — System Overview, Security, Activity, Recent Audit."""
     template_name = 'admin_custom/dashboard.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        from core.models import AuditLog, Role, UserRole
         
-        # Thống kê tổng quan
+        # System Overview
         context['total_users'] = User.objects.count()
-        context['total_projects'] = Project.objects.count()
-        context['active_projects'] = Project.objects.filter(status='active').count()
-        context['total_employees'] = Employee.objects.count()
-        context['total_clients'] = Client.objects.count()
-        context['total_budgets'] = Budget.objects.count()
-        context['total_expenses'] = Expense.objects.aggregate(Sum('amount'))['amount__sum'] or 0
-        context['total_tasks'] = Task.objects.count()
-        context['pending_tasks'] = Task.objects.filter(status='todo').count()
+        context['active_users'] = User.objects.filter(is_active=True).count()
+        context['inactive_users'] = User.objects.filter(is_active=False).count()
+        now = timezone.now()
+        context['new_users_this_month'] = User.objects.filter(
+            date_joined__year=now.year, date_joined__month=now.month
+        ).count()
         
-        # Thống kê gần đây
-        context['recent_projects'] = Project.objects.select_related('client').order_by('-created_at')[:5]
+        # System Activity (today)
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        today_logs = AuditLog.objects.filter(created_at__gte=today_start)
+        context['users_created_today'] = today_logs.filter(
+            action_type='CREATE', table_name='auth_user'
+        ).count()
+        context['roles_changed_today'] = today_logs.filter(
+            action_type='UPDATE', table_name='auth_user'
+        ).count()
+        context['accounts_deactivated_today'] = today_logs.filter(
+            action_type='UPDATE', table_name='auth_user',
+            new_data__contains='false'
+        ).count()
+        
+        # System-level counts only (no business data)
+        context['total_roles'] = Role.objects.filter(is_active=True).count()
+        context['total_departments'] = Department.objects.count()
+        
+        # Security metrics
+        context['failed_login_attempts'] = AuditLog.objects.filter(
+            action_type='LOGIN_FAILED'
+        ).filter(created_at__gte=today_start).count()
+        
+        # Recent Audit Logs
+        context['recent_audit'] = AuditLog.objects.select_related('user').order_by('-created_at')[:10]
+        
+        # Recent Users
         context['recent_users'] = User.objects.order_by('-date_joined')[:5]
-        context['recent_tasks'] = Task.objects.select_related('project', 'assigned_to').order_by('-created_at')[:5]
-        context['recent_employees'] = Employee.objects.select_related('department').order_by('-created_at')[:5]
-        
-        # Thống kê theo trạng thái
-        context['project_status_stats'] = Project.objects.values('status').annotate(count=Count('id'))
-        context['task_status_stats'] = Task.objects.values('status').annotate(count=Count('id'))
         
         return context
 
@@ -82,7 +86,7 @@ class AdminUserListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
     paginate_by = 20
     
     def get_queryset(self):
-        queryset = User.objects.all().select_related('userprofile')
+        queryset = User.objects.all().prefetch_related('user_roles__role')
         search = self.request.GET.get('search')
         if search:
             queryset = queryset.filter(
@@ -91,6 +95,11 @@ class AdminUserListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
                 Q(first_name__icontains=search) |
                 Q(last_name__icontains=search)
             )
+        status_filter = self.request.GET.get('status')
+        if status_filter == 'active':
+            queryset = queryset.filter(is_active=True)
+        elif status_filter == 'inactive':
+            queryset = queryset.filter(is_active=False)
         return queryset.order_by('-date_joined')
     
     def get_context_data(self, **kwargs):
@@ -98,6 +107,8 @@ class AdminUserListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
         context['total_users'] = User.objects.count()
         context['staff_users'] = User.objects.filter(is_staff=True).count()
         context['active_users'] = User.objects.filter(is_active=True).count()
+        from core.models import Role
+        context['all_roles'] = Role.objects.filter(is_active=True)
         return context
 
 
@@ -106,314 +117,155 @@ class AdminUserDetailView(LoginRequiredMixin, AdminRequiredMixin, DetailView):
     template_name = 'admin_custom/users/detail.html'
     context_object_name = 'user_obj'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user_obj = self.get_object()
+        from core.models import UserRole, AuditLog
+        context['user_roles'] = UserRole.objects.filter(user=user_obj).select_related('role')
+        context['recent_audit'] = AuditLog.objects.filter(
+            Q(user=user_obj) |
+            Q(table_name='auth_user', record_id=str(user_obj.pk))
+        ).order_by('-created_at')[:10]
+        # Employee info
+        from resources.models import Employee
+        try:
+            context['employee'] = Employee.objects.select_related('department').get(user=user_obj)
+        except Employee.DoesNotExist:
+            context['employee'] = None
+        return context
 
-# ==================== PROJECT MANAGEMENT ====================
 
-class AdminProjectListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
-    model = Project
-    template_name = 'admin_custom/projects/list.html'
-    context_object_name = 'projects'
-    paginate_by = 20
-    
-    def get_queryset(self):
-        queryset = Project.objects.select_related('client').all()
-        status = self.request.GET.get('status')
-        if status:
-            queryset = queryset.filter(status=status)
-        search = self.request.GET.get('search')
-        if search:
-            queryset = queryset.filter(
-                Q(name__icontains=search) |
-                Q(description__icontains=search) |
-                Q(client__name__icontains=search)
+class AdminUserCreateView(LoginRequiredMixin, AdminRequiredMixin, TemplateView):
+    """Tạo user mới + gán role RBAC + audit log."""
+    template_name = 'admin_custom/users/form.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from core.admin_forms import AdminUserCreateForm
+        context['form'] = kwargs.get('form') or AdminUserCreateForm()
+        context['form_title'] = 'Tạo Người dùng mới'
+        context['is_create'] = True
+        return context
+
+    def post(self, request, *args, **kwargs):
+        from core.admin_forms import AdminUserCreateForm
+        from core.rbac import log_audit, get_client_ip
+        form = AdminUserCreateForm(request.POST)
+        if form.is_valid():
+            user, temp_password = form.save()
+            log_audit(
+                user=request.user,
+                action_type='CREATE',
+                table_name='auth_user',
+                record_id=user.pk,
+                new_data=json.dumps({
+                    'username': user.username,
+                    'email': user.email,
+                    'roles': [r.name for r in form.cleaned_data.get('roles', [])],
+                }),
+                ip_address=get_client_ip(request),
             )
+            messages.success(
+                request,
+                f'Đã tạo user "{user.username}" thành công. Mật khẩu tạm: {temp_password}'
+            )
+            return redirect(reverse('admin_custom:users'))
+        return self.render_to_response(self.get_context_data(form=form))
+
+
+class AdminUserEditView(LoginRequiredMixin, AdminRequiredMixin, TemplateView):
+    """Chỉnh sửa user — đổi role, department, deactivate, reset password."""
+    template_name = 'admin_custom/users/form.html'
+
+    def get_user_obj(self):
+        return get_object_or_404(User, pk=self.kwargs['pk'])
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from core.admin_forms import AdminUserEditForm
+        user_obj = self.get_user_obj()
+        context['form'] = kwargs.get('form') or AdminUserEditForm(user_obj=user_obj)
+        context['form_title'] = f'Chỉnh sửa: {user_obj.username}'
+        context['user_obj'] = user_obj
+        context['is_create'] = False
+        return context
+
+    def post(self, request, *args, **kwargs):
+        from core.admin_forms import AdminUserEditForm
+        from core.rbac import log_audit, get_client_ip
+        user_obj = self.get_user_obj()
+        form = AdminUserEditForm(request.POST, user_obj=user_obj)
+        if form.is_valid():
+            user, new_password, changes = form.save()
+            if changes:
+                log_audit(
+                    user=request.user,
+                    action_type='UPDATE',
+                    table_name='auth_user',
+                    record_id=user.pk,
+                    old_data=json.dumps({k: v.get('old') if isinstance(v, dict) else v for k, v in changes.items()}),
+                    new_data=json.dumps({k: v.get('new') if isinstance(v, dict) else v for k, v in changes.items()}),
+                    ip_address=get_client_ip(request),
+                )
+            msg = f'Đã cập nhật user "{user.username}" thành công.'
+            if new_password:
+                msg += f' Mật khẩu mới: {new_password}'
+            messages.success(request, msg)
+            return redirect(reverse('admin_custom:user_detail', kwargs={'pk': user.pk}))
+        return self.render_to_response(self.get_context_data(form=form))
+
+
+class AdminUserDeactivateView(LoginRequiredMixin, AdminRequiredMixin, TemplateView):
+    """Toggle active/inactive cho user."""
+    def post(self, request, *args, **kwargs):
+        from core.rbac import log_audit, get_client_ip
+        user_obj = get_object_or_404(User, pk=self.kwargs['pk'])
+        old_status = user_obj.is_active
+        user_obj.is_active = not user_obj.is_active
+        user_obj.save()
+        action = 'kích hoạt' if user_obj.is_active else 'vô hiệu hóa'
+        log_audit(
+            user=request.user,
+            action_type='UPDATE',
+            table_name='auth_user',
+            record_id=user_obj.pk,
+            old_data=json.dumps({'is_active': old_status}),
+            new_data=json.dumps({'is_active': user_obj.is_active}),
+            ip_address=get_client_ip(request),
+        )
+        messages.success(request, f'Đã {action} tài khoản "{user_obj.username}".')
+        return redirect(reverse('admin_custom:users'))
+
+
+# ==================== AUDIT LOG ====================
+
+class AdminAuditLogView(LoginRequiredMixin, AdminRequiredMixin, ListView):
+    """Xem nhật ký hoạt động hệ thống — ai làm gì, lúc nào."""
+    template_name = 'admin_custom/users/audit_log.html'
+    context_object_name = 'audit_logs'
+    paginate_by = 30
+
+    def get_queryset(self):
+        from core.models import AuditLog
+        queryset = AuditLog.objects.select_related('user').all()
+        action_type = self.request.GET.get('action_type')
+        if action_type:
+            queryset = queryset.filter(action_type=action_type)
+        table_name = self.request.GET.get('table_name')
+        if table_name:
+            queryset = queryset.filter(table_name__icontains=table_name)
+        user_id = self.request.GET.get('user_id')
+        if user_id:
+            queryset = queryset.filter(user_id=user_id)
         return queryset.order_by('-created_at')
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['status_choices'] = Project.STATUS_CHOICES
-        context['total_projects'] = Project.objects.count()
-        context['active_projects'] = Project.objects.filter(status='active').count()
+        from core.models import AuditLog
+        context['total_logs'] = AuditLog.objects.count()
+        context['action_types'] = AuditLog.ACTION_CHOICES
+        context['all_users'] = User.objects.filter(is_active=True).order_by('username')
         return context
-
-
-class AdminProjectCreateView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
-    model = Project
-    form_class = ProjectForm
-    template_name = 'admin_custom/projects/form.html'
-    
-    def form_valid(self, form):
-        messages.success(self.request, f'Đã tạo dự án "{form.instance.name}" thành công.')
-        return super().form_valid(form)
-    
-    def get_success_url(self):
-        return reverse('admin_custom:projects').url
-
-
-class AdminProjectUpdateView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
-    model = Project
-    form_class = ProjectForm
-    template_name = 'admin_custom/projects/form.html'
-    
-    def form_valid(self, form):
-        messages.success(self.request, f'Đã cập nhật dự án "{form.instance.name}" thành công.')
-        return super().form_valid(form)
-    
-    def get_success_url(self):
-        return reverse('admin_custom:projects').url
-
-
-class AdminProjectDeleteView(LoginRequiredMixin, AdminRequiredMixin, DeleteView):
-    model = Project
-    template_name = 'admin_custom/confirm_delete.html'
-    
-    def get_success_url(self):
-        messages.success(self.request, f'Đã xóa dự án "{self.object.name}".')
-        return reverse('admin_custom:projects')
-
-
-# ==================== TASK MANAGEMENT ====================
-
-class AdminTaskListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
-    model = Task
-    template_name = 'admin_custom/tasks/list.html'
-    context_object_name = 'tasks'
-    paginate_by = 20
-    
-    def get_queryset(self):
-        queryset = Task.objects.select_related('project', 'assigned_to').all()
-        status = self.request.GET.get('status')
-        if status:
-            queryset = queryset.filter(status=status)
-        project_id = self.request.GET.get('project')
-        if project_id:
-            queryset = queryset.filter(project_id=project_id)
-        return queryset.order_by('-created_at')
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['status_choices'] = Task.STATUS_CHOICES
-        context['projects'] = Project.objects.all()
-        return context
-
-
-class AdminTaskCreateView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
-    model = Task
-    form_class = TaskForm
-    template_name = 'admin_custom/tasks/form.html'
-    
-    def form_valid(self, form):
-        messages.success(self.request, f'Đã tạo công việc "{form.instance.name}" thành công.')
-        return super().form_valid(form)
-    
-    def get_success_url(self):
-        return reverse('admin_custom:tasks')
-
-
-class AdminTaskUpdateView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
-    model = Task
-    form_class = TaskForm
-    template_name = 'admin_custom/tasks/form.html'
-    
-    def form_valid(self, form):
-        messages.success(self.request, f'Đã cập nhật công việc "{form.instance.name}" thành công.')
-        return super().form_valid(form)
-    
-    def get_success_url(self):
-        return reverse('admin_custom:tasks')
-
-
-class AdminTaskDeleteView(LoginRequiredMixin, AdminRequiredMixin, DeleteView):
-    model = Task
-    template_name = 'admin_custom/confirm_delete.html'
-    
-    def get_success_url(self):
-        messages.success(self.request, f'Đã xóa công việc "{self.object.name}".')
-        return reverse('admin_custom:tasks')
-
-
-# ==================== EMPLOYEE MANAGEMENT ====================
-
-class AdminEmployeeListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
-    model = Employee
-    template_name = 'admin_custom/employees/list.html'
-    context_object_name = 'employees'
-    paginate_by = 20
-    
-    def get_queryset(self):
-        queryset = Employee.objects.select_related('department', 'user').all()
-        department_id = self.request.GET.get('department')
-        if department_id:
-            queryset = queryset.filter(department_id=department_id)
-        search = self.request.GET.get('search')
-        if search:
-            queryset = queryset.filter(
-                Q(first_name__icontains=search) |
-                Q(last_name__icontains=search) |
-                Q(email__icontains=search) |
-                Q(employee_id__icontains=search)
-            )
-        return queryset.order_by('last_name', 'first_name')
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['departments'] = Department.objects.all()
-        return context
-
-
-class AdminEmployeeCreateView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
-    model = Employee
-    form_class = EmployeeForm
-    template_name = 'admin_custom/employees/form.html'
-    
-    def form_valid(self, form):
-        messages.success(self.request, f'Đã tạo nhân sự "{form.instance.full_name}" thành công.')
-        return super().form_valid(form)
-    
-    def get_success_url(self):
-        return reverse('admin_custom:employees')
-
-
-class AdminEmployeeUpdateView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
-    model = Employee
-    form_class = EmployeeForm
-    template_name = 'admin_custom/employees/form.html'
-    
-    def form_valid(self, form):
-        messages.success(self.request, f'Đã cập nhật nhân sự "{form.instance.full_name}" thành công.')
-        return super().form_valid(form)
-    
-    def get_success_url(self):
-        return reverse('admin_custom:employees')
-
-
-class AdminEmployeeDeleteView(LoginRequiredMixin, AdminRequiredMixin, DeleteView):
-    model = Employee
-    template_name = 'admin_custom/confirm_delete.html'
-    
-    def get_success_url(self):
-        messages.success(self.request, f'Đã xóa nhân sự "{self.object.full_name}".')
-        return reverse('admin_custom:employees')
-
-
-# ==================== CLIENT MANAGEMENT ====================
-
-class AdminClientListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
-    model = Client
-    template_name = 'admin_custom/clients/list.html'
-    context_object_name = 'clients'
-    paginate_by = 20
-    
-    def get_queryset(self):
-        queryset = Client.objects.all()
-        status = self.request.GET.get('status')
-        if status:
-            queryset = queryset.filter(status=status)
-        search = self.request.GET.get('search')
-        if search:
-            queryset = queryset.filter(
-                Q(name__icontains=search) |
-                Q(email__icontains=search) |
-                Q(phone__icontains=search)
-            )
-        return queryset.order_by('name')
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['status_choices'] = Client.STATUS_CHOICES
-        return context
-
-
-class AdminClientCreateView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
-    model = Client
-    form_class = ClientForm
-    template_name = 'admin_custom/clients/form.html'
-    
-    def form_valid(self, form):
-        messages.success(self.request, f'Đã tạo khách hàng "{form.instance.name}" thành công.')
-        return super().form_valid(form)
-    
-    def get_success_url(self):
-        return reverse('admin_custom:clients')
-
-
-class AdminClientUpdateView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
-    model = Client
-    form_class = ClientForm
-    template_name = 'admin_custom/clients/form.html'
-    
-    def form_valid(self, form):
-        messages.success(self.request, f'Đã cập nhật khách hàng "{form.instance.name}" thành công.')
-        return super().form_valid(form)
-    
-    def get_success_url(self):
-        return reverse('admin_custom:clients')
-
-
-class AdminClientDeleteView(LoginRequiredMixin, AdminRequiredMixin, DeleteView):
-    model = Client
-    template_name = 'admin_custom/confirm_delete.html'
-    
-    def get_success_url(self):
-        messages.success(self.request, f'Đã xóa khách hàng "{self.object.name}".')
-        return reverse('admin_custom:clients')
-
-
-# ==================== BUDGET MANAGEMENT ====================
-
-class AdminBudgetListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
-    model = Budget
-    template_name = 'admin_custom/budgets/list.html'
-    context_object_name = 'budgets'
-    paginate_by = 20
-    
-    def get_queryset(self):
-        queryset = Budget.objects.select_related('project', 'category').all()
-        project_id = self.request.GET.get('project')
-        if project_id:
-            queryset = queryset.filter(project_id=project_id)
-        return queryset.order_by('-fiscal_year', 'category')
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['projects'] = Project.objects.all()
-        context['categories'] = BudgetCategory.objects.all()
-        return context
-
-
-class AdminBudgetCreateView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
-    model = Budget
-    form_class = BudgetForm
-    template_name = 'admin_custom/budgets/form.html'
-    
-    def form_valid(self, form):
-        messages.success(self.request, 'Đã tạo ngân sách thành công.')
-        return super().form_valid(form)
-    
-    def get_success_url(self):
-        return reverse('admin_custom:budgets')
-
-
-class AdminBudgetUpdateView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
-    model = Budget
-    form_class = BudgetForm
-    template_name = 'admin_custom/budgets/form.html'
-    
-    def form_valid(self, form):
-        messages.success(self.request, 'Đã cập nhật ngân sách thành công.')
-        return super().form_valid(form)
-    
-    def get_success_url(self):
-        return reverse('admin_custom:budgets')
-
-
-class AdminBudgetDeleteView(LoginRequiredMixin, AdminRequiredMixin, DeleteView):
-    model = Budget
-    template_name = 'admin_custom/confirm_delete.html'
-    
-    def get_success_url(self):
-        messages.success(self.request, 'Đã xóa ngân sách.')
-        return reverse('admin_custom:budgets')
 
 
 # ==================== DEPARTMENT MANAGEMENT ====================
@@ -460,146 +312,184 @@ class AdminDepartmentDeleteView(LoginRequiredMixin, AdminRequiredMixin, DeleteVi
         return reverse('admin_custom:departments')
 
 
-# ==================== PERFORMANCE MANAGEMENT ====================
+# ==================== ROLE & PERMISSION MANAGEMENT ====================
 
-class AdminPerformanceListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
-    model = PerformanceScore
-    template_name = 'admin_custom/performance/list.html'
-    context_object_name = 'scores'
-    paginate_by = 20
-    
+class AdminRoleListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
+    """List all RBAC roles with user count and permission count."""
+    template_name = 'admin_custom/roles/list.html'
+    context_object_name = 'roles'
+
     def get_queryset(self):
-        queryset = PerformanceScore.objects.select_related('employee', 'project').all()
-        employee_id = self.request.GET.get('employee')
-        if employee_id:
-            queryset = queryset.filter(employee_id=employee_id)
-        return queryset.order_by('-period_end', '-overall_score')
-    
+        from core.models import Role
+        return Role.objects.filter(is_active=True).annotate(
+            user_count=Count('user_roles', distinct=True),
+            permission_count=Count('role_permissions', distinct=True),
+        ).order_by('name')
+
+
+class AdminRoleCreateView(LoginRequiredMixin, AdminRequiredMixin, TemplateView):
+    """Create a new RBAC role."""
+    template_name = 'admin_custom/roles/create.html'
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['employees'] = Employee.objects.all()
+        from core.models import Permission
+        all_perms = Permission.objects.all().order_by('module', 'code')
+        modules = {}
+        for p in all_perms:
+            modules.setdefault(p.module, []).append({
+                'id': p.id, 'code': p.code, 'name': p.name,
+            })
+        context['modules'] = modules
+        return context
+
+    def post(self, request, *args, **kwargs):
+        from core.models import Role, RolePermission
+        from core.rbac import log_audit
+        name = request.POST.get('name', '').strip().upper()
+        description = request.POST.get('description', '').strip()
+        if not name:
+            from django.contrib import messages as msg_framework
+            msg_framework.error(request, 'Role name is required.')
+            return self.get(request, *args, **kwargs)
+        
+        role, created = Role.objects.get_or_create(
+            name=name,
+            defaults={'description': description, 'is_active': True}
+        )
+        if not created:
+            from django.contrib import messages as msg_framework
+            msg_framework.warning(request, f'Role {name} already exists.')
+            return redirect('admin_custom:role_detail', pk=role.pk)
+        
+        # Assign selected permissions
+        perm_ids = request.POST.getlist('permissions')
+        for pid in perm_ids:
+            RolePermission.objects.create(role=role, permission_id=int(pid))
+        
+        log_audit(
+            user=request.user,
+            action_type='CREATE',
+            table_name='roles',
+            record_id=str(role.id),
+            new_data=f'name={name}, permissions={perm_ids}',
+            request=request,
+        )
+        from django.contrib import messages as msg_framework
+        msg_framework.success(request, f'Role {name} created successfully.')
+        return redirect('admin_custom:roles')
+
+
+class AdminRoleDetailView(LoginRequiredMixin, AdminRequiredMixin, DetailView):
+    """View/edit role permissions (permission matrix)."""
+    template_name = 'admin_custom/roles/detail.html'
+    context_object_name = 'role'
+
+    def get_queryset(self):
+        from core.models import Role
+        return Role.objects.filter(is_active=True)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from core.models import Permission, RolePermission
+        role = self.object
+        assigned_ids = set(
+            RolePermission.objects.filter(role=role).values_list('permission_id', flat=True)
+        )
+        all_perms = Permission.objects.all().order_by('module', 'code')
+        # Group by module
+        modules = {}
+        for p in all_perms:
+            modules.setdefault(p.module, []).append({
+                'id': p.id,
+                'code': p.code,
+                'name': p.name,
+                'enabled': p.id in assigned_ids,
+            })
+        context['modules'] = modules
+        context['assigned_users'] = User.objects.filter(
+            user_roles__role=role
+        ).distinct()[:20]
+        return context
+
+    def post(self, request, *args, **kwargs):
+        """Toggle permissions for this role."""
+        from core.models import Permission, RolePermission
+        from core.rbac import log_audit
+        self.object = self.get_object()
+        role = self.object
+        selected_ids = set(map(int, request.POST.getlist('permissions')))
+        all_perms = Permission.objects.all()
+
+        # Remove unchecked
+        RolePermission.objects.filter(role=role).exclude(
+            permission_id__in=selected_ids
+        ).delete()
+
+        # Add new
+        existing = set(
+            RolePermission.objects.filter(role=role).values_list('permission_id', flat=True)
+        )
+        for pid in selected_ids - existing:
+            RolePermission.objects.create(role=role, permission_id=pid)
+
+        log_audit(
+            user=request.user,
+            action_type='UPDATE',
+            table_name='role_permissions',
+            record_id=str(role.id),
+            new_data=f'permissions={list(selected_ids)}',
+            request=request,
+        )
+        from django.contrib import messages as msg_framework
+        msg_framework.success(request, f'Permissions for role {role.name} updated.')
+        return redirect('admin_custom:role_detail', pk=role.pk)
+
+
+# ==================== PROJECT ACCESS CONTROL ====================
+
+class AdminProjectAccessView(LoginRequiredMixin, AdminRequiredMixin, ListView):
+    """User-Project-Role assignment matrix.
+    Admin chỉ thấy User + Project ID + Role, KHÔNG thấy budget/profit/finance."""
+    template_name = 'admin_custom/project_access/list.html'
+    context_object_name = 'assignments'
+    paginate_by = 30
+
+    def get_queryset(self):
+        from projects.models import Task
+        # Show project members via tasks (assigned_to)
+        qs = Task.objects.select_related(
+            'project', 'assigned_to__user'
+        ).exclude(assigned_to__isnull=True).values(
+            'assigned_to__user__id',
+            'assigned_to__user__username',
+            'assigned_to__user__first_name',
+            'assigned_to__user__last_name',
+            'project__id',
+            'project__name',
+        ).distinct().order_by('project__name')
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from projects.models import Project
+        context['projects'] = Project.objects.all().order_by('name')
         return context
 
 
-# ==================== NOTIFICATION MANAGEMENT ====================
+# ==================== SYSTEM SETTINGS ====================
 
-class AdminNotificationListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
-    model = Notification
-    template_name = 'admin_custom/notifications/list.html'
-    context_object_name = 'notifications'
-    paginate_by = 20
-    
-    def get_queryset(self):
-        queryset = Notification.objects.select_related('user').all()
-        level = self.request.GET.get('level')
-        if level:
-            queryset = queryset.filter(level=level)
-        is_read = self.request.GET.get('is_read')
-        if is_read:
-            queryset = queryset.filter(is_read=is_read == 'true')
-        return queryset.order_by('-created_at')
-    
+class AdminSystemSettingsView(LoginRequiredMixin, AdminRequiredMixin, TemplateView):
+    """System configuration page."""
+    template_name = 'admin_custom/settings/system.html'
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['total_notifications'] = Notification.objects.count()
-        context['unread_notifications'] = Notification.objects.filter(is_read=False).count()
+        from django.conf import settings
+        context['debug_mode'] = settings.DEBUG
+        context['database_engine'] = settings.DATABASES.get('default', {}).get('ENGINE', '')
+        context['database_name'] = settings.DATABASES.get('default', {}).get('NAME', '')
+        context['timezone'] = settings.TIME_ZONE
+        context['language'] = settings.LANGUAGE_CODE
+        context['installed_apps'] = settings.INSTALLED_APPS
         return context
-
-
-# ==================== AI INSIGHTS MANAGEMENT ====================
-
-class AdminAIInsightListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
-    model = AIInsight
-    template_name = 'admin_custom/ai_insights/list.html'
-    context_object_name = 'insights'
-    paginate_by = 20
-    
-    def get_queryset(self):
-        return AIInsight.objects.all().order_by('-created_at')
-
-
-# ==================== EXPORT FUNCTIONS ====================
-
-class AdminExportView(LoginRequiredMixin, AdminRequiredMixin, TemplateView):
-    """Base view cho export data."""
-    pass
-
-
-@login_required
-@user_passes_test(is_staff_user)
-def export_projects_csv(request):
-    """Export projects to CSV."""
-    response = HttpResponse(content_type='text/csv; charset=utf-8')
-    response['Content-Disposition'] = 'attachment; filename="projects.csv"'
-    
-    writer = csv.writer(response)
-    writer.writerow(['ID', 'Tên', 'Khách hàng', 'Trạng thái', 'Ưu tiên', 'Ngân sách dự kiến', 'Ngân sách thực tế', 'Ngày bắt đầu', 'Ngày kết thúc'])
-    
-    projects = Project.objects.select_related('client').all()
-    for project in projects:
-        writer.writerow([
-            project.id,
-            project.name,
-            project.client.name if project.client else '',
-            project.get_status_display(),
-            project.get_priority_display(),
-            project.estimated_budget,
-            project.actual_budget,
-            project.start_date or '',
-            project.end_date or '',
-        ])
-    
-    return response
-
-
-@login_required
-@user_passes_test(is_staff_user)
-def export_employees_csv(request):
-    """Export employees to CSV."""
-    response = HttpResponse(content_type='text/csv; charset=utf-8')
-    response['Content-Disposition'] = 'attachment; filename="employees.csv"'
-    
-    writer = csv.writer(response)
-    writer.writerow(['ID', 'Mã NV', 'Họ', 'Tên', 'Email', 'Phòng ban', 'Chức vụ', 'Loại hợp đồng', 'Lương/giờ', 'Trạng thái'])
-    
-    employees = Employee.objects.select_related('department').all()
-    for emp in employees:
-        writer.writerow([
-            emp.id,
-            emp.employee_id,
-            emp.first_name,
-            emp.last_name,
-            emp.email,
-            emp.department.name if emp.department else '',
-            emp.position,
-            emp.get_employment_type_display(),
-            emp.hourly_rate,
-            'Hoạt động' if emp.is_active else 'Không hoạt động',
-        ])
-    
-    return response
-
-
-@login_required
-@user_passes_test(is_staff_user)
-def export_clients_csv(request):
-    """Export clients to CSV."""
-    response = HttpResponse(content_type='text/csv; charset=utf-8')
-    response['Content-Disposition'] = 'attachment; filename="clients.csv"'
-    
-    writer = csv.writer(response)
-    writer.writerow(['ID', 'Tên', 'Loại', 'Trạng thái', 'Email', 'Số điện thoại', 'Ngành nghề'])
-    
-    clients = Client.objects.all()
-    for client in clients:
-        writer.writerow([
-            client.id,
-            client.name,
-            client.get_client_type_display(),
-            client.get_status_display(),
-            client.email,
-            client.phone,
-            client.industry,
-        ])
-    
-    return response

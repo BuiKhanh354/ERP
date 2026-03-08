@@ -1,0 +1,54 @@
+        <div class="menu-section">
+          <div class="menu-section-title">Quản lý Dự án</div>
+          <a
+            href="{% url 'projects:list' %}"
+            class="menu-item {% if 'projects' in request.resolver_match.namespace and request.resolver_match.url_name in 'list,detail,create,edit,delete' and 'task' not in request.resolver_match.url_name %}active{% endif %}"
+          >
+            <i class="bi bi-folder"></i>
+            <span>Dự án</span>
+          </a>
+          <a
+            href="{% url 'budgeting:list' %}"
+            class="menu-item {% if 'budgeting' in request.resolver_match.namespace %}active{% endif %}"
+          >
+            <i class="bi bi-cash-stack"></i>
+            <span>Ngân sách</span>
+          </a>
+          <a
+            href="{% url 'projects:tasks' %}"
+            class="menu-item {% if 'projects' in request.resolver_match.namespace and request.resolver_match.url_name in 'tasks,task_create,task_edit,task_delete,task_update_status' %}active{% endif %}"
+          >
+            <i class="bi bi-check-square"></i>
+            <span>Công việc</span>
+            {% if pending_tasks_count > 0 %}
+            <span class="badge" id="task-badge">{{ pending_tasks_count }}</span>
+            {% else %}
+            <span class="badge" id="task-badge" style="display: none;">0</span>
+            {% endif %}
+          </a>
+          <a
+            href="{% url 'core:analytics' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}"
+          >
+            <i class="bi bi-graph-up"></i>
+            <span>Phân tích</span>
+          </a>
+           <a
+            href="{% url 'core:analytics' %}"
+            class="menu-item "
+          >
+            <i class="bi bi-ticket"></i>
+            <span>Phiếu đề xuất chi phí</span>
+          </a>
+        </div>
+
+        <div class="menu-section">
+          <div class="menu-section-title">Chat với PRM AI</div>
+          <a
+            href="{% url 'core:ai-chat' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'ai-chat' or request.resolver_match.url_name == 'ai-chat-history' %}active{% endif %}"
+          >
+            <i class="bi bi-chat-dots"></i>
+            <span>Chat với PRM AI</span>
+          </a>
+        </div>

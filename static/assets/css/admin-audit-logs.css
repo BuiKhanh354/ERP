@@ -1,0 +1,36 @@
+.log-toolbar {
+    display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center;
+  }
+  .log-toolbar .search-box {
+    flex: 1; min-width: 200px; position: relative;
+  }
+  .log-toolbar .search-box input {
+    width: 100%; padding: 0.55rem 0.75rem 0.55rem 2.25rem;
+    border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem; background: #fff;
+  }
+  .log-toolbar .search-box input:focus {
+    outline: none; border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+  }
+  .log-toolbar .search-box i {
+    position: absolute; left: 0.7rem; top: 50%; transform: translateY(-50%); color: var(--text-secondary);
+  }
+  .log-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+  .log-table thead th {
+    background: #f8fafc; padding: 0.7rem 1rem; font-size: 0.78rem;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em;
+    color: var(--text-secondary); border-bottom: 2px solid var(--border-color);
+  }
+  .log-table tbody td {
+    padding: 0.75rem 1rem; font-size: 0.85rem; border-bottom: 1px solid var(--border-color); vertical-align: middle;
+  }
+  .log-table tbody tr:hover { background: #f8fafc; }
+  .action-badge { padding: 0.2em 0.55em; border-radius: 5px; font-size: 0.74rem; font-weight: 600; }
+  .action-create { background: #dcfce7; color: #166534; }
+  .action-update { background: #dbeafe; color: #1e40af; }
+  .action-delete { background: #fee2e2; color: #991b1b; }
+  .action-approve { background: #fef3c7; color: #92400e; }
+  .log-stat { background: #fff; border: 1px solid var(--border-color); border-radius: 10px;
+    padding: 0.85rem 1.25rem; font-size: 0.9rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    margin-bottom: 1.5rem; display: inline-block;
+  }
+  .log-stat strong { font-size: 1.25rem; color: #4f46e5; margin-right: 0.4rem; }

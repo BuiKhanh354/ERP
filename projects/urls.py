@@ -16,6 +16,10 @@ from .time_entry_views import (
     TimeEntryCreateView, MyTimeEntriesView, QuickLogTimeEntryView,
     AutoLogTimeOnCompleteView
 )
+from .phase_views import (
+    PhaseCreateView, PhaseUpdateView, PhaseDeleteView,
+    PhaseReorderAPIView, GanttDataAPIView, TaskProgressUpdateView
+)
 
 # API routes
 router = DefaultRouter()
@@ -34,6 +38,16 @@ urlpatterns = [
     path('<int:pk>/', ProjectDetailView.as_view(), name='detail'),
     path('<int:pk>/edit/', ProjectUpdateView.as_view(), name='edit'),
     path('<int:pk>/delete/', ProjectDeleteView.as_view(), name='delete'),
+    
+    # Phases
+    path('<int:project_id>/phases/create/', PhaseCreateView.as_view(), name='phase_create'),
+    path('phases/<int:pk>/edit/', PhaseUpdateView.as_view(), name='phase_edit'),
+    path('phases/<int:pk>/delete/', PhaseDeleteView.as_view(), name='phase_delete'),
+    path('api/phases/reorder/', PhaseReorderAPIView.as_view(), name='phase_reorder'),
+    
+    # Gantt & Progress
+    path('<int:project_id>/gantt-data/', GanttDataAPIView.as_view(), name='gantt_data'),
+    path('api/tasks/<int:pk>/progress/', TaskProgressUpdateView.as_view(), name='task_progress_update'),
     
     # Tasks
     path('tasks/', TaskListView.as_view(), name='tasks'),
@@ -57,4 +71,5 @@ urlpatterns = [
     path('recommendations/<int:recommendation_id>/apply/', ApplyPersonnelRecommendationView.as_view(), name='apply_recommendation'),
     path('<int:project_id>/budget-monitoring/', BudgetMonitoringView.as_view(), name='budget_monitoring'),
 ]
+
 

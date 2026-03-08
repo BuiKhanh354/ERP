@@ -153,56 +153,61 @@ class Migration(migrations.Migration):
         migrations.RunPython(add_budget_for_personnel_if_not_exists, reverse_add_budget_for_personnel),
         migrations.RunPython(create_models_if_not_exist, reverse_create_models),
         # State-only operations to update Django's model state
-        migrations.AddField(
-            model_name='project',
-            name='required_departments',
-            field=models.ManyToManyField(blank=True, help_text='Các phòng ban bắt buộc cần tham gia dự án', related_name='required_projects', to='resources.department'),
-        ),
-        migrations.CreateModel(
-            name='PersonnelRecommendation',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('optimization_goal', models.CharField(choices=[('performance', 'Tối ưu hiệu suất'), ('cost', 'Tối ưu chi phí'), ('balanced', 'Cân bằng')], default='balanced', help_text='Mục tiêu tối ưu hóa', max_length=20)),
-                ('total_estimated_cost', models.DecimalField(decimal_places=2, default=0, help_text='Tổng chi phí ước tính (VNĐ)', max_digits=15)),
-                ('reasoning', models.TextField(help_text='Lý do và phân tích đề xuất')),
-                ('is_applied', models.BooleanField(default=False, help_text='Đã áp dụng đề xuất này chưa')),
-                ('applied_at', models.DateTimeField(blank=True, help_text='Thời điểm áp dụng', null=True)),
-                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created', to=settings.AUTH_USER_MODEL)),
-                ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='personnel_recommendations', to='projects.project')),
-                ('updated_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated', to=settings.AUTH_USER_MODEL)),
-            ],
-            options={
-                'verbose_name': 'Đề xuất nhân sự',
-                'verbose_name_plural': 'Đề xuất nhân sự',
-                'ordering': ['-created_at'],
-            },
-        ),
-        migrations.CreateModel(
-            name='PersonnelRecommendationDetail',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('allocation_percentage', models.DecimalField(decimal_places=2, help_text='Tỷ lệ phân bổ (%)', max_digits=5, validators=[django.core.validators.MinValueValidator(0), django.core.validators.MaxValueValidator(100)])),
-                ('estimated_hours', models.DecimalField(decimal_places=2, default=0, help_text='Số giờ ước tính', max_digits=8)),
-                ('estimated_cost', models.DecimalField(decimal_places=2, default=0, help_text='Chi phí ước tính (VNĐ)', max_digits=15)),
-                ('reasoning', models.TextField(blank=True, help_text='Lý do đề xuất nhân sự này')),
-                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created', to=settings.AUTH_USER_MODEL)),
-                ('employee', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='resources.employee')),
-                ('recommendation', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='projects.personnelrecommendation')),
-                ('updated_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated', to=settings.AUTH_USER_MODEL)),
-            ],
-            options={
-                'verbose_name': 'Chi tiết đề xuất nhân sự',
-                'verbose_name_plural': 'Chi tiết đề xuất nhân sự',
-                'unique_together': {('recommendation', 'employee')},
-            },
-        ),
-        migrations.AddField(
-            model_name='personnelrecommendation',
-            name='recommended_employees',
-            field=models.ManyToManyField(help_text='Danh sách nhân sự được đề xuất', related_name='recommendations', through='projects.PersonnelRecommendationDetail', to='resources.employee'),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddField(
+                    model_name='project',
+                    name='required_departments',
+                    field=models.ManyToManyField(blank=True, help_text='Các phòng ban bắt buộc cần tham gia dự án', related_name='required_projects', to='resources.department'),
+                ),
+                migrations.CreateModel(
+                    name='PersonnelRecommendation',
+                    fields=[
+                        ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                        ('created_at', models.DateTimeField(auto_now_add=True)),
+                        ('updated_at', models.DateTimeField(auto_now=True)),
+                        ('optimization_goal', models.CharField(choices=[('performance', 'Tối ưu hiệu suất'), ('cost', 'Tối ưu chi phí'), ('balanced', 'Cân bằng')], default='balanced', help_text='Mục tiêu tối ưu hóa', max_length=20)),
+                        ('total_estimated_cost', models.DecimalField(decimal_places=2, default=0, help_text='Tổng chi phí ước tính (VNĐ)', max_digits=15)),
+                        ('reasoning', models.TextField(help_text='Lý do và phân tích đề xuất')),
+                        ('is_applied', models.BooleanField(default=False, help_text='Đã áp dụng đề xuất này chưa')),
+                        ('applied_at', models.DateTimeField(blank=True, help_text='Thời điểm áp dụng', null=True)),
+                        ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created', to=settings.AUTH_USER_MODEL)),
+                        ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='personnel_recommendations', to='projects.project')),
+                        ('updated_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated', to=settings.AUTH_USER_MODEL)),
+                    ],
+                    options={
+                        'verbose_name': 'Đề xuất nhân sự',
+                        'verbose_name_plural': 'Đề xuất nhân sự',
+                        'ordering': ['-created_at'],
+                    },
+                ),
+                migrations.CreateModel(
+                    name='PersonnelRecommendationDetail',
+                    fields=[
+                        ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                        ('created_at', models.DateTimeField(auto_now_add=True)),
+                        ('updated_at', models.DateTimeField(auto_now=True)),
+                        ('allocation_percentage', models.DecimalField(decimal_places=2, help_text='Tỷ lệ phân bổ (%)', max_digits=5, validators=[django.core.validators.MinValueValidator(0), django.core.validators.MaxValueValidator(100)])),
+                        ('estimated_hours', models.DecimalField(decimal_places=2, default=0, help_text='Số giờ ước tính', max_digits=8)),
+                        ('estimated_cost', models.DecimalField(decimal_places=2, default=0, help_text='Chi phí ước tính (VNĐ)', max_digits=15)),
+                        ('reasoning', models.TextField(blank=True, help_text='Lý do đề xuất nhân sự này')),
+                        ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created', to=settings.AUTH_USER_MODEL)),
+                        ('employee', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='resources.employee')),
+                        ('recommendation', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='projects.personnelrecommendation')),
+                        ('updated_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated', to=settings.AUTH_USER_MODEL)),
+                    ],
+                    options={
+                        'verbose_name': 'Chi tiết đề xuất nhân sự',
+                        'verbose_name_plural': 'Chi tiết đề xuất nhân sự',
+                        'unique_together': {('recommendation', 'employee')},
+                    },
+                ),
+                migrations.AddField(
+                    model_name='personnelrecommendation',
+                    name='recommended_employees',
+                    field=models.ManyToManyField(help_text='Danh sách nhân sự được đề xuất', related_name='recommendations', through='projects.PersonnelRecommendationDetail', to='resources.employee'),
+                ),
+            ]
         ),
     ]

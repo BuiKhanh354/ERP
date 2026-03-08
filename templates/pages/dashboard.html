@@ -1,176 +1,8 @@
 {% extends 'base_sidebar.html' %} {% load static %} {% block title %}Bảng điều
 khiển - ERP System{% endblock %} {% block page_title %}Bảng điều khiển {% endblock %} {% block breadcrumb_title %}Dashboard{% endblock %} 
 {% block extra_css %}
-<style>
-  .stat-card {
-    border-radius: 12px;
-    border: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
+<link rel="stylesheet" href="{% static 'assets/css/pages-dashboard.css' %}" />
 
-  .stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  }
-
-  .stat-card .card-body {
-    padding: 1.5rem;
-  }
-
-  .stat-value {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #0f172a;
-    margin: 0.5rem 0;
-  }
-
-  .stat-label {
-    font-size: 0.9rem;
-    color: #64748b;
-    font-weight: 500;
-  }
-
-  .stat-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-  }
-
-  .alert-card {
-    border-left: 4px solid;
-    border-radius: 8px;
-    margin-bottom: 0.75rem;
-  }
-
-  .alert-card.alert-danger {
-    border-left-color: #ef4444;
-  }
-
-  .alert-card.alert-warning {
-    border-left-color: #f59e0b;
-  }
-
-  .alert-card.alert-info {
-    border-left-color: #3b82f6;
-  }
-
-  .chart-container {
-    position: relative;
-    height: 300px;
-    margin-top: 1rem;
-  }
-
-  .ai-insights-panel {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-top: 1rem;
-  }
-
-  .ai-insights-panel h6 {
-    color: white;
-    font-weight: 600;
-    margin-bottom: 1rem;
-  }
-
-  .ai-insights-panel .btn-link {
-    color: rgba(255, 255, 255, 0.8);
-    text-decoration: none;
-    transition: color 0.2s;
-    padding: 0;
-    border: none;
-    background: none;
-  }
-
-  .ai-insights-panel .btn-link:hover {
-    color: #ffffff;
-    text-decoration: none;
-    background: none;
-  }
-
-  .ai-insights-panel .btn-link:focus {
-    box-shadow: none;
-    outline: none;
-  }
-
-  .project-completion-item {
-    padding: 1rem 1.25rem;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-    margin-bottom: 1rem;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease;
-  }
-
-  .project-completion-item:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
-    border-color: #0000cd;
-  }
-
-  .project-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.75rem;
-  }
-
-  .project-title {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #0f172a;
-    margin-right: 0.5rem;
-  }
-
-  .project-status-badge {
-    padding: 0.25rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    color: white;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .completion-bar {
-    height: 10px;
-    border-radius: 10px;
-    background-color: #e2e8f0;
-    overflow: hidden;
-    margin: 0.75rem 0;
-    position: relative;
-  }
-
-  .completion-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #0000cd 0%, #3b82f6 100%);
-    transition: width 0.5s ease;
-    border-radius: 10px;
-  }
-
-  .completion-stats {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.875rem;
-    color: #64748b;
-    margin-top: 0.5rem;
-  }
-
-  .completion-percentage {
-    font-weight: 700;
-    font-size: 1.1rem;
-    color: #0000cd;
-  }
-</style>
 {% endblock %} {% block content %}
 <!-- Stats Cards -->
 <div class="row mb-4">
@@ -417,7 +249,7 @@ khiển - ERP System{% endblock %} {% block page_title %}Bảng điều khiển 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2/dist/chartjs-plugin-datalabels.min.js"></script>
 <script>
-  // Đăng ký plugin ChartDataLabels
+// Đăng ký plugin ChartDataLabels
   Chart.register(ChartDataLabels);
 
   // Project Status Chart với label inside trên từng segment
@@ -910,4 +742,5 @@ khiển - ERP System{% endblock %} {% block page_title %}Bảng điều khiển 
     });
   }
 </script>
+
 {% endblock %}

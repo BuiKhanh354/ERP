@@ -10,13 +10,18 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='payrollschedule',
-            name='employee',
-        ),
-        migrations.AddField(
-            model_name='payrollschedule',
-            name='is_active',
-            field=models.BooleanField(default=True, help_text='Lịch phát lương đang hoạt động'),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.RemoveField(
+                    model_name='payrollschedule',
+                    name='employee',
+                ),
+                migrations.AddField(
+                    model_name='payrollschedule',
+                    name='is_active',
+                    field=models.BooleanField(default=True, help_text='Lịch phát lương đang hoạt động'),
+                ),
+            ]
         ),
     ]

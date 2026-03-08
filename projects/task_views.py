@@ -128,6 +128,16 @@ class TaskCreateView(ManagerRequiredMixin, CreateView):
     model = Task
     form_class = TaskForm
     template_name = 'projects/task_form.html'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        project_id = self.request.GET.get('project')
+        if project_id:
+            try:
+                kwargs['project'] = Project.objects.get(pk=int(project_id))
+            except (Project.DoesNotExist, ValueError, TypeError):
+                pass
+        return kwargs
     
     def get_success_url(self):
         project_id = self.request.GET.get('project') or self.object.project.pk
@@ -228,6 +238,13 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
     model = Task
     form_class = TaskForm
     template_name = 'projects/task_form.html'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        task = self.get_object()
+        if task.project_id:
+            kwargs['project'] = task.project
+        return kwargs
     
     def get_queryset(self):
         """Quản lý xem tất cả, nhân viên chỉ xem tasks được gán cho mình."""

@@ -1,0 +1,379 @@
+.form-card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    padding: 2.5rem;
+    border: 1px solid #e2e8f0;
+  }
+
+  .form-section {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .form-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .form-section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .form-section-title i {
+    color: #0000cd;
+  }
+
+  .form-label {
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .form-label .text-danger {
+    color: #ef4444;
+  }
+
+  .form-control,
+  .form-select {
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    border-color: #0000cd;
+    box-shadow: 0 0 0 0.2rem rgba(0, 0, 205, 0.15);
+    outline: none;
+  }
+
+  .form-control::placeholder {
+    color: #94a3b8;
+  }
+
+  textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+  }
+
+  .input-group-text {
+    background-color: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-left: none;
+    border-radius: 0 8px 8px 0;
+    color: #64748b;
+    font-weight: 500;
+  }
+
+  .input-group .form-control {
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+  }
+
+  .input-group .form-control:focus {
+    border-right: none;
+  }
+
+  .input-group .form-control:focus + .input-group-text {
+    border-color: #0000cd;
+  }
+
+  .btn-primary {
+    background-color: #0000cd;
+    border-color: #0000cd;
+    color: #ffffff;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    min-width: 140px;
+  }
+
+  .btn-primary:hover {
+    background-color: #0000aa;
+    border-color: #0000aa;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 205, 0.3);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .btn-outline-secondary {
+    border-color: #64748b;
+    color: #64748b;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    min-width: 140px;
+  }
+
+  .btn-outline-secondary:hover {
+    background-color: #64748b;
+    border-color: #64748b;
+    color: #ffffff;
+    transform: translateY(-1px);
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+    border-top: 2px solid #e2e8f0;
+  }
+
+  .text-danger.small {
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+    display: block;
+  }
+
+  .alert-danger {
+    background-color: #fee2e2;
+    border-color: #fecaca;
+    color: #991b1b;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px 12px;
+    padding-right: 2.5rem;
+  }
+
+  .form-select:focus {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%230000cd' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+  }
+
+  /* Cursor pointer cho tất cả input và select */
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  textarea {
+    cursor: pointer;
+  }
+
+  .department-selector {
+    margin-top: 0.5rem;
+    position: relative;
+  }
+
+  .department-input-wrapper {
+    position: relative;
+  }
+
+  .department-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    padding-right: 3rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background-color: #ffffff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+    color: #0f172a;
+  }
+
+  .department-input:focus {
+    border-color: #0000cd;
+    box-shadow: 0 0 0 0.2rem rgba(0, 0, 205, 0.15);
+    outline: none;
+  }
+
+  .department-input::placeholder {
+    color: #94a3b8;
+  }
+
+  .department-dropdown-icon {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+    pointer-events: none;
+    transition: transform 0.3s ease;
+    font-size: 0.9rem;
+  }
+
+  .department-selector.active .department-dropdown-icon {
+    transform: translateY(-50%) rotate(180deg);
+  }
+
+  .department-checkbox-container {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    width: 100%;
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.5rem;
+    max-height: 300px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    margin-top: 0.25rem;
+    display: none;
+    animation: slideDown 0.3s ease;
+    box-sizing: border-box;
+  }
+
+  .department-selector.active .department-checkbox-container {
+    display: block;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .department-checkbox-container::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .department-checkbox-container::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.06);
+    border-radius: 3px;
+  }
+
+  .department-checkbox-container::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.18);
+    border-radius: 3px;
+  }
+
+  .department-checkbox-container::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .department-checkbox-container::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.06);
+    border-radius: 3px;
+  }
+
+  .department-checkbox-container::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.18);
+    border-radius: 3px;
+  }
+
+  .department-checkbox-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(15, 23, 42, 0.3);
+  }
+
+  .department-item {
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    margin-bottom: 0.25rem;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .department-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .department-item:hover {
+    background-color: #f1f5f9;
+  }
+
+  .department-item .form-check {
+    margin: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .department-item .form-check-input {
+    cursor: pointer;
+    margin-top: 0.25rem;
+    flex-shrink: 0;
+    width: 1.1rem;
+    height: 1.1rem;
+    min-width: 1.1rem;
+    border: 2px solid #cbd5e1;
+    transition: all 0.2s ease;
+  }
+
+  .department-item .form-check-input:checked {
+    background-color: #0000cd;
+    border-color: #0000cd;
+  }
+
+  .department-item .form-check-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 0, 205, 0.15);
+  }
+
+  .department-item .form-check-label {
+    cursor: pointer;
+    user-select: none;
+    font-weight: 500;
+    color: #0f172a;
+    flex: 1;
+    line-height: 1.5;
+    min-width: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    overflow: hidden;
+  }
+
+  .department-item .form-check-label strong {
+    display: block;
+    margin-bottom: 0.25rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  .department-item .form-check-label small {
+    display: block;
+    font-weight: 400;
+    color: #64748b;
+    line-height: 1.4;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  @media (max-width: 768px) {
+    .form-card {
+      padding: 1.5rem;
+    }
+
+    .form-actions {
+      flex-direction: column;
+    }
+
+    .form-actions .btn {
+      width: 100%;
+    }
+  }

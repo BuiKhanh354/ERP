@@ -1,0 +1,42 @@
+{% load static %}
+<li>
+  <div class="tree-item">
+    {% if node.children.all %}
+      <button class="tree-toggle" data-target="children-{{ node.pk }}">
+        <i class="bi bi-chevron-down"></i>
+      </button>
+    {% else %}
+      <span style="width: 22px; display: inline-block;"></span>
+    {% endif %}
+
+    <div class="tree-item-icon {% if level == 0 %}root{% elif node.children.all %}branch{% else %}leaf{% endif %}">
+      <i class="bi bi-{% if level == 0 %}building{% elif node.children.all %}diagram-3{% else %}folder{% endif %}"></i>
+    </div>
+
+    <a href="{% url 'admin_module:department_detail' node.pk %}" class="tree-item-name">
+      {{ node.name }}
+    </a>
+
+    {% if node.code %}
+      <span class="tree-item-code">{{ node.code }}</span>
+    {% endif %}
+
+    {% if not node.is_active %}
+      <span class="tree-badge-inactive">Ngưng</span>
+    {% endif %}
+
+    <span class="tree-item-meta">
+      {% if node.manager %}
+        <i class="bi bi-person-fill"></i> {{ node.manager.full_name }}
+      {% endif %}
+    </span>
+  </div>
+
+  {% if node.children.all %}
+    <ul class="tree-node" id="children-{{ node.pk }}">
+      {% for child in node.children.all %}
+        {% include "modules/admin/pages/_department_tree_node.html" with node=child level=level|add:1 %}
+      {% endfor %}
+    </ul>
+  {% endif %}
+</li>

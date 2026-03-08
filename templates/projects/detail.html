@@ -8,170 +8,11 @@
 {% block page_title %}{{ project.name }}{% endblock %}
 
 {% block extra_css %}
-<style>
-  .detail-card {
-    background-color: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-  }
+<link rel="stylesheet" href="{% static 'assets/css/projects-detail.css' %}" />
 
-  .status-badge-large {
-    font-size: 0.85rem;
-    padding: 0.5rem 1rem;
-    border-radius: 999px;
-    font-weight: 600;
-  }
+<!-- Frappe Gantt CSS v0.5.0 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.5.0/dist/frappe-gantt.min.css">
 
-  .progress-ring {
-    width: 120px;
-    height: 120px;
-  }
-
-  .task-item-card {
-    padding: 1rem 1.25rem;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-    margin-bottom: 1rem;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease;
-  }
-
-  .task-item-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
-    border-color: #0000cd;
-  }
-
-  .task-item-card.done {
-    opacity: 1;
-    border-color: #cbd5e1;
-  }
-
-  .task-item-card.done .task-title {
-    text-decoration: line-through;
-    color: #475569;
-  }
-
-  .task-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 0.75rem;
-  }
-
-  .task-title {
-    font-size: 1rem;
-    font-weight: 700;
-    color: #0f172a;
-    margin-bottom: 0.25rem;
-  }
-
-  .task-description {
-    font-size: 0.875rem;
-    color: #64748b;
-    margin-bottom: 0.5rem;
-  }
-
-  .task-status-badge {
-    font-size: 0.75rem;
-    padding: 0.35rem 0.75rem;
-    border-radius: 6px;
-    font-weight: 600;
-    white-space: nowrap;
-  }
-
-  .status-todo { background-color: #f1f5f9; color: #64748b; }
-  .status-in_progress { background-color: #dbeafe; color: #1e40af; }
-  .status-review { background-color: #fef3c7; color: #92400e; }
-  .status-done { background-color: #d1fae5; color: #065f46; }
-  .status-overdue { background-color: #fee2e2; color: #991b1b; }
-
-  .task-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    font-size: 0.875rem;
-    color: #475569;
-    margin-bottom: 0.75rem;
-  }
-
-  .task-meta-pills {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 0.25rem;
-  }
-
-  .task-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.25rem 0.55rem;
-    border-radius: 999px;
-    border: 1px solid #e2e8f0;
-    background: #ffffff;
-    font-size: 0.78rem;
-    color: #334155;
-    white-space: nowrap;
-  }
-
-  .task-pill.danger {
-    border-color: rgba(239, 68, 68, 0.35);
-    background: rgba(239, 68, 68, 0.06);
-    color: #991b1b;
-  }
-
-  .task-pill.warning {
-    border-color: rgba(245, 158, 11, 0.35);
-    background: rgba(245, 158, 11, 0.08);
-    color: #92400e;
-  }
-
-  .timeline-bar {
-    height: 8px;
-    border-radius: 4px;
-    background-color: #e2e8f0;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .timeline-progress {
-    height: 100%;
-    background-color: #0000cd;
-    transition: width 0.3s;
-  }
-
-  .budget-card {
-    background: #667eea;
-    color: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-  }
-
-  .ai-insight-card {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-top: 1rem;
-  }
-
-  .ai-insight-card.error {
-    background: #fef2f2;
-    border-color: #fecaca;
-  }
-
-  .ai-insight-card h6 {
-    color: #1e40af;
-  }
-
-  .ai-insight-card.error h6 {
-    color: #991b1b;
-  }
-</style>
 {% endblock %}
 
 {% block content %}
@@ -251,101 +92,200 @@
     </div>
     {% endif %}
 
-    <!-- Tasks -->
+    <!-- Tabs: Phases / Tasks / Gantt -->
     <div class="detail-card">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0"><i class="bi bi-check-square me-2"></i>Công việc</h5>
-        {% if user.profile.is_manager %}
-        <a href="{% url 'projects:task_create' %}?project={{ project.pk }}&from=detail" class="btn btn-sm btn-primary">
-          <i class="bi bi-plus-circle me-1"></i>Thêm công việc
-        </a>
-        {% endif %}
-      </div>
+      <ul class="nav project-tabs mb-3" role="tablist">
+        <li class="nav-item">
+          <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-phases" type="button">
+            <i class="bi bi-layers me-1"></i>Giai đoạn & Công việc
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-gantt" type="button">
+            <i class="bi bi-bar-chart-steps me-1"></i>Gantt Chart
+          </button>
+        </li>
+      </ul>
 
-      <!-- Task Stats -->
-      <div class="row mb-3">
-        <div class="col-3 text-center">
-          <div class="fw-bold text-primary">{{ task_stats.total }}</div>
-          <small class="text-muted">Tổng</small>
-        </div>
-        <div class="col-3 text-center">
-          <div class="fw-bold text-secondary">{{ task_stats.todo }}</div>
-          <small class="text-muted">Cần làm</small>
-        </div>
-        <div class="col-3 text-center">
-          <div class="fw-bold text-info">{{ task_stats.in_progress }}</div>
-          <small class="text-muted">Đang làm</small>
-        </div>
-        <div class="col-3 text-center">
-          <div class="fw-bold text-success">{{ task_stats.done }}</div>
-          <small class="text-muted">Hoàn thành</small>
-        </div>
-      </div>
-
-      <!-- Task List -->
-      {% if tasks %}
-      <div class="task-list">
-        {% for task in tasks|slice:":10" %}
-        <div class="task-item-card {% if task.status == 'done' %}done{% endif %}">
-          <div class="task-header">
-            <div class="flex-grow-1">
-              <div class="task-title">{{ task.name }}</div>
-              {% if task.description %}
-              <div class="task-description">{{ task.description|truncatewords:30 }}</div>
-              {% endif %}
+      <div class="tab-content">
+        <!-- Tab: Phases & Tasks -->
+        <div class="tab-pane fade show active" id="tab-phases">
+          <!-- Phase Actions -->
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <span class="fw-bold">Tiến độ dự án:</span>
+              <span class="badge bg-primary ms-1">{{ project_progress }}%</span>
             </div>
-            <span class="task-status-badge status-{{ task.status }}">
-              {% if task.status == 'todo' %}Cần làm
-              {% elif task.status == 'in_progress' %}Đang thực hiện
-              {% elif task.status == 'review' %}Đang xem xét
-              {% elif task.status == 'done' %}Hoàn thành
-              {% elif task.status == 'overdue' %}Quá hạn
-              {% endif %}
-            </span>
-          </div>
-          
-          <div class="task-meta">
-            <div class="task-meta-pills">
-              {% if task.department %}
-              <span class="task-pill"><i class="bi bi-building"></i>{{ task.department.name }}</span>
-              {% endif %}
-              {% if task.assigned_to %}
-              <span class="task-pill"><i class="bi bi-person"></i>{{ task.assigned_to.full_name }}</span>
-              {% endif %}
-              {% if task.due_date %}
-              <span class="task-pill {% if task.status == 'overdue' %}danger{% elif task.due_date|date:'Y-m-d' <= today|date:'Y-m-d' %}warning{% endif %}">
-                <i class="bi bi-calendar"></i>{{ task.due_date|date:"d/m/Y" }}
-              </span>
-              {% endif %}
-              {% if task.estimated_hours %}
-              {% if task.estimated_end_at %}
-              <span class="task-pill" title="Đếm ngược theo giờ ước tính">
-                <i class="bi bi-hourglass-split"></i>
-                <span class="js-countdown" data-end-at="{{ task.estimated_end_at|date:'c' }}"></span>
-              </span>
-              {% else %}
-              <span class="task-pill"><i class="bi bi-clock"></i>{{ task.estimated_hours|hours_hhmm }}</span>
-              {% endif %}
-              {% endif %}
-              {% if task.actual_hours or task.estimated_hours %}
-              <span class="task-pill">
-                <i class="bi bi-stopwatch"></i>
-                {{ task.actual_hours|default:0|hours_hhmm }} / {{ task.estimated_hours|default:0|hours_hhmm }}
-              </span>
+            <div class="d-flex gap-2">
+              {% if user.profile.is_manager %}
+              <a href="{% url 'projects:phase_create' project.pk %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-plus-circle me-1"></i>Thêm giai đoạn
+              </a>
+              <a href="{% url 'projects:task_create' %}?project={{ project.pk }}&from=detail" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus-circle me-1"></i>Thêm công việc
+              </a>
               {% endif %}
             </div>
           </div>
+
+          <!-- Task Stats -->
+          <div class="row mb-3">
+            <div class="col text-center">
+              <div class="fw-bold text-primary">{{ task_stats.total }}</div>
+              <small class="text-muted">Tổng</small>
+            </div>
+            <div class="col text-center">
+              <div class="fw-bold text-secondary">{{ task_stats.todo }}</div>
+              <small class="text-muted">Cần làm</small>
+            </div>
+            <div class="col text-center">
+              <div class="fw-bold text-info">{{ task_stats.in_progress }}</div>
+              <small class="text-muted">Đang làm</small>
+            </div>
+            <div class="col text-center">
+              <div class="fw-bold text-warning">{{ task_stats.review }}</div>
+              <small class="text-muted">Xem xét</small>
+            </div>
+            <div class="col text-center">
+              <div class="fw-bold text-success">{{ task_stats.done }}</div>
+              <small class="text-muted">Hoàn thành</small>
+            </div>
+          </div>
+
+          <!-- Phases list -->
+          <div id="phases-container">
+            {% for pd in phases_data %}
+            <div class="phase-card" data-phase-id="{{ pd.phase.pk }}">
+              <div class="phase-header" data-bs-toggle="collapse" data-bs-target="#phase-body-{{ pd.phase.pk }}">
+                <div class="d-flex align-items-center gap-2">
+                  {% if user.profile.is_manager %}
+                  <span class="phase-drag-handle"><i class="bi bi-grip-vertical"></i></span>
+                  {% endif %}
+                  <div class="phase-title">
+                    <i class="bi bi-chevron-down"></i>
+                    {{ pd.phase.phase_name }}
+                  </div>
+                </div>
+                <div class="phase-meta">
+                  <span>{{ pd.task_count }} công việc</span>
+                  <span class="fw-semibold">{{ pd.progress }}%</span>
+                  {% if pd.phase.start_date %}
+                  <span>{{ pd.phase.start_date|date:"d/m" }} - {{ pd.phase.end_date|date:"d/m" }}</span>
+                  {% endif %}
+                  {% if user.profile.is_manager %}
+                  <div class="d-flex gap-1" onclick="event.stopPropagation();">
+                    <a href="{% url 'projects:phase_edit' pd.phase.pk %}" class="btn btn-sm btn-outline-secondary py-0 px-1" title="Sửa">
+                      <i class="bi bi-pencil"></i>
+                    </a>
+                    <button class="btn btn-sm btn-outline-danger py-0 px-1" title="Xóa" onclick="deletePhase({{ pd.phase.pk }}, '{{ pd.phase.phase_name|escapejs }}')">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="phase-progress-bar">
+                <div class="phase-progress-fill" id="phase-progress-{{ pd.phase.pk }}" style="width: {{ pd.progress }}%; background-color: {% if pd.progress >= 100 %}#10b981{% elif pd.progress >= 50 %}#3b82f6{% elif pd.progress > 0 %}#f59e0b{% else %}#94a3b8{% endif %};"></div>
+              </div>
+              <div class="collapse show" id="phase-body-{{ pd.phase.pk }}">
+                <div class="phase-body">
+                  {% if pd.phase.description %}
+                  <p class="text-muted mb-3" style="font-size: 0.85rem;">{{ pd.phase.description }}</p>
+                  {% endif %}
+                  {% for task in pd.tasks %}
+                  {% include "projects/_task_card.html" with task=task %}
+                  {% empty %}
+                  <p class="text-muted text-center py-2 mb-0" style="font-size: 0.875rem;">Chưa có công việc nào trong giai đoạn này.</p>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <!-- Unphased tasks -->
+          {% if unphased_tasks %}
+          <div class="phase-card mt-3">
+            <div class="phase-header" data-bs-toggle="collapse" data-bs-target="#phase-body-unphased">
+              <div class="phase-title">
+                <i class="bi bi-chevron-down"></i>
+                Công việc chưa phân giai đoạn
+              </div>
+              <div class="phase-meta">
+                <span>{{ unphased_tasks|length }} công việc</span>
+              </div>
+            </div>
+            <div class="collapse show" id="phase-body-unphased">
+              <div class="phase-body">
+                {% for task in unphased_tasks %}
+                {% include "projects/_task_card.html" with task=task %}
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if not phases_data and not unphased_tasks %}
+          <p class="text-muted text-center py-4">
+            Chưa có giai đoạn hoặc công việc nào.
+            {% if user.profile.is_manager %}
+            <br><a href="{% url 'projects:phase_create' project.pk %}" class="mt-2 btn btn-sm btn-outline-primary">
+              <i class="bi bi-plus-circle me-1"></i>Tạo giai đoạn đầu tiên
+            </a>
+            {% endif %}
+          </p>
+          {% endif %}
         </div>
-        {% endfor %}
-        {% if tasks|length > 10 %}
-        <a href="{% url 'projects:tasks' %}?project={{ project.pk }}" class="btn btn-sm btn-outline-primary w-100 mt-2">
-          Xem tất cả {{ tasks|length }} công việc
-        </a>
-        {% endif %}
+
+        <!-- Tab: Gantt Chart -->
+        <div class="tab-pane fade" id="tab-gantt">
+          <!-- Gantt Header with Mode Switcher -->
+          <div class="d-flex justify-content-between align-items-center mb-3" id="gantt-header" style="display:none;">
+            <div class="fw-bold text-muted">
+              <i class="bi bi-bar-chart-steps me-2"></i>Biểu đồ Gantt
+            </div>
+            <div class="d-flex align-items-center gap-3">
+              <!-- Mode Switcher -->
+              <div class="gantt-mode-switcher">
+                <button class="gantt-mode-btn active" data-gantt-mode="clickup" onclick="setGanttMode('clickup')">
+                  <i class="bi bi-layers me-1"></i>ClickUp
+                </button>
+                <button class="gantt-mode-btn" data-gantt-mode="monday" onclick="setGanttMode('monday')">
+                  <i class="bi bi-grid-3x3-gap me-1"></i>Monday
+                </button>
+              </div>
+              <!-- View Mode Controls -->
+              <div class="gantt-view-switcher">
+                <button class="gantt-view-btn active" data-view-mode="Day" onclick="setGanttViewMode('Day')" title="Xem theo ngày">
+                  <i class="bi bi-calendar-day me-1"></i>Ngày
+                </button>
+                <button class="gantt-view-btn" data-view-mode="Week" onclick="setGanttViewMode('Week')" title="Xem theo tuần">
+                  <i class="bi bi-calendar-week me-1"></i>Tuần
+                </button>
+                <button class="gantt-view-btn" data-view-mode="Month" onclick="setGanttViewMode('Month')" title="Xem theo tháng">
+                  <i class="bi bi-calendar-month me-1"></i>Tháng
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div id="gantt-loading" class="text-center py-5 text-muted">
+            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+            Đang tải Gantt Chart...
+          </div>
+          <div id="gantt-empty" class="text-center py-5 text-muted" style="display:none;">
+            <i class="bi bi-bar-chart-steps" style="font-size: 2rem;"></i>
+            <p class="mt-2">Chưa có dữ liệu cho Gantt Chart.<br>Hãy tạo giai đoạn và công việc có ngày bắt đầu/kết thúc trước.</p>
+          </div>
+          <div id="gantt-error" class="text-center py-5 text-danger" style="display:none;">
+            <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+            <p class="mt-2" id="gantt-error-text">Lỗi khi tải Gantt Chart.</p>
+          </div>
+          <div id="gantt-chart-wrapper" class="gantt-container gantt-theme-clickup" style="min-height: 300px; display:none;">
+            <svg id="gantt-svg"></svg>
+          </div>
+        </div>
       </div>
-      {% else %}
-      <p class="text-muted text-center py-3">Chưa có công việc nào.</p>
-      {% endif %}
     </div>
 
     <!-- Resource Allocations -->
@@ -397,24 +337,24 @@
 
   <!-- Right Column -->
   <div class="col-md-4">
-    <!-- Completion Rate -->
+    <!-- Project Progress (based on task progress_percent) -->
     <div class="detail-card text-center">
-      <h5 class="mb-3">Tỷ lệ hoàn thành</h5>
+      <h5 class="mb-3">Tiến độ dự án</h5>
       <div class="position-relative mb-3" style="width: 120px; height: 120px; margin: 0 auto;">
         <svg class="progress-ring" viewBox="0 0 120 120" style="width: 120px; height: 120px;">
           <circle cx="60" cy="60" r="54" fill="none" stroke="#e2e8f0" stroke-width="12"/>
-          {% if completion_rate > 0 %}
+          {% if project_progress > 0 %}
           <circle cx="60" cy="60" r="54" fill="none" stroke="#0000cd" stroke-width="12"
-                  stroke-dasharray="{% widthratio completion_rate 100 339 %} 339"
+                  stroke-dasharray="{% widthratio project_progress 100 339 %} 339"
                   stroke-dashoffset="84.75"
                   transform="rotate(-90 60 60)"/>
           {% endif %}
         </svg>
         <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
-          <div class="h3 mb-0">{{ completion_rate|floatformat:0 }}%</div>
+          <div class="h3 mb-0">{{ project_progress }}%</div>
         </div>
       </div>
-      <p class="text-muted mb-0">{{ task_stats.done }}/{{ task_stats.total }} công việc</p>
+      <p class="text-muted mb-0">{{ task_stats.done }}/{{ task_stats.total }} công việc hoàn thành</p>
     </div>
 
     <!-- Budget Summary -->
@@ -478,7 +418,7 @@
       {% elif ai_insight and ai_insight.no_data %}
       <div class="alert alert-info mb-0" style="font-size: 0.85rem;">
         <i class="bi bi-info-circle me-1"></i>
-        <strong>Thông báo:</strong> {{ ai_insight.summary|default:"Dự án chưa có công việc hoặc phân bổ nhân sự. Vui lòng thêm công việc hoặc phân bổ nhân sự trước khi phân tích." }}
+        <strong>Thông báo:</strong> {{ ai_insight.summary|default:"Dự án chưa có công việc hoặc phân bổ nhân sự." }}
       </div>
       {% elif ai_insight %}
       <p class="mb-2" style="font-size: 0.9rem; color: #334155;">{{ ai_insight.summary|truncatewords:30 }}</p>
@@ -519,11 +459,610 @@
     {% endif %}
   </div>
 </div>
+
+<!-- Progress Update Modal -->
+<div class="modal fade" id="progressModal" tabindex="-1" aria-labelledby="progressModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="progressModalLabel">
+          <i class="bi bi-speedometer2 me-2"></i>Cập nhật tiến độ
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="progress-task-id">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Tên công việc</label>
+          <p id="progress-task-name" class="mb-0 fw-bold"></p>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Tiến độ: <span id="progress-value-display">0</span>%</label>
+          <input type="range" class="progress-slider" id="progress-range" min="0" max="100" step="5" value="0"
+                 oninput="document.getElementById('progress-value-display').textContent=this.value">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Trạng thái</label>
+          <select class="form-select" id="progress-status">
+            <option value="todo">Cần làm</option>
+            <option value="in_progress">Đang thực hiện</option>
+            <option value="review">Đang xem xét</option>
+            <option value="done">Hoàn thành</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Ghi chú</label>
+          <textarea class="form-control" id="progress-note" rows="3" placeholder="Mô tả tiến độ công việc..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+        <button type="button" class="btn btn-primary" onclick="submitProgressUpdate()">
+          <i class="bi bi-check-lg me-1"></i>Cập nhật
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+// ============================================================
+// CSRF Token helper
+// ============================================================
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+// ============================================================
+// Phase drag-and-drop reorder
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+  const container = document.getElementById('phases-container');
+  if (container) {
+    new Sortable(container, {
+      handle: '.phase-drag-handle',
+      animation: 200,
+      ghostClass: 'bg-light',
+      onEnd: function() {
+        const phaseIds = Array.from(container.querySelectorAll('.phase-card'))
+          .map(el => parseInt(el.dataset.phaseId))
+          .filter(id => !isNaN(id));
+
+        fetch("{% url 'projects:phase_reorder' %}", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+          },
+          body: JSON.stringify({ phase_ids: phaseIds }),
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && window.showNotification) {
+            window.showNotification('success', data.message);
+          }
+        })
+        .catch(err => console.error('Reorder error:', err));
+      }
+    });
+  }
+});
+
+// ============================================================
+// Delete Phase
+// ============================================================
+function deletePhase(phaseId, phaseName) {
+  if (!confirm(`Bạn có chắc muốn xóa giai đoạn "${phaseName}"?\nCác công việc trong giai đoạn sẽ được giữ lại nhưng không thuộc giai đoạn nào.`)) return;
+
+  fetch(`/projects/phases/${phaseId}/delete/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': getCookie('csrftoken'),
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      location.reload();
+    }
+  })
+  .catch(() => location.reload());
+}
+
+// ============================================================
+// Task Progress Update
+// ============================================================
+function openProgressModal(taskId, taskName, currentProgress, currentStatus) {
+  document.getElementById('progress-task-id').value = taskId;
+  document.getElementById('progress-task-name').textContent = taskName;
+  document.getElementById('progress-range').value = currentProgress;
+  document.getElementById('progress-value-display').textContent = currentProgress;
+  document.getElementById('progress-status').value = currentStatus;
+  document.getElementById('progress-note').value = '';
+  new bootstrap.Modal(document.getElementById('progressModal')).show();
+}
+
+function submitProgressUpdate() {
+  const taskId = document.getElementById('progress-task-id').value;
+  const progress = document.getElementById('progress-range').value;
+  const status = document.getElementById('progress-status').value;
+  const note = document.getElementById('progress-note').value;
+
+  fetch(`/projects/api/tasks/${taskId}/progress/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCookie('csrftoken'),
+    },
+    body: JSON.stringify({
+      progress_percent: parseInt(progress),
+      status: status,
+      note: note,
+    }),
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      bootstrap.Modal.getInstance(document.getElementById('progressModal')).hide();
+      if (window.showNotification) window.showNotification('success', data.message);
+      // Reload page to reflect changes
+      location.reload();
+    } else {
+      alert(data.error || 'Có lỗi xảy ra.');
+    }
+  })
+  .catch(err => {
+    console.error('Progress update error:', err);
+    alert('Có lỗi kết nối.');
+  });
+}
+
+// ============================================================
+// Gantt Chart with Mode Switcher
+// ============================================================
+let ganttChart = null;
+let currentGanttMode = localStorage.getItem('ganttMode') || 'clickup';
+let currentGanttData = null;
+
+// Theme configurations with colors
+const GANTT_THEMES = {
+  clickup: {
+    name: 'ClickUp',
+    containerClass: 'gantt-theme-clickup',
+    barHeight: 24,        // Slim bars
+    headerHeight: 40,     // Compact header
+    fontSize: 11,
+    borderRadius: 3,
+    colors: {
+      // Muted, professional GitHub-style colors
+      phase: '#7c7d86',
+      done: '#3fb950',
+      in_progress: '#0969da',
+      todo: '#8c959f',
+      overdue: '#cf222e',
+      review: '#d29922',
+      progress: {
+        phase: 'rgba(124, 125, 134, 0.25)',
+        done: 'rgba(63, 185, 80, 0.3)',
+        in_progress: 'rgba(9, 105, 218, 0.3)',
+        todo: 'rgba(140, 149, 159, 0.25)',
+        overdue: 'rgba(207, 34, 46, 0.35)',
+        review: 'rgba(210, 153, 34, 0.3)',
+      }
+    }
+  },
+  monday: {
+    name: 'Monday',
+    containerClass: 'gantt-theme-monday',
+    barHeight: 40,        // Thick bars
+    headerHeight: 60,     // Large header
+    fontSize: 13,
+    borderRadius: 8,
+    colors: {
+      // Vibrant, saturated Monday.com-style colors
+      phase: '#6366f1',
+      done: '#00c875',
+      in_progress: '#fdab3d',
+      todo: '#c4c9d4',
+      overdue: '#ff3d57',
+      review: '#a25ddc',
+      progress: {
+        phase: 'rgba(99, 102, 241, 0.6)',
+        done: 'rgba(0, 200, 117, 0.6)',
+        in_progress: 'rgba(253, 171, 61, 0.6)',
+        todo: 'rgba(196, 201, 212, 0.5)',
+        overdue: 'rgba(255, 61, 87, 0.6)',
+        review: 'rgba(162, 93, 220, 0.6)',
+      }
+    }
+  }
+};
+
+// Get status key from task's custom_class
+function getStatusKey(customClass) {
+  if (!customClass) return 'todo';
+  if (customClass.includes('phase')) return 'phase';
+  if (customClass.includes('done')) return 'done';
+  if (customClass.includes('in_progress')) return 'in_progress';
+  if (customClass.includes('review')) return 'review';
+  if (customClass.includes('overdue')) return 'overdue';
+  return 'todo';
+}
+
+// Gantt View Mode State (Day/Week/Month)
+let currentViewMode = localStorage.getItem('ganttViewMode') || 'Month';
+
+function setGanttViewMode(viewMode) {
+  // Validate view mode
+  const validModes = ['Day', 'Week', 'Month'];
+  if (!validModes.includes(viewMode)) {
+    console.error('Invalid view mode:', viewMode);
+    return;
+  }
+
+  // Update state
+  currentViewMode = viewMode;
+  localStorage.setItem('ganttViewMode', viewMode);
+
+  // Update button active states
+  document.querySelectorAll('.gantt-view-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.viewMode === viewMode);
+  });
+
+  // Update Gantt chart view if it exists
+  if (ganttChart && typeof ganttChart.change_view_mode === 'function') {
+    ganttChart.change_view_mode(viewMode);
+    console.log(`Gantt view mode changed to: ${viewMode}`);
+  } else {
+    console.log(`View mode set to: ${viewMode} (Gantt chart not yet initialized)`);
+  }
+}
+
+function setGanttMode(mode) {
+  if (!GANTT_THEMES[mode]) return;
+
+  currentGanttMode = mode;
+  localStorage.setItem('ganttMode', mode);
+
+  // Update button states
+  document.querySelectorAll('.gantt-mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.ganttMode === mode);
+  });
+
+  // Update container theme class
+  const wrapperEl = document.getElementById('gantt-chart-wrapper');
+  if (wrapperEl) {
+    wrapperEl.className = `gantt-container ${GANTT_THEMES[mode].containerClass}`;
+  }
+
+  // Re-render chart with new theme if data exists
+  if (currentGanttData && ganttChart) {
+    renderGanttChart(currentGanttData, mode, true);
+  }
+
+  console.log(`Gantt mode switched to: ${mode}`);
+}
+
+function applyThemeColors(theme) {
+  const svg = document.getElementById('gantt-svg');
+  if (!svg) return;
+
+  const isMonday = theme === GANTT_THEMES.monday;
+  const isClickUp = theme === GANTT_THEMES.clickup;
+
+  // Apply colors to all bar elements
+  const bars = svg.querySelectorAll('.bar');
+  bars.forEach(bar => {
+    // Get the parent group to find status
+    const parentGroup = bar.closest('.bar-wrapper') || bar.parentElement;
+    const parentClass = parentGroup ? parentGroup.getAttribute('class') : '';
+
+    // Determine status from class or data
+    let statusKey = 'todo';
+    if (parentClass && parentClass.includes('phase')) statusKey = 'phase';
+    else if (parentClass && parentClass.includes('done')) statusKey = 'done';
+    else if (parentClass && parentClass.includes('in_progress')) statusKey = 'in_progress';
+    else if (parentClass && parentClass.includes('review')) statusKey = 'review';
+    else if (parentClass && parentClass.includes('overdue')) statusKey = 'overdue';
+
+    const color = theme.colors[statusKey] || theme.colors.todo;
+    bar.setAttribute('fill', color);
+    bar.setAttribute('rx', theme.borderRadius);
+
+    // ClickUp: remove stroke for minimal look
+    if (isClickUp) {
+      bar.removeAttribute('stroke');
+      bar.removeAttribute('stroke-width');
+    }
+  });
+
+  // Apply progress bar colors
+  const progressBars = svg.querySelectorAll('.bar-progress');
+  progressBars.forEach(bar => {
+    const parentGroup = bar.closest('.bar-wrapper') || bar.parentElement;
+    const parentClass = parentGroup ? parentGroup.getAttribute('class') : '';
+
+    let statusKey = 'todo';
+    if (parentClass && parentClass.includes('phase')) statusKey = 'phase';
+    else if (parentClass && parentClass.includes('done')) statusKey = 'done';
+    else if (parentClass && parentClass.includes('in_progress')) statusKey = 'in_progress';
+    else if (parentClass && parentClass.includes('review')) statusKey = 'review';
+    else if (parentClass && parentClass.includes('overdue')) statusKey = 'overdue';
+
+    const progressColor = theme.colors.progress[statusKey] || theme.colors.progress.todo;
+    bar.setAttribute('fill', progressColor);
+    bar.setAttribute('rx', theme.borderRadius);
+  });
+
+  // Style labels - different for each theme
+  const labels = svg.querySelectorAll('.bar-label');
+  labels.forEach(label => {
+    if (isMonday) {
+      // Monday: white labels on bars with shadow
+      label.setAttribute('fill', '#ffffff');
+      label.style.fontWeight = '700';
+      label.style.fontSize = '13px';
+      label.style.textShadow = '0 2px 4px rgba(0, 0, 0, 0.3)';
+      label.style.letterSpacing = '0.3px';
+    } else if (isClickUp) {
+      // ClickUp: colored labels matching bar color
+      const parentGroup = label.closest('.bar-wrapper') || label.parentElement;
+      const parentClass = parentGroup ? parentGroup.getAttribute('class') : '';
+
+      let labelColor = '#5c6bc0';
+      if (parentClass && parentClass.includes('phase')) labelColor = '#7c7d86';
+      else if (parentClass && parentClass.includes('done')) labelColor = '#3fb950';
+      else if (parentClass && parentClass.includes('in_progress')) labelColor = '#0969da';
+      else if (parentClass && parentClass.includes('review')) labelColor = '#d29922';
+      else if (parentClass && parentClass.includes('overdue')) labelColor = '#cf222e';
+
+      label.setAttribute('fill', labelColor);
+      label.style.fontWeight = '500';
+      label.style.fontSize = '11px';
+      label.style.textShadow = 'none';
+    }
+  });
+
+  // Style grid rows
+  const gridRows = svg.querySelectorAll('.grid-row');
+  gridRows.forEach((row, i) => {
+    if (isMonday) {
+      row.setAttribute('fill', i % 2 === 0 ? '#ffffff' : '#f8f9fa');
+      row.setAttribute('stroke', '#f0f2f5');
+      row.setAttribute('stroke-width', '1');
+    } else {
+      row.setAttribute('fill', i % 2 === 0 ? '#fafbfc' : '#f8f9fa');
+      row.removeAttribute('stroke');
+    }
+  });
+
+  // Style grid header
+  const gridHeader = svg.querySelector('.grid-header');
+  if (gridHeader) {
+    if (isMonday) {
+      gridHeader.setAttribute('fill', '#f5f6f8');
+      gridHeader.setAttribute('stroke', '#d0d4d8');
+      gridHeader.setAttribute('stroke-width', '2');
+    } else {
+      gridHeader.setAttribute('fill', '#ffffff');
+      gridHeader.setAttribute('stroke', '#eaecef');
+      gridHeader.setAttribute('stroke-width', '1');
+    }
+  }
+
+  // Style today line
+  const todayLine = svg.querySelector('.today-line');
+  if (todayLine) {
+    if (isMonday) {
+      todayLine.setAttribute('stroke', '#ff3d57');
+      todayLine.setAttribute('stroke-width', '3');
+      todayLine.setAttribute('stroke-dasharray', '6, 4');
+      todayLine.setAttribute('opacity', '1');
+    } else {
+      todayLine.setAttribute('stroke', '#ff6b6b');
+      todayLine.setAttribute('stroke-width', '1.5');
+      todayLine.setAttribute('stroke-dasharray', '3, 3');
+      todayLine.setAttribute('opacity', '0.6');
+    }
+  }
+
+  // Style text elements
+  const texts = svg.querySelectorAll('.upper-text, .lower-text');
+  texts.forEach(text => {
+    if (isMonday) {
+      // Monday: large, bold text
+      if (text.classList.contains('upper-text')) {
+        text.setAttribute('fill', '#1a1a1a');
+        text.setAttribute('font-weight', '800');
+      } else {
+        text.setAttribute('fill', '#333333');
+        text.setAttribute('font-weight', '700');
+      }
+      text.setAttribute('font-size', '12px');
+      text.setAttribute('letter-spacing', '0.5px');
+    } else {
+      // ClickUp: small, subtle text
+      if (text.classList.contains('upper-text')) {
+        text.setAttribute('fill', '#6e7781');
+        text.setAttribute('font-weight', '600');
+      } else {
+        text.setAttribute('fill', '#8b949e');
+        text.setAttribute('font-weight', '500');
+      }
+      text.setAttribute('font-size', '10px');
+      text.removeAttribute('letter-spacing');
+    }
+  });
+}
+
+function renderGanttChart(data, mode = currentGanttMode, isSwitch = false) {
+  const theme = GANTT_THEMES[mode];
+  const wrapperEl = document.getElementById('gantt-chart-wrapper');
+  const headerEl = document.getElementById('gantt-header');
+
+  if (!wrapperEl || typeof Gantt === 'undefined') {
+    console.error('Gantt container or library not available');
+    return;
+  }
+
+  // Prepare tasks for Gantt - include status in the object
+  const ganttTasks = data.tasks.map(t => {
+    const statusKey = getStatusKey(t.custom_class);
+    return {
+      id: t.id,
+      name: t.name + (t.assignee ? ` (${t.assignee})` : ''),
+      start: t.start,
+      end: t.end,
+      progress: t.progress,
+      custom_class: t.custom_class || '',
+      _status: statusKey,
+      _color: theme.colors[statusKey],
+    };
+  });
+
+  try {
+    // If switching modes, just reapply colors
+    if (isSwitch && ganttChart) {
+      applyThemeColors(theme);
+      wrapperEl.className = `gantt-container ${theme.containerClass}`;
+      console.log('Theme switched to:', mode);
+      return;
+    }
+
+    // Create new chart
+    ganttChart = new Gantt('#gantt-svg', ganttTasks, {
+      view_mode: currentViewMode,
+      date_format: 'YYYY-MM-DD',
+      bar_height: theme.barHeight,
+      header_height: theme.headerHeight,
+      font_size: theme.fontSize,
+      custom_popup_html: function(task) {
+        const statusLabels = {
+          phase: 'Giai đoạn',
+          done: 'Hoàn thành',
+          in_progress: 'Đang thực hiện',
+          todo: 'Cần làm',
+          review: 'Đang xem xét',
+          overdue: 'Quá hạn',
+        };
+        const statusKey = task._status || 'todo';
+        const statusLabel = statusLabels[statusKey] || 'Không rõ';
+
+        return `
+          <div class="p-2" style="min-width: 200px;">
+            <strong style="color: #0f172a;">${task.name}</strong><br>
+            <small style="color: #64748b;">Trạng thái: ${statusLabel}</small><br>
+            <small style="color: #64748b;">Tiến độ: ${task.progress}%</small><br>
+            <small style="color: #64748b;">${new Date(task.start).toLocaleDateString('vi-VN')} - ${new Date(task.end).toLocaleDateString('vi-VN')}</small>
+          </div>
+        `;
+      },
+    });
+
+    // Apply theme after chart renders
+    setTimeout(() => {
+      applyThemeColors(theme);
+      wrapperEl.className = `gantt-container ${theme.containerClass}`;
+      headerEl.style.display = 'flex';
+      console.log('Gantt chart initialized with mode:', mode, 'and view:', currentViewMode);
+    }, 200);
+
+  } catch (initErr) {
+    console.error('Gantt init error:', initErr);
+    throw initErr;
+  }
+}
+
+function initGanttChart() {
+  if (ganttChart) {
+    console.log('Gantt already initialized');
+    return;
+  }
+
+  const loadingEl = document.getElementById('gantt-loading');
+  const emptyEl = document.getElementById('gantt-empty');
+  const errorEl = document.getElementById('gantt-error');
+  const errorTextEl = document.getElementById('gantt-error-text');
+  const wrapperEl = document.getElementById('gantt-chart-wrapper');
+  const headerEl = document.getElementById('gantt-header');
+
+  console.log('Initializing Gantt Chart...');
+  console.log('Gantt library available:', typeof Gantt !== 'undefined');
+
+  // Check if Gantt library is loaded
+  if (typeof Gantt === 'undefined') {
+    console.error('Frappe Gantt library not loaded');
+    loadingEl.style.display = 'none';
+    errorEl.style.display = 'block';
+    errorTextEl.textContent = 'Thư viện Gantt Chart chưa được tải. Vui lòng refresh trang.';
+    return;
+  }
+
+  const apiUrl = "{% url 'projects:gantt_data' project.pk %}";
+  console.log('Fetching Gantt data from:', apiUrl);
+
+  fetch(apiUrl)
+    .then(res => {
+      console.log('Gantt API response status:', res.status);
+      if (!res.ok) throw new Error('API returned ' + res.status);
+      return res.json();
+    })
+    .then(data => {
+      console.log('Gantt data received:', data);
+      console.log('Number of tasks:', data.tasks ? data.tasks.length : 0);
+      loadingEl.style.display = 'none';
+
+      if (!data.tasks || data.tasks.length === 0) {
+        console.log('No tasks to display');
+        emptyEl.style.display = 'block';
+        return;
+      }
+
+      // Store data for mode switching
+      currentGanttData = data;
+
+      // Show wrapper before rendering
+      wrapperEl.style.display = 'block';
+
+      // Render chart with current mode
+      renderGanttChart(data);
+    })
+    .catch(err => {
+      console.error('Gantt load error:', err);
+      loadingEl.style.display = 'none';
+      errorEl.style.display = 'block';
+      errorTextEl.textContent = 'Lỗi khi tải dữ liệu: ' + err.message;
+    });
+}
+
+// Init when Gantt tab is shown
+const ganttTabBtn = document.querySelector('[data-bs-target="#tab-gantt"]');
+if (ganttTabBtn) {
+  ganttTabBtn.addEventListener('shown.bs.tab', initGanttChart);
+}
+
+// Initialize modes on page load
+document.addEventListener('DOMContentLoaded', function() {
+  // Set initial theme mode from localStorage
+  setGanttMode(currentGanttMode);
+
+  // Set initial view mode from localStorage (update button states)
+  const validModes = ['Day', 'Week', 'Month'];
+  if (validModes.includes(currentViewMode)) {
+    document.querySelectorAll('.gantt-view-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.viewMode === currentViewMode);
+    });
+  }
+});
+
+// ============================================================
 // Countdown timers (estimated time)
+// ============================================================
 function formatCountdown(ms) {
   if (ms <= 0) return 'Hết giờ';
   const totalSeconds = Math.floor(ms / 1000);
@@ -559,147 +1098,61 @@ document.addEventListener('DOMContentLoaded', function() {
   setInterval(updateCountdowns, 1000);
 });
 
-// Function hiển thị modal AI Insights chi tiết cho dự án
+// ============================================================
+// AI Insights Modal (preserved from original)
+// ============================================================
 function showProjectAIInsightsModal() {
-  // Lấy dữ liệu từ json_script tag
   const aiInsightScript = document.getElementById('ai-insight-data');
   if (!aiInsightScript) {
-    window.showNotification('error', 'Không tìm thấy dữ liệu AI Insights.');
+    if(window.showNotification) window.showNotification('error', 'Không tìm thấy dữ liệu AI Insights.');
     return;
   }
 
   let aiInsightData;
+  try { aiInsightData = JSON.parse(aiInsightScript.textContent); }
+  catch(e) { console.error(e); return; }
+
+  let insightsList = [], recommendationsList = [];
   try {
-    aiInsightData = JSON.parse(aiInsightScript.textContent);
-  } catch (e) {
-    console.error('Error parsing AI insight data:', e);
-    window.showNotification('error', 'Lỗi khi đọc dữ liệu AI Insights.');
-    return;
-  }
+    insightsList = typeof aiInsightData.insights === 'string' ? JSON.parse(aiInsightData.insights || '[]') : (Array.isArray(aiInsightData.insights) ? aiInsightData.insights : []);
+    recommendationsList = typeof aiInsightData.recommendations === 'string' ? JSON.parse(aiInsightData.recommendations || '[]') : (Array.isArray(aiInsightData.recommendations) ? aiInsightData.recommendations : []);
+  } catch(e) { console.error(e); }
 
-  // Parse insights và recommendations
-  let insightsList = [];
-  let recommendationsList = [];
+  let summaryText = (aiInsightData.summary || '').replace(/\*\*/g,'').replace(/\*/g,'').replace(/```json/g,'').replace(/```/g,'').trim();
 
-  try {
-    if (typeof aiInsightData.insights === 'string') {
-      insightsList = JSON.parse(aiInsightData.insights || '[]');
-    } else {
-      insightsList = Array.isArray(aiInsightData.insights) ? aiInsightData.insights : [];
-    }
-
-    if (typeof aiInsightData.recommendations === 'string') {
-      recommendationsList = JSON.parse(aiInsightData.recommendations || '[]');
-    } else {
-      recommendationsList = Array.isArray(aiInsightData.recommendations) ? aiInsightData.recommendations : [];
-    }
-  } catch (e) {
-    console.error('Error parsing insights/recommendations:', e);
-  }
-
-  // Làm sạch summary
-  let summaryText = aiInsightData.summary || '';
-  summaryText = summaryText
-    .replace(/\*\*/g, '')
-    .replace(/\*/g, '')
-    .replace(/```json/g, '')
-    .replace(/```/g, '')
-    .replace(/\{/g, '')
-    .replace(/\}/g, '')
-    .replace(/\[/g, '')
-    .replace(/\]/g, '')
-    .replace(/"summary":/gi, '')
-    .replace(/"insights":/gi, '')
-    .replace(/"recommendations":/gi, '')
-    .replace(/Dưới đây là.*?JSON:/gi, '')
-    .trim();
-
-  // Tạo HTML cho modal
   const modalHtml = `
-    <div class="modal fade" id="projectAIInsightsModal" tabindex="-1" aria-labelledby="projectAIInsightsModalLabel" aria-hidden="true">
+    <div class="modal fade" id="projectAIInsightsModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
           <div class="modal-header bg-primary text-white">
-            <h5 class="modal-title" id="projectAIInsightsModalLabel">
-              <i class="bi bi-robot me-2"></i>${aiInsightData.title || 'AI Insights - {{ project.name|escapejs }}'}
-            </h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            <h5 class="modal-title"><i class="bi bi-robot me-2"></i>${aiInsightData.title || 'AI Insights - {{ project.name|escapejs }}'}</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
-            ${summaryText ? `
-              <div class="mb-4">
-                <h6 class="text-primary mb-3"><i class="bi bi-file-text me-2"></i>Tóm tắt</h6>
-                <div class="p-3 bg-light rounded">
-                  ${summaryText.split(/\n\n+/).filter(p => p.trim().length > 0).map(p =>
-                    `<p class="mb-2">${p.trim().replace(/\n/g, '<br>')}</p>`
-                  ).join('')}
-                </div>
-              </div>
-            ` : ''}
-
-            ${insightsList.length > 0 ? `
-              <div class="mb-4">
-                <h6 class="text-info mb-3"><i class="bi bi-lightbulb me-2"></i>Những điểm nổi bật</h6>
-                <ul class="list-group">
-                  ${insightsList.map(insight => {
-                    const insightText = typeof insight === 'string' ? insight : (insight.text || JSON.stringify(insight));
-                    return `
-                      <li class="list-group-item">
-                        <i class="bi bi-check-circle-fill text-info me-2"></i>${insightText}
-                      </li>
-                    `;
-                  }).join('')}
-                </ul>
-              </div>
-            ` : ''}
-
-            ${recommendationsList.length > 0 ? `
-              <div class="mb-4">
-                <h6 class="text-success mb-3"><i class="bi bi-star me-2"></i>Khuyến nghị</h6>
-                <ul class="list-group">
-                  ${recommendationsList.map(rec => {
-                    const recText = typeof rec === 'string' ? rec : (rec.text || JSON.stringify(rec));
-                    return `
-                      <li class="list-group-item">
-                        <i class="bi bi-arrow-right-circle-fill text-success me-2"></i>${recText}
-                      </li>
-                    `;
-                  }).join('')}
-                </ul>
-              </div>
-            ` : ''}
-
-            <div class="text-center mt-4">
-              <a href="{% url 'core:ai-chat' %}" class="btn btn-primary">
-                <i class="bi bi-chat-dots me-2"></i>Chat với AI để tìm hiểu thêm
-              </a>
-            </div>
+            ${summaryText ? `<div class="mb-4"><h6 class="text-primary mb-3"><i class="bi bi-file-text me-2"></i>Tóm tắt</h6><div class="p-3 bg-light rounded"><p>${summaryText}</p></div></div>` : ''}
+            ${insightsList.length > 0 ? `<div class="mb-4"><h6 class="text-info mb-3"><i class="bi bi-lightbulb me-2"></i>Những điểm nổi bật</h6><ul class="list-group">${insightsList.map(i => `<li class="list-group-item"><i class="bi bi-check-circle-fill text-info me-2"></i>${typeof i === 'string' ? i : (i.text || JSON.stringify(i))}</li>`).join('')}</ul></div>` : ''}
+            ${recommendationsList.length > 0 ? `<div class="mb-4"><h6 class="text-success mb-3"><i class="bi bi-star me-2"></i>Khuyến nghị</h6><ul class="list-group">${recommendationsList.map(r => `<li class="list-group-item"><i class="bi bi-arrow-right-circle-fill text-success me-2"></i>${typeof r === 'string' ? r : (r.text || JSON.stringify(r))}</li>`).join('')}</ul></div>` : ''}
+            <div class="text-center mt-4"><a href="{% url 'core:ai-chat' %}" class="btn btn-primary"><i class="bi bi-chat-dots me-2"></i>Chat với AI</a></div>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-          </div>
+          <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button></div>
         </div>
       </div>
     </div>
   `;
 
-  // Xóa modal cũ nếu có
   const oldModal = document.getElementById('projectAIInsightsModal');
-  if (oldModal) {
-    oldModal.remove();
-  }
-
-  // Thêm modal mới vào body
+  if (oldModal) oldModal.remove();
   document.body.insertAdjacentHTML('beforeend', modalHtml);
-
-  // Hiển thị modal
   const modal = new bootstrap.Modal(document.getElementById('projectAIInsightsModal'));
   modal.show();
-
-  // Xóa modal khi đóng
-  document.getElementById('projectAIInsightsModal').addEventListener('hidden.bs.modal', function() {
-    this.remove();
-  });
+  document.getElementById('projectAIInsightsModal').addEventListener('hidden.bs.modal', function() { this.remove(); });
 }
 </script>
+
+<!-- SortableJS for drag-reorder phases -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<!-- Frappe Gantt v0.5.0 (stable version) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.5.0/dist/frappe-gantt.min.css">
+<script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.5.0/dist/frappe-gantt.min.js"></script>
+
 {% endblock %}

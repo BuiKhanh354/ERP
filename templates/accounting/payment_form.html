@@ -1,0 +1,73 @@
+{% load static %}
+{% extends "base_sidebar.html" %}
+
+{% block title %}{{ title|default:"Thanh toán" }} - ERP{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">{{ title|default:"Ghi nhận thanh toán" }}</h1>
+  <ul class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'accounting:dashboard' %}">Kế toán</a></li>
+    <li class="breadcrumb-separator"><i class="bi bi-chevron-right"></i></li>
+    <li class="breadcrumb-item"><a href="{% url 'accounting:payment_list' %}">Thanh toán</a></li>
+    <li class="breadcrumb-separator"><i class="bi bi-chevron-right"></i></li>
+    <li class="breadcrumb-item active">{{ title }}</li>
+  </ul>
+</div>
+
+<div class="card" style="max-width: 700px;">
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      {% if form.errors %}
+      <div class="alert alert-danger">
+        <ul class="mb-0">{% for field, errors in form.errors.items %}{% for error in errors %}<li>{{ field }}: {{ error }}</li>{% endfor %}{% endfor %}</ul>
+      </div>
+      {% endif %}
+      <div class="row g-3">
+        <div class="col-md-12">
+          <label class="form-label">Hoá đơn <span class="text-danger">*</span></label>
+          {{ form.invoice }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Số tiền <span class="text-danger">*</span></label>
+          {{ form.amount }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Phương thức <span class="text-danger">*</span></label>
+          {{ form.payment_method }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Ngày thanh toán <span class="text-danger">*</span></label>
+          {{ form.payment_date }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Mã tham chiếu</label>
+          {{ form.reference_number }}
+        </div>
+        <div class="col-12">
+          <label class="form-label">Ghi chú</label>
+          {{ form.note }}
+        </div>
+      </div>
+      <div class="d-flex gap-2 justify-content-end mt-4">
+        <a href="{% url 'accounting:payment_list' %}" class="btn btn-outline-secondary">Huỷ</a>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Lưu</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Pre-select invoice if provided
+  {% if preselected_invoice %}
+  document.addEventListener('DOMContentLoaded', function() {
+    const sel = document.getElementById('id_invoice');
+    if (sel) sel.value = '{{ preselected_invoice }}';
+  });
+  {% endif %}
+</script>
+
+{% endblock %}

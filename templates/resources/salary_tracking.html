@@ -8,27 +8,8 @@
 {% block page_title %}Theo dõi Lương{% endblock %}
 
 {% block extra_css %}
-<style>
-  .salary-card {
-    border-radius: 16px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease;
-  }
-  .salary-card:hover {
-    transform: translateY(-4px);
-  }
-  .salary-amount {
-    font-size: 2.5rem;
-    font-weight: 900;
-    color: #10b981;
-  }
-  .stat-item {
-    padding: 1.5rem;
-    border-radius: 12px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-  }
-</style>
+<link rel="stylesheet" href="{% static 'assets/css/resources-salary-tracking.css' %}" />
+
 {% endblock %}
 
 {% block content %}
@@ -270,10 +251,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-  // Format số với dấu phẩy
-  function formatNumber(num) {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  }
-</script>
+<script src="{% static 'assets/js/resources-salary-tracking.js' %}"></script>
+
 {% endblock %}

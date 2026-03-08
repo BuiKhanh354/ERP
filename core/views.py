@@ -44,6 +44,11 @@ class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = "pages/dashboard.html"
     login_url = reverse_lazy("core:login")
 
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated and request.user.is_staff:
+            return redirect("admin_custom:dashboard")
+        return super().dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         from .services import DashboardService
@@ -79,6 +84,11 @@ class LoginView(DjangoLoginView):
             del self.request.session['require_password_change']
             # Redirect đến trang đổi mật khẩu bắt buộc
             return redirect('core:change-password-required')
+        
+        # Chuyển hướng nếu là Admin
+        if user.is_staff:
+            login(self.request, user)
+            return redirect('admin_custom:dashboard')
         
         # Login bình thường
         return super().form_valid(form)
@@ -197,7 +207,7 @@ class OTPVerifyView(FormView):
 
         otp_code = form.cleaned_data["otp"]
         otp_obj = PasswordResetOTP.objects.filter(
-            user=user, code=otp_code, is_used=False
+            user=user, otp_code=otp_code, is_used=False
         ).first()
 
         if not otp_obj or otp_obj.is_expired():
@@ -427,7 +437,7 @@ class ProfileView(LoginRequiredMixin, TemplateView):
                 from .models import EmailChangeOTP
 
                 otp_obj = EmailChangeOTP.objects.filter(
-                    user=request.user, code=otp_code, is_used=False
+                    user=request.user, otp_code=otp_code, is_used=False
                 ).first()
 
                 if not otp_obj or otp_obj.is_expired():
@@ -550,7 +560,7 @@ class ProfileView(LoginRequiredMixin, TemplateView):
                 from .models import AccountDeleteOTP
 
                 otp_obj = AccountDeleteOTP.objects.filter(
-                    user=request.user, code=otp_code, is_used=False
+                    user=request.user, otp_code=otp_code, is_used=False
                 ).first()
 
                 if not otp_obj or otp_obj.is_expired():
@@ -796,7 +806,7 @@ class SettingsView(LoginRequiredMixin, TemplateView):
             if form.is_valid():
                 otp_code = form.cleaned_data["otp"]
                 otp_obj = AccountDeleteOTP.objects.filter(
-                    user=request.user, code=otp_code, is_used=False
+                    user=request.user, otp_code=otp_code, is_used=False
                 ).first()
 
                 if not otp_obj or otp_obj.is_expired():

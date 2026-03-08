@@ -1,0 +1,96 @@
+{% extends "base_sidebar.html" %}
+{% load static %}
+
+{% block title %}Báo cáo Tài chính - ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/accounting-reports.css' %}" />
+
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Báo cáo Tài chính</h1>
+  <ul class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'accounting:dashboard' %}">Kế toán</a></li>
+    <li class="breadcrumb-separator"><i class="bi bi-chevron-right"></i></li>
+    <li class="breadcrumb-item active">Báo cáo</li>
+  </ul>
+</div>
+
+<!-- Report type selection -->
+<div class="report-cards" id="report-cards">
+  <div class="report-card" data-type="profit_loss" onclick="selectReport(this)">
+    <div class="icon icon-pl"><i class="bi bi-graph-up-arrow"></i></div>
+    <h5>Lãi / Lỗ theo Dự án</h5>
+    <p>Báo cáo doanh thu, chi phí và lợi nhuận của từng dự án</p>
+  </div>
+  <div class="report-card" data-type="monthly_revenue" onclick="selectReport(this)">
+    <div class="icon icon-rev"><i class="bi bi-calendar3"></i></div>
+    <h5>Doanh thu theo Tháng</h5>
+    <p>Tổng hợp doanh thu theo từng tháng</p>
+  </div>
+  <div class="report-card" data-type="expense_category" onclick="selectReport(this)">
+    <div class="icon icon-exp"><i class="bi bi-pie-chart"></i></div>
+    <h5>Chi phí theo Danh mục</h5>
+    <p>Phân tích chi phí theo từng danh mục</p>
+  </div>
+  <div class="report-card" data-type="cash_flow" onclick="selectReport(this)">
+    <div class="icon icon-cf"><i class="bi bi-arrow-left-right"></i></div>
+    <h5>Dòng tiền</h5>
+    <p>Báo cáo dòng tiền vào ra theo tháng</p>
+  </div>
+</div>
+
+<!-- Export form -->
+<div class="card" id="export-form" style="display: none;">
+  <div class="card-header"><i class="bi bi-download me-2"></i>Xuất Báo cáo</div>
+  <div class="card-body">
+    <form id="reportForm">
+      <input type="hidden" name="type" id="report-type" value="">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small">Dự án (tuỳ chọn)</label>
+          <select name="project" class="form-select form-select-sm">
+            <option value="">Tất cả dự án</option>
+            {% for p in projects %}
+            <option value="{{ p.id }}">{{ p.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">Từ ngày</label>
+          <input type="date" name="date_from" class="form-control form-control-sm">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">Đến ngày</label>
+          <input type="date" name="date_to" class="form-control form-control-sm">
+        </div>
+        <div class="col-md-3">
+          <button type="submit" class="btn btn-primary btn-sm w-100">
+            <i class="bi bi-file-earmark-excel me-1"></i>Tải Excel
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function selectReport(el) {
+    document.querySelectorAll('.report-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('report-type').value = el.dataset.type;
+    document.getElementById('export-form').style.display = 'block';
+  }
+
+  document.getElementById('reportForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const params = new URLSearchParams(new FormData(this));
+    window.location.href = "{% url 'accounting:report_export' %}?" + params.toString();
+  });
+</script>
+
+{% endblock %}

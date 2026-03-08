@@ -6,14 +6,47 @@ from core.models import BaseModel
 class Department(BaseModel):
     """Department model for organizational structure."""
     name = models.CharField(max_length=100, unique=True)
+    code = models.CharField(max_length=20, unique=True, blank=True, default='', help_text='Mã phòng ban')
     description = models.TextField(blank=True)
-    manager = models.ForeignKey('Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='managed_departments')
+    parent = models.ForeignKey(
+        'self', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='children', help_text='Phòng ban cha'
+    )
+    manager = models.ForeignKey(
+        'Employee', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='managed_departments'
+    )
+    is_active = models.BooleanField(default=True, help_text='Trạng thái hoạt động')
 
     class Meta:
         ordering = ['name']
 
     def __str__(self):
         return self.name
+
+    @property
+    def employee_count(self):
+        """Số nhân viên trong phòng ban."""
+        return self.employee_set.filter(is_active=True).count()
+
+    def get_ancestors(self):
+        """Trả về danh sách phòng ban cha (từ gần nhất đến gốc)."""
+        ancestors = []
+        current = self.parent
+        visited = set()
+        while current and current.pk not in visited:
+            ancestors.append(current)
+            visited.add(current.pk)
+            current = current.parent
+        return ancestors
+
+    def get_descendants(self):
+        """Trả về tất cả phòng ban con (đệ quy)."""
+        descendants = []
+        for child in self.children.all():
+            descendants.append(child)
+            descendants.extend(child.get_descendants())
+        return descendants
 
 
 class Position(BaseModel):

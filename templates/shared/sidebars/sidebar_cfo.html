@@ -1,0 +1,49 @@
+        <div class="menu-section">
+          <div class="menu-section-title">Giám đốc Tài chính</div>
+          <a
+            href="{% url 'cfo:dashboard' %}"
+            class="menu-item {% if 'cfo' in request.resolver_match.namespace and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+          >
+            <i class="bi bi-graph-up-arrow"></i>
+            <span>CFO Dashboard</span>
+          </a>
+          <a
+            href="{% url 'cfo:project_finance' %}"
+            class="menu-item {% if 'cfo' in request.resolver_match.namespace and 'project_finance' in request.resolver_match.url_name %}active{% endif %}"
+          >
+            <i class="bi bi-briefcase"></i>
+            <span>Tài chính Dự án</span>
+          </a>
+          <a
+            href="{% url 'cfo:budget_monitoring' %}"
+            class="menu-item {% if 'cfo' in request.resolver_match.namespace and request.resolver_match.url_name == 'budget_monitoring' %}active{% endif %}"
+          >
+            <i class="bi bi-piggy-bank"></i>
+            <span>Giám sát Ngân sách</span>
+          </a>
+          <a
+            href="{% url 'cfo:approval_center' %}"
+            class="menu-item {% if 'cfo' in request.resolver_match.namespace and 'approv' in request.resolver_match.url_name %}active{% endif %}"
+          >
+            <i class="bi bi-check2-square"></i>
+            <span>Phê duyệt</span>
+          </a>
+          <a
+            href="{% url 'cfo:reports' %}"
+            class="menu-item {% if 'cfo' in request.resolver_match.namespace and 'report' in request.resolver_match.url_name %}active{% endif %}"
+          >
+            <i class="bi bi-file-earmark-bar-graph"></i>
+            <span>Báo cáo Tài chính</span>
+          </a>
+        </div>
+
+        <div class="menu-section">
+          <div class="menu-section-title">Chat với PRM AI</div>
+          <a
+            href="{% url 'core:ai-chat' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'ai-chat' or request.resolver_match.url_name == 'ai-chat-history' %}active{% endif %}"
+          >
+            <i class="bi bi-chat-dots"></i>
+            <span>Chat với PRM AI</span>
+          </a>
+        </div>

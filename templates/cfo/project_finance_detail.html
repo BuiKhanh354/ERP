@@ -1,0 +1,180 @@
+{% load static %}
+{% extends "base_sidebar.html" %}
+{% load humanize %}
+
+{% block title %}{{ project.name }} - Tài chính{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/cfo-project-finance-detail.css' %}" />
+
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">{{ project.name }}</h1>
+  <ul class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'cfo:dashboard' %}">CFO Dashboard</a></li>
+    <li class="breadcrumb-separator"><i class="bi bi-chevron-right"></i></li>
+    <li class="breadcrumb-item"><a href="{% url 'cfo:project_finance' %}">Tài chính Dự án</a></li>
+    <li class="breadcrumb-separator"><i class="bi bi-chevron-right"></i></li>
+    <li class="breadcrumb-item active">{{ project.name }}</li>
+  </ul>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-md">
+    <div class="kpi-card">
+      <div class="kpi-label">Ngân sách</div>
+      <div class="kpi-value text-primary">{{ budget_total|intcomma }}</div>
+    </div>
+  </div>
+  <div class="col-md">
+    <div class="kpi-card">
+      <div class="kpi-label">Doanh thu</div>
+      <div class="kpi-value text-success">{{ revenue_total|intcomma }}</div>
+    </div>
+  </div>
+  <div class="col-md">
+    <div class="kpi-card">
+      <div class="kpi-label">Chi phí</div>
+      <div class="kpi-value text-danger">{{ cost_total|intcomma }}</div>
+    </div>
+  </div>
+  <div class="col-md">
+    <div class="kpi-card">
+      <div class="kpi-label">Lợi nhuận</div>
+      <div class="kpi-value {% if profit_total >= 0 %}text-success{% else %}text-danger{% endif %}">{{ profit_total|intcomma }}</div>
+    </div>
+  </div>
+  <div class="col-md">
+    <div class="kpi-card">
+      <div class="kpi-label">Margin</div>
+      <div class="kpi-value {% if margin_pct >= 0 %}text-primary{% else %}text-danger{% endif %}">{{ margin_pct }}%</div>
+    </div>
+  </div>
+</div>
+
+<!-- Timeline Chart -->
+<div class="card mb-4">
+  <div class="card-header"><i class="bi bi-graph-up me-2"></i>Doanh thu vs Chi phí theo Thời gian</div>
+  <div class="card-body"><div class="chart-container"><canvas id="timelineChart"></canvas></div></div>
+</div>
+
+<!-- Tabs: Invoices, Expenses, Budgets -->
+<ul class="nav nav-tabs mb-3" id="financeTabs" role="tablist">
+  <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#invoicesTab">Hoá đơn ({{ invoices|length }})</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#expensesTab">Chi phí ({{ expenses|length }})</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#budgetsTab">Ngân sách ({{ budgets|length }})</a></li>
+</ul>
+
+<div class="tab-content">
+  <!-- Invoices Tab -->
+  <div class="tab-pane fade show active" id="invoicesTab">
+    <div class="card table-section">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead><tr><th>Số HĐ</th><th>Khách hàng</th><th class="text-end">Số tiền</th><th>Ngày</th><th>Hạn TT</th><th>Trạng thái</th></tr></thead>
+            <tbody>
+              {% for inv in invoices %}
+              <tr>
+                <td class="fw-semibold">{{ inv.invoice_number }}</td>
+                <td>{{ inv.client.name }}</td>
+                <td class="text-end fw-semibold">{{ inv.total_amount|intcomma }}</td>
+                <td>{{ inv.issue_date|date:"d/m/Y" }}</td>
+                <td>{{ inv.due_date|date:"d/m/Y" }}</td>
+                <td><span class="badge-status badge-{{ inv.status }}">{{ inv.get_status_display }}</span></td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" class="text-center text-muted py-4">Chưa có hoá đơn</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Expenses Tab -->
+  <div class="tab-pane fade" id="expensesTab">
+    <div class="card table-section">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead><tr><th>Mô tả</th><th>Danh mục</th><th class="text-end">Số tiền</th><th>Ngày</th><th>Trạng thái</th></tr></thead>
+            <tbody>
+              {% for exp in expenses %}
+              <tr>
+                <td>{{ exp.description|truncatechars:60 }}</td>
+                <td>{{ exp.category.name }}</td>
+                <td class="text-end fw-semibold">{{ exp.amount|intcomma }}</td>
+                <td>{{ exp.expense_date|date:"d/m/Y" }}</td>
+                <td><span class="badge-status badge-{{ exp.approval_status }}">{{ exp.get_approval_status_display }}</span></td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-center text-muted py-4">Chưa có chi phí</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Budgets Tab -->
+  <div class="tab-pane fade" id="budgetsTab">
+    <div class="card table-section">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead><tr><th>Danh mục</th><th>Năm</th><th class="text-end">Phân bổ</th><th class="text-end">Đã dùng</th><th class="text-end">Còn lại</th><th class="text-end">Sử dụng</th><th>Trạng thái</th></tr></thead>
+            <tbody>
+              {% for b in budgets %}
+              <tr>
+                <td class="fw-semibold">{{ b.category.name }}</td>
+                <td>{{ b.fiscal_year }}</td>
+                <td class="text-end">{{ b.allocated_amount|intcomma }}</td>
+                <td class="text-end">{{ b.spent_amount|intcomma }}</td>
+                <td class="text-end">{{ b.remaining_amount|intcomma }}</td>
+                <td class="text-end">
+                  <span class="badge-status {% if b.utilization_percentage > 90 %}badge-overdue{% elif b.utilization_percentage > 70 %}badge-pending{% else %}badge-approved{% endif %}">
+                    {{ b.utilization_percentage|floatformat:0 }}%
+                  </span>
+                </td>
+                <td><span class="badge-status badge-{{ b.approval_status }}">{{ b.get_approval_status_display }}</span></td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="7" class="text-center text-muted py-4">Chưa có ngân sách</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const tl = {{ timeline_json|safe }};
+  new Chart(document.getElementById('timelineChart'), {
+    type: 'line',
+    data: {
+      labels: tl.labels,
+      datasets: [
+        { label: 'Doanh thu', data: tl.revenue, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.3 },
+        { label: 'Chi phí', data: tl.cost, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)', fill: true, tension: 0.3 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12 } } },
+      scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() } } }
+    }
+  });
+</script>
+
+{% endblock %}

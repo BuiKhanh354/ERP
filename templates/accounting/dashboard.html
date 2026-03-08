@@ -1,0 +1,225 @@
+{% extends "base_sidebar.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Dashboard Kế toán - ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/accounting-dashboard.css' %}" />
+
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Dashboard Kế toán</h1>
+  <ul class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">Trang chủ</a></li>
+    <li class="breadcrumb-separator"><i class="bi bi-chevron-right"></i></li>
+    <li class="breadcrumb-item active">Dashboard Kế toán</li>
+  </ul>
+</div>
+
+<!-- Stat Widgets -->
+<div class="row g-3 mb-4">
+  <div class="col-xl col-md-6">
+    <div class="stat-card">
+      <div class="stat-icon icon-revenue"><i class="bi bi-currency-dollar"></i></div>
+      <div class="stat-value text-success">{{ total_revenue|intcomma }}</div>
+      <div class="stat-label">Tổng doanh thu</div>
+    </div>
+  </div>
+  <div class="col-xl col-md-6">
+    <div class="stat-card">
+      <div class="stat-icon icon-expense"><i class="bi bi-arrow-down-circle"></i></div>
+      <div class="stat-value text-danger">{{ total_expenses|intcomma }}</div>
+      <div class="stat-label">Tổng chi phí</div>
+    </div>
+  </div>
+  <div class="col-xl col-md-6">
+    <div class="stat-card">
+      <div class="stat-icon icon-profit"><i class="bi bi-graph-up-arrow"></i></div>
+      <div class="stat-value {% if profit_loss >= 0 %}text-primary{% else %}text-danger{% endif %}">{{ profit_loss|intcomma }}</div>
+      <div class="stat-label">Lãi / Lỗ</div>
+    </div>
+  </div>
+  <div class="col-xl col-md-6">
+    <div class="stat-card">
+      <div class="stat-icon icon-pending"><i class="bi bi-clock-history"></i></div>
+      <div class="stat-value text-warning">{{ pending_invoices }}</div>
+      <div class="stat-label">Hoá đơn chờ</div>
+    </div>
+  </div>
+  <div class="col-xl col-md-6">
+    <div class="stat-card">
+      <div class="stat-icon icon-overdue"><i class="bi bi-exclamation-triangle"></i></div>
+      <div class="stat-value text-danger">{{ overdue_invoices }}</div>
+      <div class="stat-label">Hoá đơn quá hạn</div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-bar-chart me-2"></i>Doanh thu theo Dự án</div>
+      <div class="card-body">
+        <div class="chart-container"><canvas id="revenueByProjectChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-pie-chart me-2"></i>Chi phí theo Danh mục</div>
+      <div class="card-body">
+        <div class="chart-container"><canvas id="expenseByCategoryChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-graph-up me-2"></i>Dòng tiền hàng tháng</div>
+      <div class="card-body">
+        <div class="chart-container"><canvas id="cashFlowChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tables: Recent Payments & Expenses -->
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card table-section">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-credit-card me-2"></i>Thanh toán gần đây</span>
+        <a href="{% url 'accounting:payment_list' %}" class="btn btn-sm btn-outline-primary">Xem tất cả</a>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Khách hàng</th>
+                <th>Dự án</th>
+                <th class="text-end">Số tiền</th>
+                <th>Ngày</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in recent_payments %}
+              <tr>
+                <td>{{ p.invoice.client.name }}</td>
+                <td>{{ p.invoice.project.name }}</td>
+                <td class="text-end fw-semibold">{{ p.amount|intcomma }}</td>
+                <td>{{ p.payment_date|date:"d/m/Y" }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-4">Chưa có thanh toán</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card table-section">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-wallet2 me-2"></i>Chi phí gần đây</span>
+        <a href="{% url 'accounting:expense_list' %}" class="btn btn-sm btn-outline-primary">Xem tất cả</a>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Dự án</th>
+                <th>Danh mục</th>
+                <th class="text-end">Số tiền</th>
+                <th>Ngày</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for e in recent_expenses %}
+              <tr>
+                <td>{{ e.project.name }}</td>
+                <td>{{ e.category.name }}</td>
+                <td class="text-end fw-semibold">{{ e.amount|intcomma }}</td>
+                <td>{{ e.expense_date|date:"d/m/Y" }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-4">Chưa có chi phí</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const COLORS = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4','#84cc16'];
+
+  // Revenue by Project - Bar Chart
+  const rbpData = {{ revenue_by_project|safe }};
+  new Chart(document.getElementById('revenueByProjectChart'), {
+    type: 'bar',
+    data: {
+      labels: rbpData.labels,
+      datasets: [{
+        label: 'Doanh thu',
+        data: rbpData.data,
+        backgroundColor: COLORS.slice(0, rbpData.labels.length),
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() } } }
+    }
+  });
+
+  // Expenses by Category - Doughnut Chart
+  const ebcData = {{ expenses_by_category|safe }};
+  new Chart(document.getElementById('expenseByCategoryChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ebcData.labels,
+      datasets: [{
+        data: ebcData.data,
+        backgroundColor: COLORS.slice(0, ebcData.labels.length),
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12 } } },
+      cutout: '60%'
+    }
+  });
+
+  // Monthly Cash Flow - Line Chart
+  const cfData = {{ monthly_cash_flow|safe }};
+  new Chart(document.getElementById('cashFlowChart'), {
+    type: 'line',
+    data: {
+      labels: cfData.labels,
+      datasets: [
+        { label: 'Doanh thu', data: cfData.revenue, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.3 },
+        { label: 'Chi phí', data: cfData.expenses, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)', fill: true, tension: 0.3 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12 } } },
+      scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() } } }
+    }
+  });
+</script>
+
+{% endblock %}

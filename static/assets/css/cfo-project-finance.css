@@ -1,0 +1,11 @@
+.finance-table th { font-weight: 600; font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+  .badge-status { font-size: 0.75rem; padding: 0.3em 0.7em; border-radius: 6px; font-weight: 600; }
+  .badge-active { background: rgba(16,185,129,0.12); color: #059669; }
+  .badge-planning { background: rgba(59,130,246,0.12); color: #2563eb; }
+  .badge-on_hold { background: rgba(245,158,11,0.12); color: #b45309; }
+  .badge-completed { background: rgba(148,163,184,0.12); color: #64748b; }
+  .badge-cancelled { background: rgba(239,68,68,0.12); color: #dc2626; }
+  .filter-badge { font-size: 0.8rem; padding: 0.4em 0.8em; border-radius: 20px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-secondary); text-decoration: none; transition: all 0.2s; }
+  .filter-badge:hover, .filter-badge.active { background: var(--sidebar-active); color: #fff; border-color: var(--sidebar-active); }
+  .progress-bar-custom { height: 6px; border-radius: 3px; background: var(--border-color); overflow: hidden; }
+  .progress-bar-custom .fill { height: 100%; border-radius: 3px; transition: width 0.3s; }

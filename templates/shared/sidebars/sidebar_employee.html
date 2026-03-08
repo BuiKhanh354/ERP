@@ -1,0 +1,32 @@
+        <div class="menu-section">
+          <div class="menu-section-title">Nhiệm vụ</div>
+          <a
+            href="{% url 'projects:my_tasks' %}"
+            class="menu-item {% if 'projects' in request.resolver_match.namespace and request.resolver_match.url_name == 'my_tasks' %}active{% endif %}"
+          >
+            <i class="bi bi-person-check"></i>
+            <span>Công việc của tôi</span>
+          </a>
+        </div>
+
+        <div class="menu-section">
+          <div class="menu-section-title">Theo dõi Lương</div>
+          <a
+            href="{% url 'resources:salary-tracking' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'salary-tracking' %}active{% endif %}"
+          >
+            <i class="bi bi-cash-stack"></i>
+            <span>Theo dõi Lương Cá nhân</span>
+          </a>
+        </div>
+
+        <div class="menu-section">
+          <div class="menu-section-title">Chat với PRM AI</div>
+          <a
+            href="{% url 'core:ai-chat' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'ai-chat' or request.resolver_match.url_name == 'ai-chat-history' %}active{% endif %}"
+          >
+            <i class="bi bi-chat-dots"></i>
+            <span>Chat với PRM AI</span>
+          </a>
+        </div>

@@ -21,13 +21,20 @@ urlpatterns = [
     path('api/performance/', include('performance.urls')),
     path('api/ai/', include('ai.urls')),
     
-    # Web routes (custom views) - Must be before Bloomerp to avoid conflicts
-    path('admin-panel/', include(('core.admin_urls', 'admin_custom'), namespace='admin_custom')),
+    # Role-based web routes (New Architecture)
+    path('admin-panel/', include(('core.role_urls.admin_urls', 'admin_module'), namespace='admin_custom')),
+    path('hr/', include(('core.role_urls.hr_urls', 'hr_module'), namespace='hr_module')),
+    path('employee/', include(('core.role_urls.employee_urls', 'employee_module'), namespace='employee_module')),
+    path('pm/', include(('core.role_urls.pm_urls', 'pm_module'), namespace='pm_module')),
+    
+    # Legacy routes (backward compat, sẽ deprecate dần)
     path('projects/', include(('projects.urls', 'projects'), namespace='projects')),
     path('budgeting/', include(('budgeting.urls', 'budgeting'), namespace='budgeting')),
     path('clients/', include(('clients.web_urls', 'clients'), namespace='clients')),
     path('resources/', include(('resources.web_urls', 'resources'), namespace='resources')),
     path('performance/', include(('performance.web_urls', 'performance'), namespace='performance')),
+    path('cfo/', include(('accounting.cfo_urls', 'cfo'), namespace='cfo')),
+    path('accounting/', include(('accounting.urls', 'accounting'), namespace='accounting')),
     path('', include(('core.urls', 'core'), namespace='core')),
     
     # Bloomerp Framework routes (automatic CRUD views)

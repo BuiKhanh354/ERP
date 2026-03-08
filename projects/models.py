@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from datetime import timedelta
@@ -46,12 +47,58 @@ class Project(BaseModel):
         blank=True,
         help_text='Các phòng ban bắt buộc cần tham gia dự án'
     )
+    project_manager = models.ForeignKey(
+        'resources.Employee',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='managed_projects',
+        help_text='Project Manager chính của dự án'
+    )
 
     class Meta:
         ordering = ['-created_at']
 
     def __str__(self):
         return self.name
+
+    @property
+    def calculated_progress(self):
+        """Tính tiến độ dự án dựa trên tất cả tasks."""
+        tasks = self.tasks.all()
+        if not tasks.exists():
+            return 0
+        return tasks.aggregate(avg=models.Avg('progress_percent'))['avg'] or 0
+
+
+class ProjectPhase(BaseModel):
+    """Giai đoạn dự án (Agile lifecycle phases)."""
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='phases')
+    phase_name = models.CharField(max_length=200, help_text='Tên giai đoạn')
+    description = models.TextField(blank=True)
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    order_index = models.PositiveIntegerField(default=0, help_text='Thứ tự sắp xếp')
+
+    class Meta:
+        ordering = ['order_index', 'created_at']
+        verbose_name = 'Giai đoạn dự án'
+        verbose_name_plural = 'Giai đoạn dự án'
+
+    def __str__(self):
+        return f"{self.project.name} - {self.phase_name}"
+
+    @property
+    def calculated_progress(self):
+        """Tính tiến độ phase dựa trên tasks."""
+        tasks = self.tasks.all()
+        if not tasks.exists():
+            return 0
+        return tasks.aggregate(avg=models.Avg('progress_percent'))['avg'] or 0
+
+    @property
+    def task_count(self):
+        return self.tasks.count()
 
 
 class Task(BaseModel):
@@ -72,10 +119,20 @@ class Task(BaseModel):
         ('rejected', 'Từ chối'),
     ]
 
+    PRIORITY_CHOICES = [
+        ('low', 'Thấp'),
+        ('medium', 'Trung bình'),
+        ('high', 'Cao'),
+        ('critical', 'Khẩn cấp'),
+    ]
+
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='tasks')
+    phase = models.ForeignKey('ProjectPhase', on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks', help_text='Giai đoạn dự án')
+    progress_percent = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(100)], help_text='Tiến độ hoàn thành (0-100%)')
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='todo')
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium', help_text='Mức độ ưu tiên')
     department = models.ForeignKey('resources.Department', on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks', help_text='Phòng ban phụ trách công việc')
     assigned_to = models.ForeignKey('resources.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_tasks')
     assignment_status = models.CharField(max_length=20, choices=ASSIGNMENT_STATUS_CHOICES, default='assigned', help_text='Trạng thái giao/nhận việc')
@@ -189,3 +246,42 @@ class PersonnelRecommendationDetail(BaseModel):
 
     def __str__(self):
         return f"{self.recommendation.project.name} - {self.employee.full_name} ({self.allocation_percentage}%)"
+
+
+class Milestone(BaseModel):
+    """Milestone cho project."""
+    STATUS_CHOICES = [
+        ('pending', 'Chờ'),
+        ('in_progress', 'Đang thực hiện'),
+        ('completed', 'Hoàn thành'),
+    ]
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='milestones')
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True, default='')
+    due_date = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+
+    class Meta:
+        db_table = 'projects_milestone'
+        ordering = ['due_date', 'created_at']
+
+    def __str__(self):
+        return f"{self.project.name} - {self.name}"
+
+
+class TaskProgressLog(BaseModel):
+    """Lịch sử cập nhật tiến độ công việc."""
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='progress_logs')
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='progress_logs')
+    progress_percent = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)], help_text='Tiến độ tại thời điểm cập nhật')
+    note = models.TextField(blank=True, help_text='Ghi chú tiến độ')
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Lịch sử cập nhật tiến độ'
+        verbose_name_plural = 'Lịch sử cập nhật tiến độ'
+
+    def __str__(self):
+        return f"{self.task.name} - {self.progress_percent}% ({self.created_at.strftime('%d/%m/%Y %H:%M')})"
+

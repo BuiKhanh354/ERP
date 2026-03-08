@@ -1,0 +1,153 @@
+{% extends "base_sidebar.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Giám sát Ngân sách - CFO{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/cfo-budget-monitoring.css' %}" />
+
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Giám sát Ngân sách</h1>
+  <ul class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'cfo:dashboard' %}">CFO Dashboard</a></li>
+    <li class="breadcrumb-separator"><i class="bi bi-chevron-right"></i></li>
+    <li class="breadcrumb-item active">Giám sát Ngân sách</li>
+  </ul>
+</div>
+
+<!-- Budget vs Actual Chart -->
+<div class="card mb-4">
+  <div class="card-header"><i class="bi bi-bar-chart-steps me-2"></i>Ngân sách vs Thực tế theo Dự án</div>
+  <div class="card-body"><div class="chart-container"><canvas id="budgetChart"></canvas></div></div>
+</div>
+
+<div class="row g-4 mb-4">
+  <!-- Budget by Project -->
+  <div class="col-lg-6">
+    <div class="card table-section">
+      <div class="card-header"><i class="bi bi-folder me-2"></i>Ngân sách theo Dự án</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead><tr><th>Dự án</th><th class="text-end">Phân bổ</th><th class="text-end">Đã dùng</th><th class="text-end">Còn lại</th><th style="width:120px">Sử dụng</th></tr></thead>
+            <tbody>
+              {% for bp in budget_by_project %}
+              <tr>
+                <td class="fw-semibold">{{ bp.project__name }}</td>
+                <td class="text-end">{{ bp.total_allocated|intcomma }}</td>
+                <td class="text-end">{{ bp.total_spent|intcomma }}</td>
+                <td class="text-end {% if bp.remaining < 0 %}text-danger{% endif %}">{{ bp.remaining|intcomma }}</td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="progress-custom flex-grow-1">
+                      <div class="fill {% if bp.utilization > 90 %}fill-danger{% elif bp.utilization > 70 %}fill-warning{% else %}fill-safe{% endif %}" style="width: {% if bp.utilization > 100 %}100{% else %}{{ bp.utilization }}{% endif %}%"></div>
+                    </div>
+                    <small class="fw-semibold">{{ bp.utilization }}%</small>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-center text-muted py-4">Chưa có dữ liệu</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Budget by Department -->
+  <div class="col-lg-6">
+    <div class="card table-section">
+      <div class="card-header"><i class="bi bi-building me-2"></i>Ngân sách theo Phòng ban</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead><tr><th>Phòng ban</th><th class="text-end">Phân bổ</th><th class="text-end">Đã dùng</th><th class="text-end">Còn lại</th><th style="width:120px">Sử dụng</th></tr></thead>
+            <tbody>
+              {% for dept in budget_by_department %}
+              <tr>
+                <td class="fw-semibold">{{ dept.name }}</td>
+                <td class="text-end">{{ dept.allocated|intcomma }}</td>
+                <td class="text-end">{{ dept.spent|intcomma }}</td>
+                <td class="text-end {% if dept.remaining < 0 %}text-danger{% endif %}">{{ dept.remaining|intcomma }}</td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="progress-custom flex-grow-1">
+                      <div class="fill {% if dept.utilization > 90 %}fill-danger{% elif dept.utilization > 70 %}fill-warning{% else %}fill-safe{% endif %}" style="width: {% if dept.utilization > 100 %}100{% else %}{{ dept.utilization }}{% endif %}%"></div>
+                    </div>
+                    <small class="fw-semibold">{{ dept.utilization }}%</small>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-center text-muted py-4">Chưa có dữ liệu</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Pending Budget Approvals -->
+{% if pending_budgets %}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-clock-history me-2 text-warning"></i>Ngân sách Chờ duyệt</span>
+    <span class="badge bg-warning text-dark">{{ pending_budgets|length }}</span>
+  </div>
+  <div class="card-body">
+    {% for b in pending_budgets %}
+    <div class="approval-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <h6 class="mb-1">{{ b.project.name }} — {{ b.category.name }}</h6>
+          <p class="mb-1 text-muted">Năm: {{ b.fiscal_year }} | Số tiền: <strong>{{ b.allocated_amount|intcomma }}</strong></p>
+          {% if b.notes %}<p class="mb-0 text-muted small">{{ b.notes|truncatechars:100 }}</p>{% endif %}
+        </div>
+        <div class="d-flex gap-2">
+          <form method="post" action="{% url 'cfo:approve_budget' b.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn-approve"><i class="bi bi-check-lg me-1"></i>Duyệt</button>
+          </form>
+          <form method="post" action="{% url 'cfo:reject_budget' b.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn-reject"><i class="bi bi-x-lg me-1"></i>Từ chối</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const bd = {{ budget_chart_json|safe }};
+  new Chart(document.getElementById('budgetChart'), {
+    type: 'bar',
+    data: {
+      labels: bd.labels,
+      datasets: [
+        { label: 'Ngân sách', data: bd.budget, backgroundColor: 'rgba(59,130,246,0.7)', borderRadius: 6 },
+        { label: 'Thực tế', data: bd.actual, backgroundColor: 'rgba(245,158,11,0.7)', borderRadius: 6 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12 } } },
+      scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() } } }
+    }
+  });
+</script>
+
+{% endblock %}

@@ -10,9 +10,14 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='project',
-            name='budget_for_personnel',
-            field=models.DecimalField(decimal_places=2, default=0, help_text='Ngân sách dành cho nhân sự (VNĐ)', max_digits=15),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddField(
+                    model_name='project',
+                    name='budget_for_personnel',
+                    field=models.DecimalField(decimal_places=2, default=0, help_text='Ngân sách dành cho nhân sự (VNĐ)', max_digits=15),
+                ),
+            ]
         ),
     ]

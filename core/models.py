@@ -1,6 +1,10 @@
+import random
+import string
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from datetime import timedelta
 
 
 class BaseModel(models.Model):
@@ -30,6 +34,8 @@ class BaseModel(models.Model):
 class PasswordResetOTP(BaseModel):
     """OTP đặt lại mật khẩu cho user."""
 
+    EXPIRY_MINUTES = 10
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="password_otps")
     otp_code = models.CharField(max_length=6)
     expires_at = models.DateTimeField()
@@ -41,8 +47,26 @@ class PasswordResetOTP(BaseModel):
         ]
         ordering = ["-created_at"]
 
+    @property
+    def code(self):
+        return self.otp_code
+
     def is_valid(self) -> bool:
         return (not self.is_used) and self.expires_at >= timezone.now()
+
+    def is_expired(self) -> bool:
+        return self.expires_at < timezone.now()
+
+    @classmethod
+    def generate_otp(cls, user):
+        """Tạo OTP 6 chữ số cho user."""
+        code = ''.join(random.choices(string.digits, k=6))
+        otp = cls(
+            user=user,
+            otp_code=code,
+            expires_at=timezone.now() + timedelta(minutes=cls.EXPIRY_MINUTES),
+        )
+        return otp
 
 
 class Notification(BaseModel):
@@ -135,6 +159,8 @@ class UserProfile(BaseModel):
 class EmailChangeOTP(BaseModel):
     """OTP xác nhận đổi email trong trang Hồ sơ."""
 
+    EXPIRY_MINUTES = 10
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="email_change_otps")
     new_email = models.EmailField()
     otp_code = models.CharField(max_length=6)
@@ -148,12 +174,33 @@ class EmailChangeOTP(BaseModel):
             models.Index(fields=["user", "is_used", "created_at"]),
         ]
 
+    @property
+    def code(self):
+        return self.otp_code
+
     def is_valid(self) -> bool:
         return (not self.is_used) and self.expires_at >= timezone.now()
+
+    def is_expired(self) -> bool:
+        return self.expires_at < timezone.now()
+
+    @classmethod
+    def generate_otp(cls, user, new_email):
+        """Tạo OTP 6 chữ số cho đổi email."""
+        code = ''.join(random.choices(string.digits, k=6))
+        otp = cls(
+            user=user,
+            new_email=new_email,
+            otp_code=code,
+            expires_at=timezone.now() + timedelta(minutes=cls.EXPIRY_MINUTES),
+        )
+        return otp
 
 
 class AccountDeleteOTP(BaseModel):
     """OTP xác nhận xoá tài khoản."""
+
+    EXPIRY_MINUTES = 10
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="account_delete_otps")
     otp_code = models.CharField(max_length=6)
@@ -167,8 +214,26 @@ class AccountDeleteOTP(BaseModel):
             models.Index(fields=["user", "is_used", "created_at"]),
         ]
 
+    @property
+    def code(self):
+        return self.otp_code
+
     def is_valid(self) -> bool:
         return (not self.is_used) and self.expires_at >= timezone.now()
+
+    def is_expired(self) -> bool:
+        return self.expires_at < timezone.now()
+
+    @classmethod
+    def generate_otp(cls, user):
+        """Tạo OTP 6 chữ số cho xoá tài khoản."""
+        code = ''.join(random.choices(string.digits, k=6))
+        otp = cls(
+            user=user,
+            otp_code=code,
+            expires_at=timezone.now() + timedelta(minutes=cls.EXPIRY_MINUTES),
+        )
+        return otp
 
 
 class AIChatHistory(BaseModel):
@@ -188,4 +253,93 @@ class AIChatHistory(BaseModel):
     
     def __str__(self):
         return f"{self.user.username} - {self.created_at}"
+
+
+# =============================================
+# RBAC Models (Role-Based Access Control)
+# =============================================
+
+class Role(models.Model):
+    """Role trong hệ thống RBAC."""
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, default='')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'roles'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class Permission(models.Model):
+    """Permission trong hệ thống RBAC."""
+    code = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=200)
+    module = models.CharField(max_length=100, blank=True, default='')
+    description = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'permissions'
+        ordering = ['module', 'code']
+
+    def __str__(self):
+        return f"{self.module}.{self.code}" if self.module else self.code
+
+
+class UserRole(models.Model):
+    """Liên kết User với Role."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_roles')
+    role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name='user_roles')
+
+    class Meta:
+        db_table = 'user_roles'
+        unique_together = ['user', 'role']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.role.name}"
+
+
+class RolePermission(models.Model):
+    """Liên kết Role với Permission."""
+    role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name='role_permissions')
+    permission = models.ForeignKey(Permission, on_delete=models.CASCADE, related_name='role_permissions')
+
+    class Meta:
+        db_table = 'role_permissions'
+        unique_together = ['role', 'permission']
+
+    def __str__(self):
+        return f"{self.role.name} - {self.permission.code}"
+
+
+class AuditLog(models.Model):
+    """System audit log - theo dõi mọi thay đổi quan trọng."""
+    ACTION_CHOICES = [
+        ('CREATE', 'Tạo mới'),
+        ('UPDATE', 'Cập nhật'),
+        ('DELETE', 'Xóa'),
+        ('APPROVE', 'Phê duyệt'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='audit_logs')
+    action_type = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    table_name = models.CharField(max_length=200)
+    record_id = models.CharField(max_length=100, blank=True, default='')
+    old_data = models.TextField(null=True, blank=True)
+    new_data = models.TextField(null=True, blank=True)
+    ip_address = models.CharField(max_length=50, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'system_auditlog'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.action_type} on {self.table_name} by {self.user}"
 

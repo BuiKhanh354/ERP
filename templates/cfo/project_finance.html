@@ -1,0 +1,96 @@
+{% extends "base_sidebar.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Tài chính Dự án - CFO{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/cfo-project-finance.css' %}" />
+
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Tài chính Dự án</h1>
+  <ul class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'cfo:dashboard' %}">CFO Dashboard</a></li>
+    <li class="breadcrumb-separator"><i class="bi bi-chevron-right"></i></li>
+    <li class="breadcrumb-item active">Tài chính Dự án</li>
+  </ul>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body d-flex flex-wrap align-items-center gap-2">
+    <span class="fw-semibold me-2"><i class="bi bi-funnel me-1"></i>Trạng thái:</span>
+    <a href="{% url 'cfo:project_finance' %}" class="filter-badge {% if not current_status %}active{% endif %}">Tất cả</a>
+    {% for value, label in status_choices %}
+    <a href="{% url 'cfo:project_finance' %}?status={{ value }}" class="filter-badge {% if current_status == value %}active{% endif %}">{{ label }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Project Finance Table -->
+<div class="card finance-table">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Dự án</th>
+            <th class="text-end">
+              <a href="{% url 'cfo:project_finance' %}?status={{ current_status }}&sort=budget&order={% if current_sort == 'budget' and current_order == 'desc' %}asc{% else %}desc{% endif %}" class="text-decoration-none text-secondary">
+                Ngân sách {% if current_sort == 'budget' %}<i class="bi bi-caret-{% if current_order == 'desc' %}down{% else %}up{% endif %}-fill"></i>{% endif %}
+              </a>
+            </th>
+            <th class="text-end">
+              <a href="{% url 'cfo:project_finance' %}?status={{ current_status }}&sort=cost&order={% if current_sort == 'cost' and current_order == 'desc' %}asc{% else %}desc{% endif %}" class="text-decoration-none text-secondary">
+                Chi phí {% if current_sort == 'cost' %}<i class="bi bi-caret-{% if current_order == 'desc' %}down{% else %}up{% endif %}-fill"></i>{% endif %}
+              </a>
+            </th>
+            <th class="text-end">
+              <a href="{% url 'cfo:project_finance' %}?status={{ current_status }}&sort=revenue&order={% if current_sort == 'revenue' and current_order == 'desc' %}asc{% else %}desc{% endif %}" class="text-decoration-none text-secondary">
+                Doanh thu {% if current_sort == 'revenue' %}<i class="bi bi-caret-{% if current_order == 'desc' %}down{% else %}up{% endif %}-fill"></i>{% endif %}
+              </a>
+            </th>
+            <th class="text-end">
+              <a href="{% url 'cfo:project_finance' %}?status={{ current_status }}&sort=profit&order={% if current_sort == 'profit' and current_order == 'desc' %}asc{% else %}desc{% endif %}" class="text-decoration-none text-secondary">
+                Lợi nhuận {% if current_sort == 'profit' %}<i class="bi bi-caret-{% if current_order == 'desc' %}down{% else %}up{% endif %}-fill"></i>{% endif %}
+              </a>
+            </th>
+            <th class="text-end">
+              <a href="{% url 'cfo:project_finance' %}?status={{ current_status }}&sort=margin&order={% if current_sort == 'margin' and current_order == 'desc' %}asc{% else %}desc{% endif %}" class="text-decoration-none text-secondary">
+                Margin {% if current_sort == 'margin' %}<i class="bi bi-caret-{% if current_order == 'desc' %}down{% else %}up{% endif %}-fill"></i>{% endif %}
+              </a>
+            </th>
+            <th>Trạng thái</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pf in project_financials %}
+          <tr style="cursor:pointer" onclick="window.location='{% url 'cfo:project_finance_detail' pf.project.pk %}'">
+            <td class="fw-semibold">{{ pf.project.name }}</td>
+            <td class="text-end">{{ pf.budget|intcomma }}</td>
+            <td class="text-end">{{ pf.cost|intcomma }}</td>
+            <td class="text-end">{{ pf.revenue|intcomma }}</td>
+            <td class="text-end {% if pf.profit >= 0 %}text-success{% else %}text-danger{% endif %} fw-semibold">{{ pf.profit|intcomma }}</td>
+            <td class="text-end">
+              {% if pf.margin >= 20 %}
+              <span class="badge-status badge-active">{{ pf.margin }}%</span>
+              {% elif pf.margin >= 0 %}
+              <span class="badge-status badge-planning">{{ pf.margin }}%</span>
+              {% else %}
+              <span class="badge-status badge-cancelled">{{ pf.margin }}%</span>
+              {% endif %}
+            </td>
+            <td><span class="badge-status badge-{{ pf.project.status }}">{{ pf.project.get_status_display }}</span></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center text-muted py-4">Chưa có dự án</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

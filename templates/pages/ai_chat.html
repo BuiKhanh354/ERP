@@ -1,198 +1,8 @@
 {% extends 'base_sidebar.html' %} {% load static %} {% block title %}Chat với
 PRM AI - ERP System{% endblock %} {% block page_title %}Chat với PRM
 AI{%endblock %} {% block extra_css %}
-<style>
-  /* Full screen chat layout */
-  .content-wrapper {
-    padding: 0 !important;
-    height: calc(100vh - 60px);
-    display: flex;
-    flex-direction: column;
-  }
+<link rel="stylesheet" href="{% static 'assets/css/pages-ai-chat.css' %}" />
 
-  .page-header {
-    padding: 1rem 1.5rem;
-    background: #ffffff;
-    border-bottom: 1px solid #e2e8f0;
-    flex-shrink: 0;
-  }
-
-  .chat-container {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    height: 100%;
-    background: #ffffff;
-    border-radius: 0;
-    border: none;
-    overflow: hidden;
-    position: relative;
-  }
-
-  .chat-messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 1.5rem;
-    background: rgb(171, 171, 172);
-  }
-
-  .message {
-    margin-bottom: 1rem;
-    display: flex;
-    gap: 0.75rem;
-  }
-
-  .message.user {
-    flex-direction: row-reverse;
-  }
-
-  .message-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    flex-shrink: 0;
-    overflow: hidden;
-    background: #e0e7ff;
-  }
-
-  .message-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .message.user .message-avatar {
-    background: #0000cd;
-    color: #ffffff;
-  }
-
-  .message.ai .message-avatar {
-    background: #ffffff;
-    padding: 2px;
-  }
-
-  .message-content {
-    max-width: 70%;
-    padding: 0.75rem 1rem;
-    border-radius: 12px;
-    line-height: 1.6;
-    word-wrap: break-word;
-  }
-
-  .message-content p {
-    margin-bottom: 0.5rem;
-  }
-
-  .message-content ul,
-  .message-content ol {
-    margin-bottom: 0.5rem;
-    padding-left: 1.5rem;
-  }
-
-  .message-content li {
-    margin-bottom: 0.25rem;
-  }
-
-  .message.user .message-content {
-    background: #0000cd;
-    color: #ffffff;
-    border-bottom-right-radius: 4px;
-  }
-
-  .message.ai .message-content {
-    background: #ffffff;
-    color: #0f172a;
-    border: 1px solid #e2e8f0;
-    border-bottom-left-radius: 4px;
-  }
-
-  .quick-chat-buttons {
-    display: flex;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    border-top: 1px solid #e2e8f0;
-    background: rgb(171, 171, 172);
-    flex-wrap: wrap;
-  }
-
-  .quick-chat-btn {
-    padding: 0.5rem 1rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 20px;
-    background: #ffffff;
-    color: #64748b;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-  }
-
-  .quick-chat-btn:hover {
-    border-color: #0000cd;
-    color: #0000cd;
-    background: #f0f4ff;
-  }
-
-  .chat-input-container {
-    padding: 1rem;
-    border-top: 1px solid #e2e8f0;
-    background: rgb(171, 171, 172);
-  }
-
-  .chat-input-form {
-    display: flex;
-    gap: 0.75rem;
-  }
-
-  .chat-input {
-    flex: 1;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 0.75rem 1rem;
-    font-size: 0.95rem;
-  }
-
-  .chat-input:focus {
-    outline: none;
-    border-color: #0000cd;
-    box-shadow: 0 0 0 3px rgba(0, 0, 205, 0.1);
-  }
-
-  .send-button {
-    background: #0000cd;
-    color: #ffffff;
-    border: none;
-    border-radius: 8px;
-    padding: 0.75rem 1.5rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .send-button:hover {
-    background: #0000aa;
-  }
-
-  .send-button:disabled {
-    background: #cbd5e1;
-    cursor: not-allowed;
-  }
-
-  .typing-indicator {
-    display: none;
-    padding: 0.75rem 1rem;
-    color: #64748b;
-    font-style: italic;
-  }
-
-  .typing-indicator.active {
-    display: block;
-  }
-</style>
 {% endblock %} {% block content %}
 <div class="chat-container">
   <div class="chat-messages" id="chatMessages">
@@ -300,7 +110,7 @@ AI{%endblock %} {% block extra_css %}
 </div>
 {% endblock %} {% block extra_js %}
 <script>
-  const chatMessages = document.getElementById('chatMessages');
+const chatMessages = document.getElementById('chatMessages');
   const chatForm = document.getElementById('chatForm');
   const messageInput = document.getElementById('messageInput');
   const sendButton = document.getElementById('sendButton');
@@ -457,4 +267,5 @@ AI{%endblock %} {% block extra_css %}
     chatForm.dispatchEvent(new Event('submit'));
   }
 </script>
+
 {% endblock %}

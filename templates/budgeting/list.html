@@ -7,106 +7,8 @@
 {% block page_title %}Quản lý Ngân sách{% endblock %}
 
 {% block extra_css %}
-<style>
-  .budget-card {
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    transition: all 0.3s ease;
-    background: #ffffff;
-  }
+<link rel="stylesheet" href="{% static 'assets/css/budgeting-list.css' %}" />
 
-  .budget-card:hover {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    transform: translateY(-4px);
-    border-color: #0000cd;
-  }
-
-  .utilization-bar {
-    height: 8px;
-    border-radius: 4px;
-    background-color: #e2e8f0;
-    overflow: hidden;
-    margin-top: 0.5rem;
-  }
-
-  .utilization-fill {
-    height: 100%;
-    transition: width 0.3s ease;
-  }
-
-  .utilization-low { background-color: #22c55e; }
-  .utilization-medium { background-color: #f59e0b; }
-  .utilization-high { background-color: #ef4444; }
-
-  .stats-card {
-    text-align: center;
-    padding: 1.5rem;
-    border-radius: 12px;
-    background-color: #ffffff;
-    border: 1px solid #e2e8f0;
-    transition: all 0.3s ease;
-  }
-
-  .stats-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    transform: translateY(-2px);
-  }
-
-  .stats-value {
-    font-size: 1.75rem;
-    font-weight: 700;
-    margin: 0.5rem 0;
-    line-height: 1.2;
-  }
-
-  .stats-label {
-    font-size: 0.9rem;
-    color: #64748b;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .filter-card {
-    background-color: #ffffff;
-    border-radius: 12px;
-    padding: 1.75rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    margin-bottom: 2rem;
-    border: 1px solid #e2e8f0;
-  }
-
-  .btn-primary {
-    background-color: #0000cd;
-    border-color: #0000cd;
-    color: #ffffff;
-    font-weight: 600;
-    padding: 0.625rem 1.25rem;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-  }
-
-  .btn-primary:hover {
-    background-color: #0000aa;
-    border-color: #0000aa;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 205, 0.3);
-  }
-
-  .chart-container {
-    position: relative;
-    height: 300px;
-    margin-top: 1rem;
-  }
-
-  .chart-card {
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    background: #ffffff;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-  }
-</style>
 {% endblock %}
 
 {% block content %}
@@ -350,19 +252,8 @@
 {% endblock %}
 
 {% block extra_js %}
-{{ budget_by_project_labels|json_script:"budget_by_project_labels" }}
-{{ budget_by_project_data|json_script:"budget_by_project_data" }}
-{{ spending_by_category_labels|json_script:"spending_by_category_labels" }}
-{{ spending_by_category_data|json_script:"spending_by_category_data" }}
-{{ utilization_by_project_labels|json_script:"utilization_by_project_labels" }}
-{{ utilization_by_project_data|json_script:"utilization_by_project_data" }}
-{{ monthly_spending_labels|json_script:"monthly_spending_labels" }}
-{{ monthly_spending_data|json_script:"monthly_spending_data" }}
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2/dist/chartjs-plugin-datalabels.min.js"></script>
 <script>
-  // --- Global modal polyfill (đảm bảo luôn có showConfirm/showNotification) ---
+// --- Global modal polyfill (đảm bảo luôn có showConfirm/showNotification) ---
   (function ensureGlobalModals() {
     function fallbackNotify(type, message, title) {
       const full = (title ? (title + ': ') : '') + (message || '');
@@ -1005,4 +896,17 @@
   // Đảm bảo function được định nghĩa trong global scope
   window.handleDeleteBudget = handleDeleteBudget;
 </script>
+
+{{ budget_by_project_labels|json_script:"budget_by_project_labels" }}
+{{ budget_by_project_data|json_script:"budget_by_project_data" }}
+{{ spending_by_category_labels|json_script:"spending_by_category_labels" }}
+{{ spending_by_category_data|json_script:"spending_by_category_data" }}
+{{ utilization_by_project_labels|json_script:"utilization_by_project_labels" }}
+{{ utilization_by_project_data|json_script:"utilization_by_project_data" }}
+{{ monthly_spending_labels|json_script:"monthly_spending_labels" }}
+{{ monthly_spending_data|json_script:"monthly_spending_data" }}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2/dist/chartjs-plugin-datalabels.min.js"></script>
+
 {% endblock %}

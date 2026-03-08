@@ -1,0 +1,22 @@
+.utilization-bar {
+    height: 12px;
+    border-radius: 6px;
+    background-color: #e2e8f0;
+    overflow: hidden;
+    margin-top: 0.5rem;
+  }
+
+  .utilization-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+  }
+
+  .utilization-low { background-color: #22c55e; }
+  .utilization-medium { background-color: #f59e0b; }
+  .utilization-high { background-color: #ef4444; }
+
+  .expense-item {
+    border-left: 3px solid #0000cd;
+    padding-left: 1rem;
+    margin-bottom: 1rem;
+  }

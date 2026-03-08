@@ -134,7 +134,7 @@ class ProjectDetailView(LoginRequiredMixin, DetailView):
         project = self.get_object()
 
         # Tasks
-        context['tasks'] = project.tasks.select_related('assigned_to').order_by('due_date', 'created_at')
+        context['tasks'] = project.tasks.select_related('assigned_to', 'phase').order_by('due_date', 'created_at')
         context['task_stats'] = {
             'total': project.tasks.count(),
             'todo': project.tasks.filter(status='todo').count(),
@@ -142,6 +142,23 @@ class ProjectDetailView(LoginRequiredMixin, DetailView):
             'review': project.tasks.filter(status='review').count(),
             'done': project.tasks.filter(status='done').count(),
         }
+
+        # Phases with progress
+        phases = project.phases.prefetch_related('tasks__assigned_to').all()
+        phases_data = []
+        for phase in phases:
+            phase_tasks = phase.tasks.select_related('assigned_to').order_by('due_date', 'created_at')
+            phases_data.append({
+                'phase': phase,
+                'tasks': phase_tasks,
+                'progress': round(phase.calculated_progress, 0),
+                'task_count': phase.task_count,
+            })
+        context['phases_data'] = phases_data
+        context['unphased_tasks'] = project.tasks.filter(phase__isnull=True).select_related('assigned_to').order_by('due_date', 'created_at')
+
+        # Project overall progress (average of all tasks' progress_percent)
+        context['project_progress'] = round(project.calculated_progress, 0)
 
         # Budget
         budgets = project.budgets.all()

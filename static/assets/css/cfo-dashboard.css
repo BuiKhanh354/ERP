@@ -1,0 +1,39 @@
+.kpi-card {
+    padding: 1.5rem;
+    border-radius: 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
+  .kpi-card .kpi-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+  }
+  .kpi-card .kpi-value { font-size: 1.6rem; font-weight: 700; margin: 0.5rem 0 0.25rem; }
+  .kpi-card .kpi-label { font-size: 0.85rem; color: var(--text-secondary); }
+  .icon-revenue { background: rgba(16,185,129,0.12); color: #10b981; }
+  .icon-cost { background: rgba(239,68,68,0.12); color: #ef4444; }
+  .icon-profit { background: rgba(59,130,246,0.12); color: #3b82f6; }
+  .icon-cash { background: rgba(139,92,246,0.12); color: #8b5cf6; }
+  .icon-margin { background: rgba(245,158,11,0.12); color: #f59e0b; }
+  .chart-container { position: relative; height: 300px; }
+  .table-section th {
+    font-weight: 600; font-size: 0.85rem; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .badge-alert { font-size: 0.75rem; padding: 0.3em 0.7em; border-radius: 6px; font-weight: 600; }
+  .badge-danger-soft { background: rgba(239,68,68,0.12); color: #dc2626; }
+  .badge-warning-soft { background: rgba(245,158,11,0.12); color: #b45309; }
+  .badge-success-soft { background: rgba(16,185,129,0.12); color: #059669; }
+  .quick-link {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.75rem 1rem; border-radius: 8px;
+    text-decoration: none; color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    transition: all 0.2s;
+  }
+  .quick-link:hover { background: rgba(0,0,205,0.04); border-color: var(--sidebar-active); color: var(--sidebar-active); }
+  .quick-link i { font-size: 1.2rem; }
+  .quick-link .badge { background: #ef4444; color: #fff; font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 12px; }

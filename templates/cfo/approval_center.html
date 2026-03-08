@@ -1,0 +1,166 @@
+{% extends "base_sidebar.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Phê duyệt - CFO{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/cfo-approval-center.css' %}" />
+
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Trung tâm Phê duyệt</h1>
+  <ul class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'cfo:dashboard' %}">CFO Dashboard</a></li>
+    <li class="breadcrumb-separator"><i class="bi bi-chevron-right"></i></li>
+    <li class="breadcrumb-item active">Phê duyệt</li>
+  </ul>
+</div>
+
+{% if messages %}
+<div class="mb-3">
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-3" id="approvalTabs" role="tablist">
+  <li class="nav-item">
+    <a class="nav-link active" data-bs-toggle="tab" href="#expensesTab">
+      <i class="bi bi-wallet2 me-1"></i>Chi phí
+      {% if pending_expense_count %}<span class="tab-badge">{{ pending_expense_count }}</span>{% endif %}
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" data-bs-toggle="tab" href="#budgetsTab">
+      <i class="bi bi-piggy-bank me-1"></i>Ngân sách
+      {% if pending_budget_count %}<span class="tab-badge">{{ pending_budget_count }}</span>{% endif %}
+    </a>
+  </li>
+</ul>
+
+<div class="tab-content">
+  <!-- Pending Expenses Tab -->
+  <div class="tab-pane fade show active" id="expensesTab">
+    {% if pending_expenses %}
+    <div class="card table-section">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Dự án</th>
+                <th>Danh mục</th>
+                <th>Loại</th>
+                <th>Mô tả</th>
+                <th class="text-end">Số tiền</th>
+                <th>Ngày</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for exp in pending_expenses %}
+              <tr>
+                <td>{{ exp.pk }}</td>
+                <td class="fw-semibold">{{ exp.project.name }}</td>
+                <td>{{ exp.category.name }}</td>
+                <td>{{ exp.get_expense_type_display }}</td>
+                <td>{{ exp.description|truncatechars:40 }}</td>
+                <td class="text-end fw-semibold">{{ exp.amount|intcomma }}</td>
+                <td>{{ exp.expense_date|date:"d/m/Y" }}</td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <form method="post" action="{% url 'cfo:approve_expense' exp.pk %}">
+                      {% csrf_token %}
+                      <button type="submit" class="btn-approve"><i class="bi bi-check-lg"></i></button>
+                    </form>
+                    <form method="post" action="{% url 'cfo:reject_expense' exp.pk %}">
+                      {% csrf_token %}
+                      <button type="submit" class="btn-reject"><i class="bi bi-x-lg"></i></button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="card">
+      <div class="card-body empty-state">
+        <i class="bi bi-check-circle"></i>
+        <h5>Không có chi phí chờ duyệt</h5>
+        <p>Tất cả chi phí đã được xử lý.</p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Pending Budgets Tab -->
+  <div class="tab-pane fade" id="budgetsTab">
+    {% if pending_budgets %}
+    <div class="card table-section">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Dự án</th>
+                <th>Danh mục</th>
+                <th>Năm</th>
+                <th class="text-end">Số tiền</th>
+                <th>Ghi chú</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for b in pending_budgets %}
+              <tr>
+                <td>{{ b.pk }}</td>
+                <td class="fw-semibold">{{ b.project.name }}</td>
+                <td>{{ b.category.name }}</td>
+                <td>{{ b.fiscal_year }}</td>
+                <td class="text-end fw-semibold">{{ b.allocated_amount|intcomma }}</td>
+                <td>{{ b.notes|truncatechars:40 }}</td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <form method="post" action="{% url 'cfo:approve_budget' b.pk %}">
+                      {% csrf_token %}
+                      <button type="submit" class="btn-approve"><i class="bi bi-check-lg"></i></button>
+                    </form>
+                    <form method="post" action="{% url 'cfo:reject_budget' b.pk %}">
+                      {% csrf_token %}
+                      <button type="submit" class="btn-reject"><i class="bi bi-x-lg"></i></button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="card">
+      <div class="card-body empty-state">
+        <i class="bi bi-check-circle"></i>
+        <h5>Không có ngân sách chờ duyệt</h5>
+        <p>Tất cả ngân sách đã được xử lý.</p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

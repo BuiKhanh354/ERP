@@ -51,3 +51,21 @@ Thumbs.db
 *.seed
 *.pid.lock
 
+
+taskforagent/
+# Database scripts
+UpgradeDatabase.sql
+TaoDatabase.sql
+RecreateDatabase_Full.sql
+
+# Setup script
+run_setup.bat
+run_update.bat
+
+# Generated / output files
+
+account_setup_output.txt
+
+# Script generate database
+generate_erp_db_sql.py
+

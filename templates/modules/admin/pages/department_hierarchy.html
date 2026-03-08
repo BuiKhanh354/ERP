@@ -1,0 +1,61 @@
+{% extends "shared/layouts/base_role.html" %}
+{% load static %}
+{% block title %}Sơ đồ tổ chức{% endblock %}
+{% block page_title %}Sơ đồ tổ chức{% endblock %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'admin_module:dashboard' %}">Admin</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'admin_module:department_list' %}">Phòng ban</a></li>
+    <li class="breadcrumb-item active">Sơ đồ tổ chức</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/admin-department-hierarchy.css' %}" />
+
+{% endblock %}
+
+{% block content %}
+<div class="hierarchy-stats">
+  <div class="hierarchy-stat">
+    <strong>{{ total_departments }}</strong> Phòng ban
+  </div>
+  <div class="hierarchy-stat">
+    <strong>{{ active_departments }}</strong> Đang hoạt động
+  </div>
+  <div class="mb-0 ms-auto d-flex align-items-center gap-2">
+    <a href="{% url 'admin_module:department_list' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-table me-1"></i>Dạng bảng
+    </a>
+    <a href="{% url 'admin_module:department_create' %}" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-lg me-1"></i>Tạo phòng ban
+    </a>
+  </div>
+</div>
+
+<div class="tree-container">
+  {% if root_departments %}
+    <ul class="tree-node">
+      {% for dept in root_departments %}
+        {% include "modules/admin/pages/_department_tree_node.html" with node=dept level=0 %}
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="empty-tree">
+      <i class="bi bi-diagram-3 d-block mb-3"></i>
+      <p><strong>Chưa có phòng ban nào</strong></p>
+      <p>Tạo phòng ban đầu tiên để xây dựng sơ đồ tổ chức.</p>
+      <a href="{% url 'admin_module:department_create' %}" class="btn btn-primary mt-2">
+        <i class="bi bi-plus-lg me-1"></i>Tạo phòng ban
+      </a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/admin-department-hierarchy.js' %}"></script>
+
+{% endblock %}

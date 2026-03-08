@@ -1,0 +1,188 @@
+{% extends "shared/layouts/base_role.html" %}
+{% load static %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block breadcrumb_title %}Admin{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/admin-dashboard.css' %}" />
+
+{% endblock %}
+
+{% block content %}
+<div class="admin-dash">
+  <!-- Welcome Banner -->
+  <div class="welcome-banner">
+    <h2>Xin chào, {{ user.get_full_name|default:user.username }}!</h2>
+    <p>Chào mừng bạn đến với bảng điều khiển quản trị hệ thống PRM.</p>
+    <div class="welcome-time">
+      <i class="bi bi-clock me-1"></i>
+      <span id="live-clock"></span>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon users"><i class="bi bi-people-fill"></i></div>
+      <div>
+        <a class="text-decoration-none" href="{% url 'admin_module:user_list' %}">
+        <div class="kpi-value">{{ total_users }}<span class="kpi-badge up">+{{ new_users_month }}</span></div>
+        <div class="kpi-label">Người dùng</div>
+        </a>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon employees"><i class="bi-bar-chart"></i></div>
+      <div>
+        <a class="text-decoration-none" href="{% url 'admin_module:user_list' %}">
+        <div class="kpi-value">{{ total_employees }}</div>
+        <div class="kpi-label">Phân tích</div>
+        </a>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon departments"><i class="bi bi-diagram-3-fill"></i></div>
+      <div>
+        <div class="kpi-value">{{ active_departments }}<span class="kpi-badge neutral">/{{ total_departments }}</span></div>
+        <div class="kpi-label">Phòng ban</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon projects"><i class="bi bi-kanban-fill"></i></div>
+      <div>
+        <div class="kpi-value">{{ total_projects }}</div>
+        <div class="kpi-label">Dự án</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon tasks"><i class="bi bi-list-check"></i></div>
+      <div>
+        <div class="kpi-value">{{ active_tasks }}<span class="kpi-badge up">+{{ completed_tasks_week }} tuần</span></div>
+        <div class="kpi-label">Công việc đang mở</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon online"><i class="bi bi-wifi"></i></div>
+      <div>
+        <div class="kpi-value">{{ online_users }}</div>
+        <div class="kpi-label">Đang trực tuyến</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard Grid -->
+  <div class="dash-grid">
+    <!-- Recent Activity -->
+    <div class="activity-card">
+      <div class="card-head">
+        <h5><i class="bi bi-activity"></i> Hoạt động gần đây</h5>
+      </div>
+      {% if recent_logs %}
+      <ul class="activity-list">
+        {% for log in recent_logs %}
+        <li class="activity-item">
+          <div class="activity-dot {% if log.action_type == 'CREATE' %}create{% elif log.action_type == 'UPDATE' %}update{% elif log.action_type == 'DELETE' %}delete{% elif log.action_type == 'LOGIN' %}login{% else %}default{% endif %}"></div>
+          <div class="activity-text">
+            <strong>{{ log.user.username|default:"System" }}</strong>
+            {% if log.action_type == 'CREATE' %}đã tạo{% elif log.action_type == 'UPDATE' %}đã cập nhật{% elif log.action_type == 'DELETE' %}đã xóa{% elif log.action_type == 'LOGIN' %}đã đăng nhập{% else %}{{ log.action_type }}{% endif %}
+            <em>{{ log.table_name }}</em>
+            {% if log.record_id %}#{{ log.record_id }}{% endif %}
+          </div>
+          <div class="activity-time">{{ log.created_at|timesince }} trước</div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="activity-empty">
+        <i class="bi bi-clock-history d-block mb-2" style="font-size:2rem; opacity:0.3;"></i>
+        Chưa có hoạt động nào được ghi nhận.
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Quick Actions + Recent Departments -->
+    <div>
+      <!-- Quick Actions -->
+      <div class="activity-card" style="margin-bottom: 1.5rem;">
+        <div class="card-head">
+          <h5><i class="bi bi-lightning-charge-fill"></i> Truy cập nhanh</h5>
+        </div>
+        <div class="quick-links">
+          <a href="{% url 'admin_module:department_list' %}" class="quick-link">
+            <i class="bi bi-diagram-3"></i>
+            <span>Phòng ban</span>
+          </a>
+          <a href="{% url 'admin_module:department_hierarchy' %}" class="quick-link">
+            <i class="bi bi-list-nested"></i>
+            <span>Sơ đồ tổ chức</span>
+          </a>
+          <a href="{% url 'admin_module:user_list' %}" class="quick-link">
+            <i class="bi bi-people"></i>
+            <span>Người dùng</span>
+          </a>
+          <a href="{% url 'admin_module:user_create' %}" class="quick-link">
+            <i class="bi bi-person-add"></i>
+            <span>Thêm người dùng</span>
+          </a>
+          <a href="{% url 'admin_module:audit_logs' %}" class="quick-link">
+            <i class="bi bi-folder"></i>
+            <span>Nhật ký hệ thống</span>
+          </a>
+          <a href="{% url 'core:ai-chat' %}" class="quick-link">
+            <i class="bi bi-chat-dots"></i>
+            <span>PRM AI</span>
+          </a>
+          <a href="{% url 'admin_custom:dashboard' %}" class="quick-link">
+            <i class="bi bi-gear"></i>
+            <span>Cài đặt</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Recent Departments -->
+      <div class="activity-card">
+        <div class="card-head">
+          <h5><i class="bi bi-building"></i> Phòng ban mới nhất</h5>
+          <a href="{% url 'admin_module:department_list' %}" style="font-size:0.8rem; text-decoration:none; color:#4f46e5; font-weight:600;">Xem tất cả →</a>
+        </div>
+        {% if recent_departments %}
+        <table class="dept-mini-table">
+          <thead>
+            <tr>
+              <th>Phòng ban</th>
+              <th>Mã</th>
+              <th>Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for dept in recent_departments %}
+            <tr>
+              <td class="dept-name">{{ dept.name }}</td>
+              <td><code>{{ dept.code|default:"—" }}</code></td>
+              <td>
+                {% if dept.is_active %}
+                  <span class="status-dot active"></span>Hoạt động
+                {% else %}
+                  <span class="status-dot inactive"></span>Ngưng
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="activity-empty">
+          Chưa có phòng ban nào.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/admin-dashboard.js' %}"></script>
+
+{% endblock %}

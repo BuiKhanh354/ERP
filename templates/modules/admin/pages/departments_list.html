@@ -1,0 +1,188 @@
+{% extends "shared/layouts/base_role.html" %}
+{% load static %}
+{% block title %}Quản lý Phòng ban{% endblock %}
+{% block page_title %}Quản lý Phòng ban{% endblock %}
+{% block breadcrumb_title %}Phòng ban{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/admin-departments-list.css' %}" />
+
+{% endblock %}
+
+{% block content %}
+<!-- Stats -->
+<div class="dept-stats">
+  <div class="dept-stat-card">
+    <div class="dept-stat-icon total"><i class="bi bi-diagram-3"></i></div>
+    <div>
+      <div class="dept-stat-value">{{ total_departments }}</div>
+      <div class="dept-stat-label">Tổng phòng ban</div>
+    </div>
+  </div>
+  <div class="dept-stat-card">
+    <div class="dept-stat-icon active"><i class="bi bi-check-circle"></i></div>
+    <div>
+      <div class="dept-stat-value">{{ active_departments }}</div>
+      <div class="dept-stat-label">Đang hoạt động</div>
+    </div>
+  </div>
+  <div class="dept-stat-card">
+    <div class="dept-stat-icon inactive"><i class="bi bi-x-circle"></i></div>
+    <div>
+      <div class="dept-stat-value">{{ inactive_departments }}</div>
+      <div class="dept-stat-label">Ngưng hoạt động</div>
+    </div>
+  </div>
+</div>
+
+<!-- Toolbar -->
+<div class="dept-toolbar">
+  <div class="search-box">
+    <i class="bi bi-search"></i>
+    <form method="get" id="searchForm">
+      <input type="text" name="q" value="{{ search_query }}" placeholder="Tìm kiếm phòng ban..." autocomplete="off">
+      {% if current_status %}<input type="hidden" name="status" value="{{ current_status }}">{% endif %}
+      {% if current_sort %}<input type="hidden" name="sort" value="{{ current_sort }}">{% endif %}
+      {% if current_dir %}<input type="hidden" name="dir" value="{{ current_dir }}">{% endif %}
+    </form>
+  </div>
+  <select class="form-select" style="width: auto; min-width: 160px;" id="statusFilter" onchange="applyFilter()">
+    <option value="" {% if not current_status %}selected{% endif %}>Tất cả trạng thái</option>
+    <option value="active" {% if current_status == 'active' %}selected{% endif %}>Đang hoạt động</option>
+    <option value="inactive" {% if current_status == 'inactive' %}selected{% endif %}>Ngưng hoạt động</option>
+  </select>
+  <a href="{% url 'admin_module:department_hierarchy' %}" class="btn btn-outline-secondary">
+    <i class="bi bi-list-nested me-1"></i>Sơ đồ tổ chức
+  </a>
+  <a href="{% url 'admin_module:department_create' %}" class="btn btn-primary">
+    <i class="bi bi-plus-lg me-1"></i>Tạo phòng ban
+  </a>
+</div>
+
+<!-- Table -->
+<div class="card">
+  <div class="card-body p-0">
+    {% if departments %}
+    <div class="table-responsive">
+      <table class="dept-table">
+        <thead>
+          <tr>
+            <th>
+              <a href="?sort=name&dir={% if current_sort == 'name' and current_dir == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}">
+                Tên phòng ban
+                {% if current_sort == 'name' %}
+                  <i class="bi bi-caret-{% if current_dir == 'asc' %}up{% else %}down{% endif %}-fill"></i>
+                {% endif %}
+              </a>
+            </th>
+            <th>
+              <a href="?sort=code&dir={% if current_sort == 'code' and current_dir == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}">
+                Mã
+                {% if current_sort == 'code' %}
+                  <i class="bi bi-caret-{% if current_dir == 'asc' %}up{% else %}down{% endif %}-fill"></i>
+                {% endif %}
+              </a>
+            </th>
+            <th>Phòng ban cha</th>
+            <th>Trưởng phòng</th>
+            <th>
+              <a href="?sort=employees&dir={% if current_sort == 'employees' and current_dir == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}">
+                Nhân viên
+                {% if current_sort == 'employees' %}
+                  <i class="bi bi-caret-{% if current_dir == 'asc' %}up{% else %}down{% endif %}-fill"></i>
+                {% endif %}
+              </a>
+            </th>
+            <th>Trạng thái</th>
+            <th>
+              <a href="?sort=created_at&dir={% if current_sort == 'created_at' and current_dir == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}">
+                Ngày tạo
+                {% if current_sort == 'created_at' %}
+                  <i class="bi bi-caret-{% if current_dir == 'asc' %}up{% else %}down{% endif %}-fill"></i>
+                {% endif %}
+              </a>
+            </th>
+            <th style="width: 120px;">Hành động</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for dept in departments %}
+          <tr>
+            <td>
+              <a href="{% url 'admin_module:department_detail' dept.pk %}" style="text-decoration:none; color: var(--text-primary); font-weight: 600;">
+                {{ dept.name }}
+              </a>
+            </td>
+            <td><code>{{ dept.code|default:"—" }}</code></td>
+            <td>{{ dept.parent.name|default:"—" }}</td>
+            <td>{{ dept.manager.full_name|default:"—" }}</td>
+            <td>{{ dept.num_employees }}</td>
+            <td>
+              {% if dept.is_active %}
+                <span class="badge-status badge-active">Hoạt động</span>
+              {% else %}
+                <span class="badge-status badge-inactive">Ngưng</span>
+              {% endif %}
+            </td>
+            <td>{{ dept.created_at|date:"d/m/Y" }}</td>
+            <td>
+              <a href="{% url 'admin_module:department_detail' dept.pk %}" class="btn-action view" title="Chi tiết">
+                <i class="bi bi-eye"></i>
+              </a>
+              <a href="{% url 'admin_module:department_edit' dept.pk %}" class="btn-action edit" title="Chỉnh sửa">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <form method="post" action="{% url 'admin_module:department_toggle_status' dept.pk %}" style="display:inline;" class="toggle-form">
+                {% csrf_token %}
+                <button type="submit" class="btn-action toggle" title="{% if dept.is_active %}Vô hiệu hóa{% else %}Kích hoạt{% endif %}">
+                  <i class="bi bi-{% if dept.is_active %}toggle-on text-success{% else %}toggle-off text-danger{% endif %}"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="d-flex justify-content-center p-3">
+      <nav>
+        <ul class="pagination pagination-sm mb-0">
+          {% if page_obj.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}">‹</a></li>
+          {% endif %}
+          {% for num in page_obj.paginator.page_range %}
+            {% if num == page_obj.number %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+            <li class="page-item"><a class="page-link" href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}">{{ num }}</a></li>
+            {% endif %}
+          {% endfor %}
+          {% if page_obj.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}">›</a></li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+      <i class="bi bi-diagram-3 d-block"></i>
+      <p class="mb-2"><strong>Chưa có phòng ban nào</strong></p>
+      <p>Tạo phòng ban đầu tiên để xây dựng cơ cấu tổ chức.</p>
+      <a href="{% url 'admin_module:department_create' %}" class="btn btn-primary mt-2">
+        <i class="bi bi-plus-lg me-1"></i>Tạo phòng ban
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/admin-departments-list.js' %}"></script>
+
+{% endblock %}

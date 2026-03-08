@@ -19,43 +19,10 @@
 {% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/projects-task-form.css' %}" />
+
 <link rel="stylesheet" href="{% static 'css/custom.css' %}">
-<style>
-  .form-card {
-    background-color: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    padding: 2.5rem;
-    border: 1px solid #e2e8f0;
-  }
 
-  .form-label {
-    font-weight: 600;
-    color: #0f172a;
-    margin-bottom: 0.5rem;
-  }
-
-  .form-control,
-  .form-select {
-    border-radius: 8px;
-    border: 1px solid #cbd5e1;
-    padding: 0.75rem 1rem;
-  }
-
-  .form-control:focus,
-  .form-select:focus {
-    border-color: #0000cd;
-    box-shadow: 0 0 0 0.2rem rgba(0, 0, 205, 0.15);
-  }
-
-  .btn-primary {
-    background-color: #0000cd;
-    border-color: #0000cd;
-    font-weight: 600;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-  }
-</style>
 {% endblock %}
 
 {% block extra_js %}
@@ -151,8 +118,18 @@ document.addEventListener('DOMContentLoaded', function() {
       filterEmployeesByDepartment(departmentSelect.value);
     }
   }
+
+  // Progress range slider — update display value
+  const progressSlider = document.getElementById('id_progress_percent');
+  const progressDisplay = document.getElementById('progress-display');
+  if (progressSlider && progressDisplay) {
+    progressSlider.addEventListener('input', function() {
+      progressDisplay.textContent = this.value;
+    });
+  }
 });
 </script>
+
 {% endblock %}
 
 {% block content %}
@@ -181,12 +158,20 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
 
         <div class="row mb-3">
-          <div class="col-md-12">
+          <div class="col-md-8">
             <label for="{{ form.name.id_for_label }}" class="form-label">Tên công việc <span class="text-danger">*</span></label>
             {{ form.name }}
             {% if form.name.errors %}
             <span class="text-danger small">{{ form.name.errors.0 }}</span>
             {% endif %}
+          </div>
+          <div class="col-md-4">
+            <label for="{{ form.phase.id_for_label }}" class="form-label">Giai đoạn dự án</label>
+            {{ form.phase }}
+            {% if form.phase.errors %}
+            <span class="text-danger small">{{ form.phase.errors.0 }}</span>
+            {% endif %}
+            <small class="text-muted">Chọn giai đoạn (nếu có)</small>
           </div>
         </div>
 
@@ -196,6 +181,18 @@ document.addEventListener('DOMContentLoaded', function() {
             {{ form.description }}
             {% if form.description.errors %}
             <span class="text-danger small">{{ form.description.errors.0 }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-12">
+            <label for="{{ form.progress_percent.id_for_label }}" class="form-label">
+              Tiến độ hoàn thành: <span id="progress-display">{{ form.progress_percent.value|default:0 }}</span>%
+            </label>
+            {{ form.progress_percent }}
+            {% if form.progress_percent.errors %}
+            <span class="text-danger small">{{ form.progress_percent.errors.0 }}</span>
             {% endif %}
           </div>
         </div>

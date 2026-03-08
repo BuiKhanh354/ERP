@@ -1,0 +1,27 @@
+.stat-card {
+    padding: 1.5rem;
+    border-radius: 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
+  .stat-card .stat-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+  }
+  .stat-card .stat-value { font-size: 1.75rem; font-weight: 700; margin: 0.5rem 0 0.25rem; }
+  .stat-card .stat-label { font-size: 0.85rem; color: var(--text-secondary); }
+  .icon-revenue { background: rgba(16,185,129,0.12); color: #10b981; }
+  .icon-expense { background: rgba(239,68,68,0.12); color: #ef4444; }
+  .icon-profit { background: rgba(59,130,246,0.12); color: #3b82f6; }
+  .icon-pending { background: rgba(245,158,11,0.12); color: #f59e0b; }
+  .icon-overdue { background: rgba(239,68,68,0.12); color: #ef4444; }
+  .chart-container { position: relative; height: 300px; }
+  .table-section th { font-weight: 600; font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+  .badge-status { font-size: 0.75rem; padding: 0.3em 0.7em; border-radius: 6px; font-weight: 600; }
+  .badge-paid { background: rgba(16,185,129,0.12); color: #059669; }
+  .badge-sent { background: rgba(59,130,246,0.12); color: #2563eb; }
+  .badge-draft { background: rgba(148,163,184,0.12); color: #64748b; }
+  .badge-overdue { background: rgba(239,68,68,0.12); color: #dc2626; }

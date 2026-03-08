@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'clients',
     'performance',
     'ai',
+    'accounting',
 ]
 
 MIDDLEWARE = [
@@ -44,6 +45,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # 'core.middleware.AutoLoginMiddleware',  # Dev/Test only: bỏ comment để auto-login superuser
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # Temporarily disabled HTMX middleware for Bloomerp
@@ -80,13 +82,10 @@ DATABASES = {
     'default': {
         'ENGINE': 'mssql',
         'NAME': os.getenv('DB_NAME', 'ERP_DB'),
-        'USER': os.getenv('DB_USER', 'sa'),
-        'PASSWORD': os.getenv('DB_PASSWORD', ''),
         'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '1433'),
         'OPTIONS': {
             'driver': 'ODBC Driver 17 for SQL Server',
-            'extra_params': 'Encrypt=yes;TrustServerCertificate=yes',
+            'trusted_connection': 'yes' if os.getenv('DB_TRUSTED_CONNECTION', 'true').lower() == 'true' else 'no',
         },
     }
 }

@@ -13,26 +13,8 @@
 {% endblock %}
 
 {% block extra_css %}
-<style>
-    .form-card {
-        background-color: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        padding: 2rem;
-    }
+<link rel="stylesheet" href="{% static 'assets/css/clients-form.css' %}" />
 
-    .form-label {
-        font-weight: 600;
-        color: #0f172a;
-        margin-bottom: 0.5rem;
-    }
-
-    .form-control:focus,
-    .form-select:focus {
-        border-color: #0000cd;
-        box-shadow: 0 0 0 0.2rem rgba(0, 0, 205, 0.15);
-    }
-</style>
 {% endblock %}
 
 {% block content %}

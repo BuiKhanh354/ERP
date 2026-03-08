@@ -1,0 +1,66 @@
+{% load custom_filters %}
+{# Reusable task card partial — used in project detail phases #}
+<div class="task-item-card {% if task.status == 'done' %}done{% endif %}" id="task-card-{{ task.pk }}">
+  <div class="task-header">
+    <div class="flex-grow-1">
+      <div class="task-title">{{ task.name }}</div>
+      {% if task.description %}
+      <div class="task-description">{{ task.description|truncatewords:20 }}</div>
+      {% endif %}
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <span class="task-status-badge status-{{ task.status }}">
+        {% if task.status == 'todo' %}Cần làm
+        {% elif task.status == 'in_progress' %}Đang thực hiện
+        {% elif task.status == 'review' %}Đang xem xét
+        {% elif task.status == 'done' %}Hoàn thành
+        {% elif task.status == 'overdue' %}Quá hạn
+        {% endif %}
+      </span>
+    </div>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="d-flex align-items-center gap-2 mb-2">
+    <div class="progress flex-grow-1" style="height: 6px;">
+      <div class="progress-bar {% if task.progress_percent >= 100 %}bg-success{% elif task.progress_percent >= 50 %}bg-primary{% elif task.progress_percent > 0 %}bg-warning{% else %}bg-secondary{% endif %}" 
+           role="progressbar" style="width: {{ task.progress_percent }}%">
+      </div>
+    </div>
+    <small class="fw-semibold text-nowrap" style="min-width: 35px;">{{ task.progress_percent }}%</small>
+    <button class="btn btn-sm btn-outline-primary py-0 px-1" title="Cập nhật tiến độ"
+            onclick="openProgressModal({{ task.pk }}, '{{ task.name|escapejs }}', {{ task.progress_percent }}, '{{ task.status }}')">
+      <i class="bi bi-pencil-square"></i>
+    </button>
+  </div>
+
+  <div class="task-meta-pills">
+    {% if task.department %}
+    <span class="task-pill"><i class="bi bi-building"></i>{{ task.department.name }}</span>
+    {% endif %}
+    {% if task.assigned_to %}
+    <span class="task-pill"><i class="bi bi-person"></i>{{ task.assigned_to.full_name }}</span>
+    {% endif %}
+    {% if task.due_date %}
+    <span class="task-pill {% if task.status == 'overdue' %}danger{% endif %}">
+      <i class="bi bi-calendar"></i>{{ task.due_date|date:"d/m/Y" }}
+    </span>
+    {% endif %}
+    {% if task.estimated_hours %}
+    {% if task.estimated_end_at %}
+    <span class="task-pill" title="Đếm ngược theo giờ ước tính">
+      <i class="bi bi-hourglass-split"></i>
+      <span class="js-countdown" data-end-at="{{ task.estimated_end_at|date:'c' }}"></span>
+    </span>
+    {% else %}
+    <span class="task-pill"><i class="bi bi-clock"></i>{{ task.estimated_hours|hours_hhmm }}</span>
+    {% endif %}
+    {% endif %}
+    {% if task.actual_hours or task.estimated_hours %}
+    <span class="task-pill">
+      <i class="bi bi-stopwatch"></i>
+      {{ task.actual_hours|default:0|hours_hhmm }} / {{ task.estimated_hours|default:0|hours_hhmm }}
+    </span>
+    {% endif %}
+  </div>
+</div>

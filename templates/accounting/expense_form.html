@@ -1,0 +1,77 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}{{ title|default:"Chi phí" }} - ERP{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">{{ title|default:"Chi phí" }}</h1>
+  <ul class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'accounting:dashboard' %}">Kế toán</a></li>
+    <li class="breadcrumb-separator"><i class="bi bi-chevron-right"></i></li>
+    <li class="breadcrumb-item"><a href="{% url 'accounting:expense_list' %}">Chi phí</a></li>
+    <li class="breadcrumb-separator"><i class="bi bi-chevron-right"></i></li>
+    <li class="breadcrumb-item active">{{ title }}</li>
+  </ul>
+</div>
+
+<div class="card" style="max-width: 800px;">
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      {% if form.errors %}
+      <div class="alert alert-danger">
+        <ul class="mb-0">{% for field, errors in form.errors.items %}{% for error in errors %}<li>{{ field }}: {{ error }}</li>{% endfor %}{% endfor %}</ul>
+      </div>
+      {% endif %}
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Dự án <span class="text-danger">*</span></label>
+          <select name="project" class="form-select" required>
+            <option value="">-- Chọn dự án --</option>
+            {% for p in projects %}
+            <option value="{{ p.id }}" {% if form.initial.project == p.id or form.project.value == p.id|stringformat:"d" %}selected{% endif %}>{{ p.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Danh mục <span class="text-danger">*</span></label>
+          <select name="category" class="form-select" required>
+            <option value="">-- Chọn danh mục --</option>
+            {% for c in categories %}
+            <option value="{{ c.id }}" {% if form.initial.category == c.id %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Loại chi phí <span class="text-danger">*</span></label>
+          {{ form.expense_type }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Số tiền <span class="text-danger">*</span></label>
+          {{ form.amount }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Ngày <span class="text-danger">*</span></label>
+          {{ form.expense_date }}
+        </div>
+        <div class="col-12">
+          <label class="form-label">Mô tả <span class="text-danger">*</span></label>
+          {{ form.description }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Nhà cung cấp</label>
+          {{ form.vendor }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Số hoá đơn</label>
+          {{ form.invoice_number }}
+        </div>
+      </div>
+      <div class="d-flex gap-2 justify-content-end mt-4">
+        <a href="{% url 'accounting:expense_list' %}" class="btn btn-outline-secondary">Huỷ</a>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Lưu chi phí</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

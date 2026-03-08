@@ -1,6 +1,6 @@
 from django import forms
 from decimal import Decimal, InvalidOperation
-from .models import Project, Task, TimeEntry
+from .models import Project, Task, TimeEntry, ProjectPhase, TaskProgressLog
 from resources.models import Department
 
 
@@ -112,6 +112,38 @@ class ProjectForm(forms.ModelForm):
         }
 
 
+class PhaseForm(forms.ModelForm):
+    """Form cho tạo/sửa giai đoạn dự án."""
+    class Meta:
+        model = ProjectPhase
+        fields = ['phase_name', 'description', 'start_date', 'end_date']
+        widgets = {
+            'phase_name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Tên giai đoạn (VD: Requirement Analysis)'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Mô tả giai đoạn'
+            }),
+            'start_date': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'form-control'
+            }),
+            'end_date': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'form-control'
+            }),
+        }
+        labels = {
+            'phase_name': 'Tên giai đoạn',
+            'description': 'Mô tả',
+            'start_date': 'Ngày bắt đầu',
+            'end_date': 'Ngày kết thúc',
+        }
+
+
 class TaskForm(forms.ModelForm):
     STATUS_CHOICES = [
         ('todo', 'Cần làm'),
@@ -127,6 +159,30 @@ class TaskForm(forms.ModelForm):
         ('completed', 'Hoàn thành'),
         ('rejected', 'Từ chối'),
     ]
+
+    phase = forms.ModelChoiceField(
+        queryset=ProjectPhase.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'form-select'
+        }),
+        label='Giai đoạn dự án'
+    )
+
+    progress_percent = forms.IntegerField(
+        min_value=0,
+        max_value=100,
+        required=False,
+        initial=0,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'type': 'range',
+            'min': '0',
+            'max': '100',
+            'step': '5',
+        }),
+        label='Tiến độ hoàn thành (%)'
+    )
 
     status = forms.ChoiceField(
         choices=STATUS_CHOICES,
@@ -167,7 +223,7 @@ class TaskForm(forms.ModelForm):
 
     class Meta:
         model = Task
-        fields = ['project', 'name', 'description', 'status', 'department', 
+        fields = ['project', 'phase', 'name', 'description', 'status', 'progress_percent', 'department', 
                   'assigned_to', 'assignment_status', 'due_date', 'estimated_hours']
         widgets = {
             'project': forms.Select(attrs={
@@ -200,7 +256,15 @@ class TaskForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        project = kwargs.pop('project', None)
         super().__init__(*args, **kwargs)
+
+        # Lọc phases theo project
+        if project:
+            self.fields['phase'].queryset = ProjectPhase.objects.filter(project=project)
+        elif self.instance and self.instance.pk and self.instance.project_id:
+            self.fields['phase'].queryset = ProjectPhase.objects.filter(project=self.instance.project)
+
         # Hiển thị dạng hh:mm cho instance nếu có
         try:
             val = getattr(self.instance, 'estimated_hours', None)

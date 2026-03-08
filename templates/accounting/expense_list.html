@@ -1,0 +1,128 @@
+{% extends "base_sidebar.html" %}
+{% load humanize %}
+
+{% block title %}Quản lý Chi phí - ERP{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div>
+    <h1 class="page-title">Quản lý Chi phí</h1>
+    <ul class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'accounting:dashboard' %}">Kế toán</a></li>
+      <li class="breadcrumb-separator"><i class="bi bi-chevron-right"></i></li>
+      <li class="breadcrumb-item active">Chi phí</li>
+    </ul>
+  </div>
+  {% if 'CREATE_EXPENSE' in user_permissions or '__superuser__' in user_permissions %}
+  <a href="{% url 'accounting:expense_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Tạo chi phí</a>
+  {% endif %}
+</div>
+
+<!-- Summary -->
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <strong>Tổng chi phí:</strong> <span class="text-danger fw-bold">{{ total_expenses|intcomma }}</span> VNĐ
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label small">Dự án</label>
+        <select name="project" class="form-select form-select-sm">
+          <option value="">Tất cả</option>
+          {% for p in projects %}
+          <option value="{{ p.id }}" {% if current_project == p.id|stringformat:"d" %}selected{% endif %}>{{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small">Danh mục</label>
+        <select name="category" class="form-select form-select-sm">
+          <option value="">Tất cả</option>
+          {% for c in categories %}
+          <option value="{{ c.id }}" {% if current_category == c.id|stringformat:"d" %}selected{% endif %}>{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small">Từ ngày</label>
+        <input type="date" name="date_from" class="form-control form-control-sm" value="{{ current_date_from }}">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small">Đến ngày</label>
+        <input type="date" name="date_to" class="form-control form-control-sm" value="{{ current_date_to }}">
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-sm flex-fill"><i class="bi bi-search me-1"></i>Lọc</button>
+        <a href="{% url 'accounting:expense_list' %}" class="btn btn-outline-secondary btn-sm">Xoá lọc</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Expense table -->
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Dự án</th>
+            <th>Danh mục</th>
+            <th>Loại</th>
+            <th>Mô tả</th>
+            <th class="text-end">Số tiền</th>
+            <th>Ngày</th>
+            <th class="text-center">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for exp in expenses %}
+          <tr>
+            <td>{{ exp.pk }}</td>
+            <td>{{ exp.project.name }}</td>
+            <td>{{ exp.category.name }}</td>
+            <td>{{ exp.get_expense_type_display }}</td>
+            <td>{{ exp.description|truncatewords:10 }}</td>
+            <td class="text-end fw-semibold">{{ exp.amount|intcomma }}</td>
+            <td>{{ exp.expense_date|date:"d/m/Y" }}</td>
+            <td class="text-center">
+              <div class="btn-group btn-group-sm">
+                {% if 'EDIT_EXPENSE' in user_permissions or '__superuser__' in user_permissions %}
+                <a href="{% url 'accounting:expense_edit' exp.pk %}" class="btn btn-outline-warning btn-sm"><i class="bi bi-pencil"></i></a>
+                {% endif %}
+                {% if 'DELETE_EXPENSE' in user_permissions or '__superuser__' in user_permissions %}
+                <a href="{% url 'accounting:expense_delete' exp.pk %}" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="text-center text-muted py-4">Chưa có chi phí</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% if is_paginated %}
+<nav class="mt-3">
+  <ul class="pagination justify-content-center">
+    {% if page_obj.has_previous %}
+    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">‹</a></li>
+    {% endif %}
+    {% for num in page_obj.paginator.page_range %}
+    <li class="page-item {% if page_obj.number == num %}active{% endif %}"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+    {% endfor %}
+    {% if page_obj.has_next %}
+    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">›</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}

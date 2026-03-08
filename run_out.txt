@@ -1,0 +1,10 @@
+============================================================
+Traceback (most recent call last):
+  File "e:\gitclone\ERP\runserver.py", line 208, in <module>
+    main()
+  File "e:\gitclone\ERP\runserver.py", line 130, in main
+    print('\u0110ang ki\u1ec3m tra và thi\u1ebft l\u1eadp database...')
+  File "C:\Users\Bui Viet Khanh\AppData\Local\Programs\Python\Python312\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u0110' in position 0: character maps to <undefined>

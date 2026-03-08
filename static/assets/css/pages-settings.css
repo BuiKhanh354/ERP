@@ -1,0 +1,53 @@
+:root {
+    --primary: #0000cd;
+    --muted: #64748b;
+    --border: #e2e8f0;
+  }
+
+  .settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .settings-subtitle {
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .settings-card {
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+    margin-bottom: 1.5rem;
+  }
+
+  .settings-section-title {
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  .settings-section-hint {
+    margin: 0.25rem 0 0 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .loading-spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 0.6s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }

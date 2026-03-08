@@ -1,0 +1,105 @@
+{% extends "shared/layouts/base_role.html" %}
+{% load static %}
+{% block title %}{{ form_title }}{% endblock %}
+{% block page_title %}{{ form_title }}{% endblock %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'admin_module:dashboard' %}">Admin</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'admin_module:user_list' %}">Người dùng</a></li>
+    <li class="breadcrumb-item active">{{ form_title }}</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/admin-user-form.css' %}" />
+
+{% endblock %}
+
+{% block content %}
+<div class="form-card card">
+  <div class="card-header"><i class="bi bi-person-plus"></i> {{ form_title }}</div>
+  <div class="card-body">
+    {% if form.errors %}
+    <div class="alert alert-danger">
+      {% for field, errors in form.errors.items %}
+        {% for error in errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="id_username">Tên đăng nhập</label>
+            {{ form.username }}
+            {% if form.username.errors %}<ul class="error-list">{% for e in form.username.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="id_email">Email</label>
+            {{ form.email }}
+            {% if form.email.errors %}<ul class="error-list">{% for e in form.email.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="id_first_name">Họ</label>
+            {{ form.first_name }}
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="id_last_name">Tên</label>
+            {{ form.last_name }}
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label>Vai trò</label>
+            <select name="role_id" class="form-select">
+              <option value="">— Chọn vai trò —</option>
+              {% for r in roles %}
+              <option value="{{ r.pk }}" {% if current_role_id == r.pk %}selected{% endif %}>{{ r.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-group">
+            <label>Phòng ban</label>
+            <select name="department_id" class="form-select">
+              <option value="">— Chọn phòng ban —</option>
+              {% for d in departments %}
+              <option value="{{ d.pk }}" {% if current_department_id == d.pk %}selected{% endif %}>{{ d.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {% if not user_obj %}
+      <div class="alert alert-info mt-2 mb-3" style="font-size:0.85rem;">
+        <i class="bi bi-info-circle me-1"></i> Mật khẩu mặc định: <code>12345678</code>. Người dùng sẽ được yêu cầu đổi mật khẩu khi đăng nhập lần đầu.
+      </div>
+      {% endif %}
+
+      <div class="form-footer">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>{{ submit_label }}</button>
+        <a href="{% url 'admin_module:user_list' %}" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i>Hủy</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
