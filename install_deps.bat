@@ -1,2 +1,2 @@
 call venv\Scripts\activate.bat
-pip install google-generativeai
+pip install -r requirements.txt

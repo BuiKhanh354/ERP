@@ -52,8 +52,6 @@ Muc luc:
    DB_HOST=localhost
    DB_PORT=1433
    
-   GEMINI_API_KEY=your-gemini-api-key-here
-   
    EMAIL_SERVICE=gmail
    EMAIL_USER=your-email@gmail.com
    EMAIL_PASSWORD=your-app-password
@@ -76,7 +74,8 @@ Muc luc:
    - mssql-django>=1.4.0
    - pyodbc>=5.0.0
    - python-dotenv>=1.0.0
-   - google-genai>=0.2.0 (cho AI features)
+   - statsmodels>=0.14.0 (cho forecast)
+   - scikit-learn>=1.5.0 (cho attrition/anomaly)
 
 
 4. CHAY MIGRATIONS

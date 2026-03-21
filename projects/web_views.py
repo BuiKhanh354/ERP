@@ -245,11 +245,11 @@ class ProjectDetailView(LoginRequiredMixin, DetailView):
                     context['ai_insight'] = ai_insight
         except Exception as e:
             error_msg = str(e)
-            # Xử lý lỗi API key - kiểm tra nhiều pattern
+            # Xử lý lỗi AI tạm thời - kiểm tra nhiều pattern
             if any(keyword in error_msg for keyword in ['API key', 'API_KEY', 'expired', 'API_KEY_INVALID', 'invalid API key']):
-                context['ai_insight_error'] = 'API key đã hết hạn hoặc không hợp lệ. Vui lòng kiểm tra và cập nhật GEMINI_API_KEY trong file .env hoặc settings.py.'
+                context['ai_insight_error'] = 'Chức năng AI hiện đang được refactor. Vui lòng thử lại sau khi hoàn tất cấu hình mới.'
             elif '400' in error_msg or 'Bad Request' in error_msg:
-                context['ai_insight_error'] = 'Lỗi kết nối với dịch vụ AI. Vui lòng kiểm tra cấu hình API key và thử lại sau.'
+                context['ai_insight_error'] = 'Lỗi kết nối với dịch vụ AI tạm thời. Vui lòng thử lại sau.'
             else:
                 # Giới hạn độ dài thông báo lỗi
                 error_display = error_msg[:150] + '...' if len(error_msg) > 150 else error_msg

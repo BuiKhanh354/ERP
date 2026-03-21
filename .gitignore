@@ -65,6 +65,8 @@ run_update.bat
 # Generated / output files
 
 account_setup_output.txt
+ai/data/
+ai/models/
 
 # Script generate database
 generate_erp_db_sql.py

@@ -26,6 +26,9 @@ urlpatterns = [
     path('hr/', include(('core.role_urls.hr_urls', 'hr_module'), namespace='hr_module')),
     path('employee/', include(('core.role_urls.employee_urls', 'employee_module'), namespace='employee_module')),
     path('pm/', include(('core.role_urls.pm_urls', 'pm_module'), namespace='pm_module')),
+    path('executive/', include(('core.role_urls.executive_urls', 'executive_module'), namespace='executive_module')),
+    path('resource-manager/', include(('core.role_urls.resource_manager_urls', 'resource_manager_module'), namespace='resource_manager_module')),
+    path('finance-admin/', include(('core.role_urls.finance_admin_urls', 'finance_admin_module'), namespace='finance_admin_module')),
     
     # Legacy routes (backward compat, sẽ deprecate dần)
     path('projects/', include(('projects.urls', 'projects'), namespace='projects')),

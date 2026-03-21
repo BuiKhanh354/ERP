@@ -146,9 +146,6 @@ LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
 
-# AI Configuration
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
-
 # Email configuration (OTP, notifications)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_SERVICE = os.getenv('EMAIL_SERVICE', 'gmail')

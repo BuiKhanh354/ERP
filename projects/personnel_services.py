@@ -174,7 +174,7 @@ class PersonnelRecommendationService:
     @staticmethod
     def ai_recommendation(project, optimization_goal='balanced', rule_based_results=None):
         """
-        Đề xuất nhân sự sử dụng AI (Gemini).
+        Đề xuất nhân sự bằng lớp AI hiện tại.
         
         Args:
             project: Project instance
