@@ -118,7 +118,8 @@ class AdminUserCreateView(PermissionRequiredMixin, CreateView):
                 Employee.objects.get_or_create(
                     user=user,
                     defaults={
-                        'full_name': user.get_full_name() or user.username,
+                        'first_name': user.first_name or '',
+                        'last_name': user.last_name or '',
                         'email': user.email,
                         'department': dept,
                         'employee_id': f'EMP{user.pk:04d}',
@@ -188,7 +189,8 @@ class AdminUserEditView(PermissionRequiredMixin, UpdateView):
                 emp, _ = Employee.objects.get_or_create(
                     user=user,
                     defaults={
-                        'full_name': user.get_full_name() or user.username,
+                        'first_name': user.first_name or '',
+                        'last_name': user.last_name or '',
                         'email': user.email,
                         'employee_id': f'EMP{user.pk:04d}',
                     }

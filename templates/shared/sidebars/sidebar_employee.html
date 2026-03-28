@@ -12,6 +12,13 @@
         <div class="menu-section">
           <div class="menu-section-title">Theo dõi Lương</div>
           <a
+            href="{% url 'employee_module:time-entry-list' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'time-entry-list' or request.resolver_match.url_name == 'time-entry' %}active{% endif %}"
+          >
+            <i class="bi bi-clock"></i>
+            <span>Time Entry</span>
+          </a>
+          <a
             href="{% url 'resources:salary-tracking' %}"
             class="menu-item {% if request.resolver_match.url_name == 'salary-tracking' %}active{% endif %}"
           >

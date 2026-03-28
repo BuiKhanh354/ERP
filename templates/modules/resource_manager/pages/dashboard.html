@@ -1,0 +1,210 @@
+{% extends "shared/layouts/base_role.html" %}
+{% block title %}Resource Dashboard{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="top-header">
+        <h2 class="h4 mb-0">Dashboard Nguồn Lực</h2>
+    </div>
+
+    <!-- KPI Widgets Row -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <div class="stats-icon">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div class="stats-value">0</div>
+                    <div class="stats-label">Tổng Nhân Viên</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <div class="stats-icon text-success">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <div class="stats-value">0</div>
+                    <div class="stats-label">Đã Phân Bổ</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <div class="stats-icon text-warning">
+                        <i class="bi bi-pause-circle"></i>
+                    </div>
+                    <div class="stats-value">0</div>
+                    <div class="stats-label">Chưa Phân Bổ</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <div class="stats-icon text-primary">
+                        <i class="bi bi-speedometer2"></i>
+                    </div>
+                    <div class="stats-value">0%</div>
+                    <div class="stats-label">Utilization TB</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <div class="stats-icon text-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                    <div class="stats-value">0</div>
+                    <div class="stats-label">Over-utilized</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <div class="stats-icon text-info">
+                        <i class="bi bi-folder"></i>
+                    </div>
+                    <div class="stats-value">0</div>
+                    <div class="stats-label">Cần Nguồn Lực</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Phân Bổ Utilization</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="utilizationDistributionChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Phân Bổ Theo Phòng Ban</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="allocationByDepartmentChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Tables -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Nhân Viên Over-utilized (>100%)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nhân Viên</th>
+                                    <th>Phòng Ban</th>
+                                    <th>Utilization</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">Không có</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Nhân Viên Under-utilized (<50%)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nhân Viên</th>
+                                    <th>Phòng Ban</th>
+                                    <th>Utilization</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">Không có</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Utilization Distribution Chart
+    const utilCtx = document.getElementById('utilizationDistributionChart').getContext('2d');
+    new Chart(utilCtx, {
+        type: 'bar',
+        data: {
+            labels: ['0-25%', '25-50%', '50-75%', '75-100%', '>100%'],
+            datasets: [{
+                label: 'Số Nhân Viên',
+                data: [0, 0, 0, 0, 0],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.5)',
+                    'rgba(255, 159, 64, 0.5)',
+                    'rgba(255, 205, 86, 0.5)',
+                    'rgba(75, 192, 192, 0.5)',
+                    'rgba(255, 99, 132, 0.8)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // Allocation By Department Chart
+    const deptCtx = document.getElementById('allocationByDepartmentChart').getContext('2d');
+    new Chart(deptCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [],
+            datasets: [{
+                data: [],
+                backgroundColor: [
+                    'rgba(54, 162, 235, 0.5)',
+                    'rgba(75, 192, 192, 0.5)',
+                    'rgba(255, 206, 86, 0.5)',
+                    'rgba(255, 99, 132, 0.5)',
+                    'rgba(153, 102, 255, 0.5)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+});
+</script>
+{% endblock %}

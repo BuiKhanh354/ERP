@@ -1,0 +1,72 @@
+{% extends "shared/layouts/base_role.html" %}
+{% block title %}Lịch Sử Ghi Nhận Thời Gian{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="top-header">
+        <h2 class="h4 mb-0">Lịch Sử Ghi Nhận Thời Gian</h2>
+    </div>
+
+    <!-- Summary Card -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <div class="stats-icon text-primary">
+                        <i class="bi bi-clock"></i>
+                    </div>
+                    <div class="stats-value">{{ total_hours_this_month|floatformat:1 }}</div>
+                    <div class="stats-label">Tổng Giờ Tháng Này</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="btn-group">
+            <a href="{% url 'employee_module:time-entry' %}" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> Tạo Time Entry
+            </a>
+        </div>
+    </div>
+
+    <!-- Time Entry Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Ngày</th>
+                            <th>Công Việc</th>
+                            <th>Dự Án</th>
+                            <th>Số Giờ</th>
+                            <th>Mô Tả</th>
+                            <th>Ngày Tạo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if time_entries %}
+                            {% for entry in time_entries %}
+                            <tr>
+                                <td>{{ entry.date|date:"d/m/Y" }}</td>
+                                <td>{{ entry.task.name }}</td>
+                                <td>{{ entry.task.project.name }}</td>
+                                <td>{{ entry.hours|floatformat:1 }}</td>
+                                <td>{{ entry.description|truncatechars:50 }}</td>
+                                <td>{{ entry.created_at|date:"d/m/Y H:i" }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">Chưa có time entry nào</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

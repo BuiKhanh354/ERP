@@ -7,6 +7,7 @@ from django.urls import reverse_lazy
 from django.http import JsonResponse
 from django.db.models import Q, Count
 from django.contrib import messages
+from django.shortcuts import redirect
 
 from core.rbac import PermissionRequiredMixin, log_audit, get_client_ip
 from core.admin_department_forms import AdminDepartmentForm
@@ -149,6 +150,10 @@ class AdminDepartmentDetailView(PermissionRequiredMixin, DetailView):
             department=dept, is_active=True
         ).select_related('department')
         ctx['ancestors'] = dept.get_ancestors()
+        # Available employees (not in this department)
+        ctx['available_employees'] = Employee.objects.exclude(
+            department=dept
+        ).filter(is_active=True).select_related('department', 'position_fk')[:50]
         return ctx
 
 
@@ -203,3 +208,123 @@ class AdminDepartmentHierarchyView(PermissionRequiredMixin, TemplateView):
         ctx['total_departments'] = Department.objects.count()
         ctx['active_departments'] = Department.objects.filter(is_active=True).count()
         return ctx
+
+
+class DepartmentEmployeeListView(PermissionRequiredMixin, View):
+    """Danh sách nhân viên theo phòng ban (AJAX)."""
+
+    def get(self, request, pk):
+        try:
+            dept = Department.objects.get(pk=pk)
+        except Department.DoesNotExist:
+            return JsonResponse({'ok': False, 'message': 'Phòng ban không tồn tại.'}, status=404)
+
+        employees = Employee.objects.filter(department=dept).select_related('user', 'position_fk')
+
+        data = []
+        for emp in employees:
+            data.append({
+                'id': emp.pk,
+                'employee_id': emp.employee_id,
+                'full_name': emp.full_name,
+                'email': emp.email,
+                'position': emp.position or '—',
+                'employment_type': emp.get_employment_type_display(),
+                'is_active': emp.is_active,
+            })
+
+        return JsonResponse({'ok': True, 'employees': data})
+
+
+class AddEmployeeToDepartmentView(PermissionRequiredMixin, View):
+    """Thêm nhân viên vào phòng ban (POST)."""
+
+    def post(self, request, pk):
+        try:
+            dept = Department.objects.get(pk=pk)
+        except Department.DoesNotExist:
+            return JsonResponse({'ok': False, 'message': 'Phòng ban không tồn tại.'}, status=404)
+
+        # Lấy danh sách employee IDs từ request
+        import json
+        try:
+            data = json.loads(request.body)
+            employee_ids = data.get('employee_ids', [])
+        except (json.JSONDecodeError, AttributeError):
+            employee_ids = request.POST.getlist('employee_ids')
+
+        if not employee_ids:
+            return JsonResponse({'ok': False, 'message': 'Chưa chọn nhân viên nào.'}, status=400)
+
+        # Cập nhật department cho các employee
+        updated_count = 0
+        for emp_id in employee_ids:
+            try:
+                emp = Employee.objects.get(pk=emp_id)
+                old_dept = emp.department.name if emp.department else None
+                emp.department = dept
+                emp.save(update_fields=['department', 'updated_at'])
+
+                log_audit(
+                    user=request.user,
+                    action_type='UPDATE',
+                    table_name='resources_employee',
+                    record_id=emp.pk,
+                    old_data={'department': old_dept},
+                    new_data={'department': dept.name},
+                    ip_address=get_client_ip(request),
+                )
+                updated_count += 1
+            except Employee.DoesNotExist:
+                continue
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'ok': True,
+                'message': f'Đã thêm {updated_count} nhân viên vào phòng ban "{dept.name}".',
+                'updated_count': updated_count,
+            })
+
+        messages.success(request, f'Đã thêm {updated_count} nhân viên vào phòng ban "{dept.name}".')
+        return redirect('admin_module:department_detail', pk=pk)
+
+
+class RemoveEmployeeFromDepartmentView(PermissionRequiredMixin, View):
+    """Xóa nhân viên khỏi phòng ban (POST)."""
+
+    def post(self, request, pk, employee_id):
+        try:
+            dept = Department.objects.get(pk=pk)
+        except Department.DoesNotExist:
+            return JsonResponse({'ok': False, 'message': 'Phòng ban không tồn tại.'}, status=404)
+
+        try:
+            emp = Employee.objects.get(pk=employee_id)
+        except Employee.DoesNotExist:
+            return JsonResponse({'ok': False, 'message': 'Nhân viên không tồn tại.'}, status=404)
+
+        if emp.department != dept:
+            return JsonResponse({'ok': False, 'message': 'Nhân viên không thuộc phòng ban này.'}, status=400)
+
+        old_dept = emp.department.name
+        emp.department = None
+        emp.save(update_fields=['department', 'updated_at'])
+
+        log_audit(
+            user=request.user,
+            action_type='UPDATE',
+            table_name='resources_employee',
+            record_id=emp.pk,
+            old_data={'department': old_dept},
+            new_data={'department': None},
+            ip_address=get_client_ip(request),
+        )
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'ok': True,
+                'message': f'Đã xóa nhân viên "{emp.full_name}" khỏi phòng ban "{dept.name}".',
+            })
+
+        messages.success(request, f'Đã xóa nhân viên "{emp.full_name}" khỏi phòng ban "{dept.name}".')
+        return redirect('admin_module:department_detail', pk=pk)

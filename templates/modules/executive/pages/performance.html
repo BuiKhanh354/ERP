@@ -1,0 +1,160 @@
+{% extends "shared/layouts/base_role.html" %}
+{% block title %}Performance Overview{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="top-header">
+        <h2 class="h4 mb-0">Hiệu Suất Tổng Quan</h2>
+    </div>
+
+    <!-- Performance Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <div class="stats-label">Hiệu Quả TB</div>
+                    <div class="stats-value text-primary">0%</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <div class="stats-label">Chất Lượng TB</div>
+                    <div class="stats-value text-success">0%</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <div class="stats-label">Năng Suất TB</div>
+                    <div class="stats-value text-info">0%</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <div class="stats-label">Hài Lòng KH</div>
+                    <div class="stats-value text-warning">0%</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <div class="stats-label">Hiệu Quả Chi Phí</div>
+                    <div class="stats-value text-danger">0%</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <div class="stats-label">Tổng Nhân Viên</div>
+                    <div class="stats-value">0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">So Sánh Hiệu Suất Theo Phòng Ban</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="departmentPerformanceChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Xu Hướng Hiệu Suất (6 Tháng)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="performanceTrendChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Employee Ranking -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Xếp Hạng Nhân Viên</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nhân Viên</th>
+                                    <th>Phòng Ban</th>
+                                    <th>Hiệu Quả</th>
+                                    <th>Chất Lượng</th>
+                                    <th>Năng Suất</th>
+                                    <th>Điểm Tổng</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">Chưa có dữ liệu</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Department Performance Chart
+    const deptCtx = document.getElementById('departmentPerformanceChart').getContext('2d');
+    new Chart(deptCtx, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Điểm Hiệu Suất',
+                data: [],
+                backgroundColor: 'rgba(54, 162, 235, 0.5)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // Performance Trend Chart
+    const trendCtx = document.getElementById('performanceTrendChart').getContext('2d');
+    new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6'],
+            datasets: [{
+                label: 'Điểm Hiệu Suất',
+                data: [0, 0, 0, 0, 0, 0],
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,54 @@
+        <div class="menu-section">
+          <div class="menu-section-title">Tổng quan</div>
+          <a
+            href="{% url 'executive_module:dashboard' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+          >
+            <i class="bi bi-speedometer2"></i>
+            <span>Dashboard Công ty</span>
+          </a>
+        </div>
+
+        <div class="menu-section">
+          <div class="menu-section-title">Dự án</div>
+          <a
+            href="{% url 'executive_module:project-portfolio' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'project-portfolio' %}active{% endif %}"
+          >
+            <i class="bi bi-folder"></i>
+            <span>Portfolio Dự án</span>
+          </a>
+        </div>
+
+        <div class="menu-section">
+          <div class="menu-section-title">Tài chính</div>
+          <a
+            href="{% url 'executive_module:financial-reports' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'financial-reports' %}active{% endif %}"
+          >
+            <i class="bi bi-file-earmark-text"></i>
+            <span>Báo cáo Tài chính</span>
+          </a>
+        </div>
+
+        <div class="menu-section">
+          <div class="menu-section-title">Hiệu suất</div>
+          <a
+            href="{% url 'executive_module:performance' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'performance' %}active{% endif %}"
+          >
+            <i class="bi bi-graph-up"></i>
+            <span>Hiệu suất Tổng quan</span>
+          </a>
+        </div>
+
+        <div class="menu-section">
+          <div class="menu-section-title">Chat với PRM AI</div>
+          <a
+            href="{% url 'core:ai-chat' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'ai-chat' or request.resolver_match.url_name == 'ai-chat-history' %}active{% endif %}"
+          >
+            <i class="bi bi-chat-dots"></i>
+            <span>Chat với PRM AI</span>
+          </a>
+        </div>

@@ -1,0 +1,596 @@
+{% extends "shared/layouts/base_role.html" %}
+{% load static %}
+{% block title %}Admin Analytics - Phân tích hệ thống{% endblock %}
+{% block page_title %}Admin Analytics{% endblock %}
+{% block breadcrumb_title %}Phân tích{% endblock %}
+
+{% block extra_css %}
+<style>
+.analytics-filters {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.analytics-filters .filter-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6B7280;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.analytics-filters .form-control,
+.analytics-filters .form-select {
+  border-radius: 6px;
+  border: 1px solid #E5E7EB;
+  font-size: 0.875rem;
+}
+
+.analytics-filters .form-control:focus,
+.analytics-filters .form-select:focus {
+  border-color: #4F46E5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.chart-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  margin-bottom: 1.5rem;
+  height: 350px;
+}
+
+.chart-card .chart-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1F2937;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chart-card .chart-title i {
+  color: #4F46E5;
+}
+
+.analytics-table {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  margin-bottom: 1.5rem;
+}
+
+.analytics-table .table-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1F2937;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.analytics-table .table-title i {
+  color: #4F46E5;
+}
+
+.analytics-table table {
+  font-size: 0.875rem;
+}
+
+.analytics-table thead th {
+  font-weight: 600;
+  color: #6B7280;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid #E5E7EB;
+}
+
+.analytics-table tbody td {
+  color: #374151;
+  vertical-align: middle;
+}
+
+.badge-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.badge-planning { background: #DBEAFE; color: #1E40AF; }
+.badge-active { background: #D1FAE5; color: #065F46; }
+.badge-on_hold { background: #FEF3C7; color: #92400E; }
+.badge-completed { background: #DBEAFE; color: #1E40AF; }
+.badge-cancelled { background: #FEE2E2; color: #991B1B; }
+
+.progress {
+  height: 8px;
+  border-radius: 4px;
+  background: #E5E7EB;
+}
+
+.progress-bar {
+  background: #4F46E5;
+  border-radius: 4px;
+}
+
+.btn-filter {
+  background: #4F46E5;
+  color: white;
+  border: none;
+  padding: 0.5rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-filter:hover {
+  background: #4338CA;
+  color: white;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Filter Bar -->
+<div class="analytics-filters">
+  <div class="filter-title"><i class="bi bi-funnel me-2"></i>Bộ lọc phân tích</div>
+  <form method="get" action="{% url 'admin_module:analytics' %}">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label">Từ ngày</label>
+        <input type="date" name="date_from" class="form-control" value="{{ current_date_from }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Đến ngày</label>
+        <input type="date" name="date_to" class="form-control" value="{{ current_date_to }}">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Phòng ban</label>
+        <select name="department" class="form-select">
+          <option value="">Tất cả</option>
+          {% for dept in departments %}
+          <option value="{{ dept.pk }}" {% if current_department == dept.pk|stringformat:"s" %}selected{% endif %}>
+            {{ dept.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Trạng thái DA</label>
+        <select name="project_status" class="form-select">
+          <option value="">Tất cả</option>
+          {% for value, label in project_statuses %}
+          <option value="{{ value }}" {% if current_project_status == value %}selected{% endif %}>
+            {{ label }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-filter w-100">
+          <i class="bi bi-search me-1"></i>Lọc
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Charts Row 1 -->
+<div class="row">
+  <div class="col-md-6">
+    <div class="chart-card">
+      <div class="chart-title">
+        <i class="bi bi-people"></i>
+        <span>User Growth Analytics</span>
+      </div>
+      <canvas id="userGrowthChart" height="50"></canvas>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="chart-card">
+      <div class="chart-title">
+        <i class="bi bi-folder"></i>
+        <span>Project Creation Trend</span>
+      </div>
+      <canvas id="projectTrendChart" height="50"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row 2 -->
+<div class="row">
+  <div class="col-md-6">
+    <div class="chart-card">
+      <div class="chart-title">
+        <i class="bi bi-building"></i>
+        <span>Employee Distribution by Department</span>
+      </div>
+      <canvas id="employeeDeptChart" height="50"></canvas>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="chart-card">
+      <div class="chart-title">
+        <i class="bi bi-pie-chart"></i>
+        <span>Project Status Distribution</span>
+      </div>
+      <canvas id="projectStatusChart" height="200"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row 3 -->
+<div class="row">
+  <div class="col-md-6">
+    <div class="chart-card">
+      <div class="chart-title">
+        <i class="bi bi-check-square"></i>
+        <span>Task Completion Analytics</span>
+      </div>
+      <canvas id="taskStatusChart" height="50"></canvas>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="chart-card">
+      <div class="chart-title">
+        <i class="bi bi-briefcase"></i>
+        <span>Workload Distribution</span>
+      </div>
+      <canvas id="workloadChart" height="200"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Tables Section -->
+<div class="row">
+  <div class="col-md-12">
+    <div class="analytics-table">
+      <div class="table-title">
+        <i class="bi bi-star"></i>
+        <span>Top 10 Active Projects</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Project Name</th>
+              <th>Manager</th>
+              <th>Status</th>
+              <th>Tasks Count</th>
+              <th>Completion %</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for proj in top_projects %}
+            <tr>
+              <td><strong>{{ proj.name }}</strong></td>
+              <td>{{ proj.project_manager.full_name|default:"—" }}</td>
+              <td>
+                <span class="badge-status badge-{{ proj.status }}">{{ proj.get_status_display }}</span>
+              </td>
+              <td>{{ proj.tasks_count }}</td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="progress flex-grow-1" style="width: 100px;">
+                    <div class="progress-bar" style="width: {{ proj.completion_percent }}%"></div>
+                  </div>
+                  <span>{{ proj.completion_percent }}%</span>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center text-muted">No data available</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="analytics-table">
+      <div class="table-title">
+        <i class="bi bi-people"></i>
+        <span>Most Active Employees</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Employee Name</th>
+              <th>Department</th>
+              <th>Tasks Assigned</th>
+              <th>Tasks Completed</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for emp in active_employees %}
+            <tr>
+              <td><strong>{{ emp.full_name }}</strong></td>
+              <td>{{ emp.department.name|default:"—" }}</td>
+              <td>{{ emp.tasks_assigned }}</td>
+              <td>{{ emp.tasks_completed }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" class="text-center text-muted">No data available</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="analytics-table">
+      <div class="table-title">
+        <i class="bi bi-activity"></i>
+        <span>System Activity Summary</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Action</th>
+              <th>User</th>
+              <th>Module</th>
+              <th>Timestamp</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for activity in recent_activities %}
+            <tr>
+              <td>
+                <span class="badge bg-{{ activity.action_type|lower }}">{{ activity.action_type }}</span>
+              </td>
+              <td>{{ activity.user.username }}</td>
+              <td>{{ activity.table_name }}</td>
+              <td>{{ activity.created_at|date:"d/m/Y H:i" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" class="text-center text-muted">No recent activity</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Pagination -->
+      {% if activities_paginator.num_pages > 1 %}
+      <div class="d-flex justify-content-between align-items-center mt-3">
+        <div class="text-muted">
+          Trang {{ activities_page.number }} / {{ activities_paginator.num_pages }}
+        </div>
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            {% if activities_page.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?activity_page={{ activities_page.previous_page_number }}">
+                <i class="bi bi-chevron-left"></i>
+              </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+              <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+            </li>
+            {% endif %}
+            
+            {% for num in activities_paginator.page_range %}
+              {% if activities_page.number == num %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+              {% elif num > activities_page.number|add:'-3' and num < activities_page.number|add:'3' %}
+                <li class="page-item"><a class="page-link" href="?activity_page={{ num }}">{{ num }}</a></li>
+              {% endif %}
+            {% endfor %}
+            
+            {% if activities_page.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?activity_page={{ activities_page.next_page_number }}">
+                <i class="bi bi-chevron-right"></i>
+              </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+              <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+            </li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Chart colors
+  const colors = {
+    primary: '#4F46E5',
+    success: '#10B981',
+    warning: '#F59E0B',
+    danger: '#EF4444',
+    info: '#3B82F6',
+    purple: '#8B5CF6',
+    teal: '#14B8A6'
+  };
+
+  // Chart 1: User Growth Analytics
+  const userGrowthCtx = document.getElementById('userGrowthChart').getContext('2d');
+  new Chart(userGrowthCtx, {
+    type: 'line',
+    data: {
+      labels: {{ user_growth_labels|safe }},
+      datasets: [{
+        label: 'New Users',
+        data: {{ user_growth_data|safe }},
+        borderColor: colors.primary,
+        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+
+  // Chart 2: Employee Distribution by Department
+  const employeeDeptCtx = document.getElementById('employeeDeptChart').getContext('2d');
+  new Chart(employeeDeptCtx, {
+    type: 'bar',
+    data: {
+      labels: {{ dept_labels|safe }},
+      datasets: [{
+        label: 'Employees',
+        data: {{ dept_data|safe }},
+        backgroundColor: colors.success,
+        borderColor: colors.success,
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+
+  // Chart 3: Project Status Distribution
+  const projectStatusCtx = document.getElementById('projectStatusChart').getContext('2d');
+  new Chart(projectStatusCtx, {
+    type: 'pie',
+    data: {
+      labels: {{ project_status_labels|safe }},
+      datasets: [{
+        data: {{ project_status_data|safe }},
+        backgroundColor: [
+          colors.primary,
+          colors.success,
+          colors.warning,
+          colors.info,
+          colors.danger
+        ]
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false
+    }
+  });
+
+  // Chart 4: Task Completion Analytics
+  const taskStatusCtx = document.getElementById('taskStatusChart').getContext('2d');
+  new Chart(taskStatusCtx, {
+    type: 'bar',
+    data: {
+      labels: {{ task_status_labels|safe }},
+      datasets: [{
+        label: 'Tasks',
+        data: {{ task_status_data|safe }},
+        backgroundColor: [
+          colors.info,
+          colors.warning,
+          colors.purple,
+          colors.success
+        ]
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+
+  // Chart 5: Project Creation Trend
+  const projectTrendCtx = document.getElementById('projectTrendChart').getContext('2d');
+  new Chart(projectTrendCtx, {
+    type: 'line',
+    data: {
+      labels: {{ project_trend_labels|safe }},
+      datasets: [{
+        label: 'New Projects',
+        data: {{ project_trend_data|safe }},
+        borderColor: colors.teal,
+        backgroundColor: 'rgba(20, 184, 166, 0.1)',
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+
+  // Chart 6: Workload Distribution
+  const workloadCtx = document.getElementById('workloadChart').getContext('2d');
+  new Chart(workloadCtx, {
+    type: 'bar',
+    data: {
+      labels: {{ workload_labels|safe }},
+      datasets: [{
+        label: 'Tasks Assigned',
+        data: {{ workload_data|safe }},
+        backgroundColor: colors.danger,
+        borderColor: colors.danger,
+        borderWidth: 1
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        x: { beginAtZero: true }
+      }
+    }
+  });
+});
+</script>
+{% endblock %}

@@ -7,7 +7,11 @@ from core.role_views.admin_department_views import (
     AdminDepartmentDetailView,
     AdminDepartmentToggleStatusView,
     AdminDepartmentHierarchyView,
+    DepartmentEmployeeListView,
+    AddEmployeeToDepartmentView,
+    RemoveEmployeeFromDepartmentView,
 )
+from core.role_views.admin_analytics_views import AdminAnalyticsView
 from core.role_views.admin_user_views import (
     AdminUserListView,
     AdminUserCreateView,
@@ -36,6 +40,14 @@ urlpatterns = [
     path('departments/<int:pk>/', AdminDepartmentDetailView.as_view(), name='department_detail'),
     path('departments/<int:pk>/edit/', AdminDepartmentUpdateView.as_view(), name='department_edit'),
     path('departments/<int:pk>/toggle-status/', AdminDepartmentToggleStatusView.as_view(), name='department_toggle_status'),
+
+    # Department employee management
+    path('departments/<int:pk>/employees/', DepartmentEmployeeListView.as_view(), name='department_employees'),
+    path('departments/<int:pk>/add-employee/', AddEmployeeToDepartmentView.as_view(), name='department_add_employee'),
+    path('departments/<int:pk>/remove-employee/<int:employee_id>/', RemoveEmployeeFromDepartmentView.as_view(), name='department_remove_employee'),
+
+    # Analytics
+    path('analytics/', AdminAnalyticsView.as_view(), name='analytics'),
 
     # System
     path('logs/', AdminAuditLogListView.as_view(), name='audit_logs'),

@@ -7,10 +7,10 @@
             <i class="bi bi-speedometer2"></i>
             <span>Bảng điều khiển</span>
           </a>
-          <a href="{% url 'core:dashboard' %}" class="menu-item">
+          <!-- <a href="{% url 'core:dashboard' %}" class="menu-item">
             <i class="bi bi-box-arrow-up-right"></i>
             <span>Client Site</span>
-          </a>
+          </a> -->
         </div>
 
         <div class="menu-section">
@@ -66,10 +66,10 @@
             <span>Nhật ký hệ thống</span>
           </a>
           <a
-            href="{% url 'admin_module:dashboard' %}"
-            class="menu-item {% if 'admin_custom' in request.resolver_match.namespace and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+            href="{% url 'admin_module:analytics' %}"
+            class="menu-item {% if 'admin_module' in request.resolver_match.namespace and request.resolver_match.url_name == 'analytics' %}active{% endif %}"
           >
-            <i class="bi-graph-up"></i>
+            <i class="bi bi-graph-up"></i>
             <span>Phân tích</span>
           </a>
           <a

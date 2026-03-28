@@ -1,0 +1,42 @@
+        <div class="menu-section">
+          <div class="menu-section-title">Quản lý Nguồn lực</div>
+          <a
+            href="{% url 'resource_manager_module:dashboard' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+          >
+            <i class="bi bi-speedometer2"></i>
+            <span>Dashboard Nguồn lực</span>
+          </a>
+          <a
+            href="{% url 'resource_manager_module:allocation-list' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'allocation-list' %}active{% endif %}"
+          >
+            <i class="bi bi-people"></i>
+            <span>Phân bổ Nguồn lực</span>
+          </a>
+          <a
+            href="{% url 'resource_manager_module:capacity-planning' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'capacity-planning' %}active{% endif %}"
+          >
+            <i class="bi bi-calendar-range"></i>
+            <span>Capacity Planning</span>
+          </a>
+          <a
+            href="{% url 'resource_manager_module:project-resources' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'project-resources' %}active{% endif %}"
+          >
+            <i class="bi bi-briefcase"></i>
+            <span>Nguồn lực theo Dự án</span>
+          </a>
+        </div>
+
+        <div class="menu-section">
+          <div class="menu-section-title">Chat với PRM AI</div>
+          <a
+            href="{% url 'core:ai-chat' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'ai-chat' or request.resolver_match.url_name == 'ai-chat-history' %}active{% endif %}"
+          >
+            <i class="bi bi-chat-dots"></i>
+            <span>Chat với PRM AI</span>
+          </a>
+        </div>

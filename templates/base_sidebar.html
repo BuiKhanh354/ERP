@@ -37,14 +37,20 @@
       <nav class="sidebar-menu">
         {% if 'ADMIN' in user_role_names or '__superuser__' in user_permissions %}
           {% include "shared/sidebars/sidebar_admin.html" %}
-        {% elif 'ACCOUNTANT' in user_role_names %}
-          {% include "shared/sidebars/sidebar_accountant.html" %}
         {% elif 'CFO' in user_role_names %}
           {% include "shared/sidebars/sidebar_cfo.html" %}
         {% elif 'HR_ADMIN' in user_role_names %}
           {% include "shared/sidebars/sidebar_hr.html" %}
         {% elif 'PROJECT_MANAGER' in user_role_names %}
           {% include "shared/sidebars/sidebar_pm.html" %}
+        {% elif 'EXECUTIVE' in user_role_names %}
+          {% include "shared/sidebars/sidebar_executive.html" %}
+        {% elif 'RESOURCE_MANAGER' in user_role_names %}
+          {% include "shared/sidebars/sidebar_resource_manager.html" %}
+        {% elif 'FINANCE_ADMIN' in user_role_names %}
+          {% include "shared/sidebars/sidebar_finance_admin.html" %}
+        {% elif 'ACCOUNTANT' in user_role_names %}
+          {% include "shared/sidebars/sidebar_accountant.html" %}
         {% else %}
           {% include "shared/sidebars/sidebar_employee.html" %}
         {% endif %}

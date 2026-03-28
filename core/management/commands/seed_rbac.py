@@ -12,13 +12,12 @@ ROLES = [
     ('ADMIN', 'Quản trị hệ thống — quản lý user, không xem lương/tài chính'),
     ('HR_ADMIN', 'Quản lý nhân sự — hồ sơ, lương, hợp đồng'),
     ('PROJECT_MANAGER', 'Quản lý dự án — tạo/sửa project, giao task, duyệt timesheet'),
-    ('TEAM_MEMBER', 'Nhân viên — xem task, cập nhật task, ghi timesheet'),
+    ('EMPLOYEE', 'Nhân viên — xem task, cập nhật task, ghi timesheet, xem hiệu suất'),
     ('EXECUTIVE', 'Lãnh đạo — xem tổng quan, read-only'),
     ('FINANCE_ADMIN', 'Tài chính — duyệt ngân sách, chi phí, khóa kỳ'),
     ('ACCOUNTANT', 'Kế toán — ghi nhận chi phí, xem báo cáo'),
     ('CFO', 'Giám đốc tài chính — toàn bộ tài chính'),
     ('RESOURCE_MANAGER', 'Quản lý nguồn lực — phân bổ, capacity'),
-    ('EMPLOYEE', 'Nhân viên thông thường'),
 ]
 
 # Tất cả permissions theo lamviecvoiagent.md
@@ -92,9 +91,9 @@ ROLE_PERMISSIONS = {
         'APPROVE_TIMESHEET', 'create_project', 'edit_project',
         'delete_project', 'log_time', 'VIEW_ALL_PROJECTS',
     ],
-    'TEAM_MEMBER': [
+    'EMPLOYEE': [
         'VIEW_ASSIGNED_TASK', 'UPDATE_TASK_STATUS', 'SUBMIT_TIMESHEET',
-        'log_time',
+        'log_time', 'view_performance',
     ],
     'EXECUTIVE': [
         'VIEW_ALL_PROJECTS', 'VIEW_COMPANY_DASHBOARD', 'VIEW_PROJECT_PROFIT',
@@ -117,10 +116,6 @@ ROLE_PERMISSIONS = {
     ],
     'RESOURCE_MANAGER': [
         'RESOURCE_ALLOCATE', 'RESOURCE_EDIT', 'VIEW_ALL_RESOURCES',
-    ],
-    'EMPLOYEE': [
-        'VIEW_ASSIGNED_TASK', 'UPDATE_TASK_STATUS', 'SUBMIT_TIMESHEET',
-        'log_time', 'view_performance',
     ],
 }
 

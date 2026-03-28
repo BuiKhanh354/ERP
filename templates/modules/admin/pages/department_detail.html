@@ -139,6 +139,16 @@
 <div class="section-title"><i class="bi bi-people"></i>Danh sách nhân viên ({{ employees.count }})</div>
 <div class="card">
   <div class="card-body p-0">
+    <!-- Toolbar -->
+    <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+      <div class="text-muted">
+        <i class="bi bi-info-circle"></i> Quản lý nhân viên thuộc phòng ban này
+      </div>
+      <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
+        <i class="bi bi-person-plus me-1"></i>Thêm nhân viên
+      </button>
+    </div>
+
     {% if employees %}
     <div class="table-responsive">
       <table class="emp-table">
@@ -150,6 +160,7 @@
             <th>Chức vụ</th>
             <th>Loại HĐ</th>
             <th>Trạng thái</th>
+            <th>Hành động</th>
           </tr>
         </thead>
         <tbody>
@@ -161,6 +172,18 @@
             <td>{{ emp.position|default:"—" }}</td>
             <td>{{ emp.get_employment_type_display }}</td>
             <td>{% if emp.is_active %}<span class="badge-active">Hoạt động</span>{% else %}<span class="badge-inactive">Nghỉ</span>{% endif %}</td>
+            <td>
+              <a href="/resources/{{ emp.pk }}/" class="btn btn-sm btn-outline-info" title="Xem hồ sơ">
+                <i class="bi bi-eye"></i>
+              </a>
+              <form method="post" action="{% url 'admin_module:department_remove_employee' department.pk emp.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa khỏi phòng ban"
+                        onclick="return confirm('Bạn có chắc muốn xóa nhân viên này khỏi phòng ban?')">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </td>
           </tr>
           {% endfor %}
         </tbody>
@@ -174,4 +197,169 @@
     {% endif %}
   </div>
 </div>
+
+<!-- Modal: Add Employee -->
+<div class="modal fade" id="addEmployeeModal" tabindex="-1" aria-labelledby="addEmployeeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addEmployeeModalLabel">
+          <i class="bi bi-person-plus me-2"></i>Thêm nhân viên vào phòng ban
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle me-2"></i>
+          Chọn nhân viên chưa thuộc phòng ban <strong>{{ department.name }}</strong>
+        </div>
+
+        <!-- Search -->
+        <div class="mb-3">
+          <label class="form-label">Tìm kiếm nhân viên</label>
+          <input type="text" class="form-control" id="employeeSearch" placeholder="Nhập tên, email hoặc mã nhân viên...">
+        </div>
+
+        <!-- Employee List -->
+        <div class="table-responsive" style="max-height:400px; overflow-y:auto;">
+          <table class="table table-hover" id="employeeTable">
+            <thead>
+              <tr>
+                <th style="width:40px;">
+                  <input type="checkbox" id="selectAll" class="form-check-input">
+                </th>
+                <th>Mã NV</th>
+                <th>Họ tên</th>
+                <th>Email</th>
+                <th>Phòng ban hiện tại</th>
+                <th>Chức vụ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for emp in available_employees %}
+              <tr class="employee-row">
+                <td>
+                  <input type="checkbox" class="form-check-input employee-checkbox" value="{{ emp.pk }}">
+                </td>
+                <td><code>{{ emp.employee_id }}</code></td>
+                <td>{{ emp.full_name }}</td>
+                <td>{{ emp.email }}</td>
+                <td>{{ emp.department.name|default:"Chưa có" }}</td>
+                <td>{{ emp.position|default:"—" }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="text-center text-muted">
+                  Không có nhân viên nào để thêm.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+        <button type="button" class="btn btn-primary" id="addEmployeeBtn">
+          <i class="bi bi-check-lg me-1"></i>Thêm đã chọn
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const searchInput = document.getElementById('employeeSearch');
+  const employeeTable = document.getElementById('employeeTable');
+  const selectAllCheckbox = document.getElementById('selectAll');
+  const employeeCheckboxes = document.querySelectorAll('.employee-checkbox');
+  const addEmployeeBtn = document.getElementById('addEmployeeBtn');
+  const departmentId = {{ department.pk }};
+
+  // Search functionality
+  if (searchInput) {
+    searchInput.addEventListener('input', function() {
+      const searchTerm = this.value.toLowerCase();
+      const rows = employeeTable.querySelectorAll('.employee-row');
+
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+      });
+    });
+  }
+
+  // Select All functionality
+  if (selectAllCheckbox) {
+    selectAllCheckbox.addEventListener('change', function() {
+      employeeCheckboxes.forEach(cb => {
+        cb.checked = this.checked;
+      });
+    });
+  }
+
+  // Add employees button
+  if (addEmployeeBtn) {
+    addEmployeeBtn.addEventListener('click', function() {
+      const selectedIds = Array.from(employeeCheckboxes)
+        .filter(cb => cb.checked)
+        .map(cb => cb.value);
+
+      if (selectedIds.length === 0) {
+        alert('Vui lòng chọn ít nhất 1 nhân viên.');
+        return;
+      }
+
+      // Disable button and show loading
+      addEmployeeBtn.disabled = true;
+      addEmployeeBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Đang xử lý...';
+
+      // Send AJAX request
+      fetch(`/admin-panel/departments/${departmentId}/add-employee/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken'),
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ employee_ids: selectedIds })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.ok) {
+          // Reload page to show updated employee list
+          window.location.reload();
+        } else {
+          alert('Lỗi: ' + data.message);
+          addEmployeeBtn.disabled = false;
+          addEmployeeBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Thêm đã chọn';
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra. Vui lòng thử lại.');
+        addEmployeeBtn.disabled = false;
+        addEmployeeBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Thêm đã chọn';
+      });
+    });
+  }
+
+  // Helper function to get CSRF token
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+});
+</script>
 {% endblock %}

@@ -6,12 +6,211 @@
     <div class="top-header">
         <h2 class="h4 mb-0">Bảng Điều Khiển Nhân Sự</h2>
     </div>
+
+    <!-- KPI Widgets Row -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <div class="stats-icon">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div class="stats-value">{{ total_employees }}</div>
+                    <div class="stats-label">Tổng Nhân Viên</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <div class="stats-icon text-success">
+                        <i class="bi bi-person-plus"></i>
+                    </div>
+                    <div class="stats-value">{{ new_employees_this_month }}</div>
+                    <div class="stats-label">Nhân Viên Mới Tháng Này</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <div class="stats-icon text-warning">
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
+                    <div class="stats-value">{{ contracts_expiring_soon }}</div>
+                    <div class="stats-label">HĐ Sắp Hết Hạn</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <div class="stats-icon text-primary">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <div class="stats-value">{{ average_salary|floatformat:0 }} ₫</div>
+                    <div class="stats-label">Lương TB</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <div class="stats-icon text-info">
+                        <i class="bi bi-wallet2"></i>
+                    </div>
+                    <div class="stats-value">{{ total_payroll|floatformat:0 }} ₫</div>
+                    <div class="stats-label">Tổng Quỹ Lương</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <div class="stats-icon text-danger">
+                        <i class="bi bi-building"></i>
+                    </div>
+                    <div class="stats-value">{{ department_labels|length }}</div>
+                    <div class="stats-label">Phòng Ban</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Phân Bổ Nhân Viên Theo Phòng Ban</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="departmentChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Loại Hợp Đồng</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="employmentTypeChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 2 -->
     <div class="row">
-        <div class="col-12">
-            <div class="alert alert-info">
-                Chức năng dành riêng cho Quản lý Nhân sự. (Under logic construction)
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Xu Hướng Tuyển Dụng (6 Tháng)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="hiringTrendChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts Panel -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Hợp Đồng Sắp Hết Hạn</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        Chưa có hợp đồng nào sắp hết hạn trong 30 ngày tới.
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Đánh Giá Hiệu Suất Cần Làm</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        Chưa có đánh giá hiệu suất nào cần làm.
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Department Chart
+    const deptCtx = document.getElementById('departmentChart').getContext('2d');
+    new Chart(deptCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ department_labels|safe }},
+            datasets: [{
+                label: 'Số Nhân Viên',
+                data: {{ department_counts|safe }},
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgb(54, 162, 235)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // Employment Type Chart
+    const typeCtx = document.getElementById('employmentTypeChart').getContext('2d');
+    new Chart(typeCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Toàn thời gian', 'Bán thời gian', 'Hợp đồng', 'Thực tập'],
+            datasets: [{
+                data: {{ employment_type_counts|safe }},
+                backgroundColor: [
+                    'rgba(54, 162, 235, 0.5)',
+                    'rgba(75, 192, 192, 0.5)',
+                    'rgba(255, 206, 86, 0.5)',
+                    'rgba(255, 99, 132, 0.5)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // Hiring Trend Chart
+    const trendCtx = document.getElementById('hiringTrendChart').getContext('2d');
+    new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: {{ hiring_trend_labels|safe }},
+            datasets: [{
+                label: 'Nhân Viên Mới',
+                data: {{ hiring_trend_data|safe }},
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1,
+                fill: true,
+                backgroundColor: 'rgba(75, 192, 192, 0.1)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+});
+</script>
 {% endblock %}

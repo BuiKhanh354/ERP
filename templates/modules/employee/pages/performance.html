@@ -1,0 +1,185 @@
+{% extends "shared/layouts/base_role.html" %}
+{% block title %}Hiệu Suất Cá Nhân{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="top-header">
+        <h2 class="h4 mb-0">Hiệu Suất Cá Nhân</h2>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <div class="stats-icon text-primary">
+                        <i class="bi bi-speedometer2"></i>
+                    </div>
+                    <div class="stats-value">0%</div>
+                    <div class="stats-label">Hiệu Quả</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <div class="stats-icon text-success">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <div class="stats-value">0%</div>
+                    <div class="stats-label">Tỷ Lệ Hoàn Thành</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <div class="stats-icon text-info">
+                        <i class="bi bi-clock"></i>
+                    </div>
+                    <div class="stats-value">0h</div>
+                    <div class="stats-label">Tổng Giờ Làm</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <div class="stats-icon text-warning">
+                        <i class="bi bi-calendar-check"></i>
+                    </div>
+                    <div class="stats-value">0 ngày</div>
+                    <div class="stats-label">Thời Gian TB/task</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <div class="stats-icon text-danger">
+                        <i class="bi bi-star"></i>
+                    </div>
+                    <div class="stats-value">0</div>
+                    <div class="stats-label">Điểm Tổng</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <div class="stats-icon text-secondary">
+                        <i class="bi bi-briefcase"></i>
+                    </div>
+                    <div class="stats-value">0</div>
+                    <div class="stats-label">Task Đã Hoàn Thành</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Xu Hướng Hiệu Suất (6 Tháng)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="performanceTrendChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Phân Bổ Thời Gian Theo Dự Án</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="timeByProjectChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance History Table -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Lịch Sử Đánh Giá Hiệu Suất</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Tháng</th>
+                                    <th>Hiệu Quả</th>
+                                    <th>Chất Lượng</th>
+                                    <th>Năng Suất</th>
+                                    <th>Điểm Tổng</th>
+                                    <th>Nhận Xét</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">Chưa có dữ liệu</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Performance Trend Chart
+    const trendCtx = document.getElementById('performanceTrendChart').getContext('2d');
+    new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6'],
+            datasets: [{
+                label: 'Điểm Hiệu Suất',
+                data: [0, 0, 0, 0, 0, 0],
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1,
+                fill: true,
+                backgroundColor: 'rgba(75, 192, 192, 0.1)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // Time By Project Chart
+    const projectCtx = document.getElementById('timeByProjectChart').getContext('2d');
+    new Chart(projectCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [],
+            datasets: [{
+                data: [],
+                backgroundColor: [
+                    'rgba(54, 162, 235, 0.5)',
+                    'rgba(75, 192, 192, 0.5)',
+                    'rgba(255, 206, 86, 0.5)',
+                    'rgba(255, 99, 132, 0.5)',
+                    'rgba(153, 102, 255, 0.5)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+});
+</script>
+{% endblock %}

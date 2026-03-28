@@ -75,13 +75,13 @@ class LoginView(DjangoLoginView):
     def form_valid(self, form):
         """Xử lý sau khi login thành công."""
         user = form.get_user()
-        
+
         # Kiểm tra xem có cần đổi mật khẩu không (mật khẩu mặc định)
         if self.request.session.get('require_password_change'):
             # Login user trước
             login(self.request, user)
             # Xóa flag trong session
-            del self.request.session['require_password_change']
+            self.request.session.pop('require_password_change', None)
             # Redirect đến trang đổi mật khẩu bắt buộc
             return redirect('core:change-password-required')
         

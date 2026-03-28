@@ -1,0 +1,71 @@
+{% extends "shared/layouts/base_role.html" %}
+{% block title %}Resource Allocation{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="top-header">
+        <h2 class="h4 mb-0">Phân Bổ Nguồn Lực</h2>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Dự Án</label>
+                    <select class="form-select" id="projectFilter">
+                        <option value="">Tất cả</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Nhân Viên</label>
+                    <select class="form-select" id="employeeFilter">
+                        <option value="">Tất cả</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Phòng Ban</label>
+                    <select class="form-select" id="departmentFilter">
+                        <option value="">Tất cả</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end gap-2">
+                    <button class="btn btn-primary flex-fill">
+                        <i class="bi bi-search"></i> Lọc
+                    </button>
+                    <button class="btn btn-success">
+                        <i class="bi bi-plus-lg"></i> Thêm
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Allocation Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Nhân Viên</th>
+                            <th>Dự Án</th>
+                            <th>Phòng Ban</th>
+                            <th>Vai Trò</th>
+                            <th>Allocation %</th>
+                            <th>Ngày Bắt Đầu</th>
+                            <th>Ngày Kết Thúc</th>
+                            <th>Hành Động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="8" class="text-center text-muted">Chưa có dữ liệu</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
