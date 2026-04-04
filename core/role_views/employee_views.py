@@ -11,6 +11,54 @@ from projects.models import TimeEntry, Task
 class EmployeeDashboardView(PermissionRequiredMixin, TemplateView):
     template_name = 'modules/employee/pages/dashboard.html'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        try:
+            employee = Employee.objects.select_related('department', 'user').get(user=self.request.user)
+        except Employee.DoesNotExist:
+            context.update(
+                {
+                    'employee': None,
+                    'assigned_tasks_count': 0,
+                    'completed_tasks_count': 0,
+                    'overdue_tasks_count': 0,
+                    'completion_rate': 0,
+                    'hours_this_month': 0,
+                    'upcoming_tasks': [],
+                }
+            )
+            return context
+
+        assigned_tasks = Task.objects.filter(assigned_to=employee)
+        assigned_tasks_count = assigned_tasks.count()
+        completed_tasks_count = assigned_tasks.filter(status='done').count()
+        overdue_tasks_count = assigned_tasks.filter(
+            due_date__lt=timezone.localdate()
+        ).exclude(status='done').count()
+        completion_rate = round((completed_tasks_count / assigned_tasks_count * 100), 2) if assigned_tasks_count else 0
+
+        month_start = timezone.localdate().replace(day=1)
+        hours_this_month = (
+            TimeEntry.objects.filter(employee=employee, date__gte=month_start)
+            .aggregate(total=Sum('hours'))['total']
+            or 0
+        )
+
+        upcoming_tasks = assigned_tasks.exclude(status='done').order_by('due_date', 'created_at')[:5]
+
+        context.update(
+            {
+                'employee': employee,
+                'assigned_tasks_count': assigned_tasks_count,
+                'completed_tasks_count': completed_tasks_count,
+                'overdue_tasks_count': overdue_tasks_count,
+                'completion_rate': completion_rate,
+                'hours_this_month': hours_this_month,
+                'upcoming_tasks': upcoming_tasks,
+            }
+        )
+        return context
+
 
 class EmployeeTimeEntryView(LoginRequiredMixin, CreateView):
     """View for employees to create time entries."""
@@ -28,10 +76,10 @@ class EmployeeTimeEntryView(LoginRequiredMixin, CreateView):
             employee = Employee.objects.get(user=self.request.user)
             kwargs['employee'] = employee
             # Only show tasks assigned to this employee
-            kwargs['task_queryset'] = Task.objects.filter(assignee=employee.user)
+            kwargs['tasks'] = Task.objects.filter(assigned_to=employee)
         except Employee.DoesNotExist:
             kwargs['employee'] = None
-            kwargs['task_queryset'] = Task.objects.none()
+            kwargs['tasks'] = Task.objects.none()
         return kwargs
 
     def form_valid(self, form):

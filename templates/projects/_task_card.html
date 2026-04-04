@@ -17,6 +17,15 @@
         {% elif task.status == 'overdue' %}Quá hạn
         {% endif %}
       </span>
+      {% if user_profile.is_manager %}
+      <a href="{% url 'projects:task_edit' task.pk %}" class="btn btn-sm btn-outline-secondary py-0 px-1" title="Sua">
+        <i class="bi bi-pencil"></i>
+      </a>
+      <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Xoa"
+              onclick="deleteTaskFromDetail('{% url 'projects:task_delete' task.pk %}', '{{ task.name|escapejs }}')">
+        <i class="bi bi-trash"></i>
+      </button>
+      {% endif %}
     </div>
   </div>
 

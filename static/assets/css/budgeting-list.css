@@ -66,6 +66,28 @@
     border: 1px solid #e2e8f0;
   }
 
+  .filter-card .form-label {
+    color: #334155;
+    font-size: 0.86rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    margin-bottom: 0.45rem;
+  }
+
+  .filter-card .form-select {
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 0.6rem 2.2rem 0.6rem 0.75rem;
+    background-color: #f8fafc;
+    transition: all 0.2s ease;
+  }
+
+  .filter-card .form-select:focus {
+    border-color: #0000cd;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 0, 205, 0.12);
+  }
+
   .btn-primary {
     background-color: #0000cd;
     border-color: #0000cd;
@@ -95,4 +117,81 @@
     background: #ffffff;
     padding: 1.5rem;
     margin-bottom: 2rem;
+  }
+
+  .chart-card h5 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1e293b;
+  }
+
+  .budget-card .card-title a {
+    color: #0f172a !important;
+  }
+
+  .budget-card .card-title a:hover {
+    color: #0000cd !important;
+  }
+
+  .budget-card .badge.bg-secondary {
+    background-color: #334155 !important;
+  }
+
+  .budget-card .btn-outline-primary,
+  .budget-card .btn-outline-secondary,
+  .budget-card .btn-outline-danger {
+    border-radius: 8px;
+  }
+
+  .pagination .page-link {
+    color: #334155;
+    border-color: #cbd5e1;
+    border-radius: 8px;
+    margin: 0 3px;
+    min-width: 38px;
+    text-align: center;
+  }
+
+  .pagination .page-item.active .page-link {
+    background-color: #0000cd;
+    border-color: #0000cd;
+    color: #ffffff;
+  }
+
+  .pagination .page-link:hover {
+    color: #0000cd;
+    border-color: #93c5fd;
+    background-color: #eff6ff;
+  }
+
+  .budget-actions .budget-manage-btn {
+    border-radius: 10px;
+    font-weight: 600;
+    padding: 0.58rem 1rem;
+  }
+
+  .budget-manage-menu {
+    border-radius: 10px;
+    border: 1px solid #dbe2ea;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+    padding: 0.35rem;
+    min-width: 260px;
+  }
+
+  .budget-manage-menu .dropdown-item {
+    border-radius: 8px;
+    padding: 0.55rem 0.75rem;
+    font-weight: 500;
+    color: #334155;
+    display: flex;
+    align-items: center;
+  }
+
+  .budget-manage-menu .dropdown-item i {
+    color: #0000cd;
+  }
+
+  .budget-manage-menu .dropdown-item:hover {
+    background-color: #eff6ff;
+    color: #0f172a;
   }

@@ -10,7 +10,10 @@ class DepartmentAdmin(admin.ModelAdmin):
 
 @admin.register(Employee)
 class EmployeeAdmin(admin.ModelAdmin):
-    list_display = ['employee_id', 'first_name', 'last_name', 'email', 'department', 'position', 'employment_type', 'is_active']
+    list_display = [
+        'employee_id', 'first_name', 'last_name', 'email', 'department',
+        'kpi_current', 'penalty_level', 'at_risk', 'is_active'
+    ]
     list_filter = ['department', 'employment_type', 'is_active', 'hire_date']
     search_fields = ['first_name', 'last_name', 'email', 'employee_id']
     date_hierarchy = 'hire_date'

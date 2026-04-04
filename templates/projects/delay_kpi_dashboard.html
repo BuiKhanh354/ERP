@@ -1,0 +1,103 @@
+{% extends 'base_sidebar.html' %}
+{% load static %}
+
+{% block title %}Delay KPI Dashboard{% endblock %}
+{% block page_title %}Delay KPI Dashboard{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      {% if is_manager_view %}
+      <div class="col-md-4">
+        <label class="form-label">Nhan su</label>
+        <select name="user" class="form-select">
+          <option value="">Tat ca</option>
+          {% for emp in employees %}
+          <option value="{{ emp.id }}" {% if selected_user == emp.id|stringformat:'s' %}selected{% endif %}>{{ emp.full_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+      {% else %}
+      <div class="col-md-4">
+      {% endif %}
+        <label class="form-label">Du an</label>
+        <select name="project" class="form-select">
+          <option value="">Tat ca</option>
+          {% for p in projects %}
+          {% if p.project_id %}
+          <option value="{{ p.project_id }}" {% if selected_project == p.project_id|stringformat:'s' %}selected{% endif %}>{{ p.project__name }}</option>
+          {% else %}
+          <option value="{{ p.id }}" {% if selected_project == p.id|stringformat:'s' %}selected{% endif %}>{{ p.name }}</option>
+          {% endif %}
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4 d-flex gap-2">
+        <button class="btn btn-primary bi bi-search" type="submit">Loc</button>
+        <a class="btn btn-outline-secondary" href="{% url 'projects:delay_kpi_dashboard' %}">Reset</a>
+        <a class="btn btn-outline-success" href="{% url 'projects:delay_kpi_export_csv' %}?user={{ selected_user }}&project={{ selected_project }}">Export CSV</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-striped mb-0" id="delay-kpi-table">
+        <thead>
+          <tr>
+            <th>Nhan su</th>
+            <th>Phong ban</th>
+            <th>KPI</th>
+            <th>Delay score</th>
+            <th>Task tre</th>
+            <th>Penalty level</th>
+            <th>Bonus giam (%)</th>
+            <th>Warning</th>
+            <th>At risk</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+  const params = new URLSearchParams(window.location.search);
+  const endpoint = "{% url 'projects:delay_kpi_data' %}?" + params.toString();
+  const tableBody = document.querySelector('#delay-kpi-table tbody');
+  try {
+    const res = await fetch(endpoint);
+    const data = await res.json();
+    tableBody.innerHTML = '';
+    (data.rows || []).forEach(row => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${row.employee_name}</td>
+        <td>${row.department || ''}</td>
+        <td>${row.kpi_current}</td>
+        <td>${row.total_delay_score}</td>
+        <td>${row.delayed_tasks}</td>
+        <td>${row.penalty_level}</td>
+        <td>${row.bonus_reduction_percent}</td>
+        <td>${row.warning_count}</td>
+        <td>${row.at_risk ? '<span class="badge bg-danger">Yes</span>' : '<span class="badge bg-success">No</span>'}</td>
+      `;
+      tableBody.appendChild(tr);
+    });
+    if ((data.rows || []).length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="9" class="text-muted">Khong co du lieu.</td></tr>';
+    }
+  } catch (err) {
+    tableBody.innerHTML = '<tr><td colspan="9" class="text-danger">Khong the tai du lieu delay KPI.</td></tr>';
+  }
+});
+</script>
+{% endblock %}

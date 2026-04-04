@@ -1,293 +1,108 @@
 {% extends "shared/layouts/base_role.html" %}
+{% load humanize %}
 {% block title %}Executive Dashboard{% endblock %}
 
 {% block content %}
 <div class="content-wrapper">
-    <div class="top-header">
-        <h2 class="h4 mb-0">Dashboard Công Ty</h2>
-    </div>
-    
-    <!-- KPI Widgets Row -->
-    <div class="row mb-4">
-        <div class="col-md-2">
-            <div class="card stats-card">
-                <div class="card-body">
-                    <div class="stats-icon">
-                        <i class="bi bi-folder-check"></i>
-                    </div>
-                    <div class="stats-value">0</div>
-                    <div class="stats-label">Dự án Đang Hoạt Động</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card stats-card">
-                <div class="card-body">
-                    <div class="stats-icon text-success">
-                        <i class="bi bi-cash-stack"></i>
-                    </div>
-                    <div class="stats-value">0 ₫</div>
-                    <div class="stats-label">Tổng Doanh Thu (YTD)</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card stats-card">
-                <div class="card-body">
-                    <div class="stats-icon text-danger">
-                        <i class="bi bi-wallet2"></i>
-                    </div>
-                    <div class="stats-value">0 ₫</div>
-                    <div class="stats-label">Tổng Chi Phí (YTD)</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card stats-card">
-                <div class="card-body">
-                    <div class="stats-icon text-primary">
-                        <i class="bi bi-graph-up"></i>
-                    </div>
-                    <div class="stats-value">0 ₫</div>
-                    <div class="stats-label">Lợi Nhuận Ròng</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card stats-card">
-                <div class="card-body">
-                    <div class="stats-icon text-info">
-                        <i class="bi bi-people"></i>
-                    </div>
-                    <div class="stats-value">0</div>
-                    <div class="stats-label">Số Lượng Nhân Viên</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card stats-card">
-                <div class="card-body">
-                    <div class="stats-icon text-warning">
-                        <i class="bi bi-speedometer2"></i>
-                    </div>
-                    <div class="stats-value">0%</div>
-                    <div class="stats-label">Tỷ Lệ Hoàn Thành TB</div>
-                </div>
-            </div>
-        </div>
-    </div>
+  <div class="top-header">
+    <h2 class="h4 mb-0">Executive Dashboard</h2>
+  </div>
 
-    <!-- Charts Row 1 -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Xu Hướng Doanh Thu (12 Tháng)</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="revenueTrendChart" height="200"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Lợi Nhuận Theo Dự Án</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="profitByProjectChart" height="200"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
+  <div class="row g-3 mb-4">
+    <div class="col-md-2"><div class="card"><div class="card-body"><div class="small text-muted">Active Projects</div><div class="h4 mb-0">{{ active_projects }}</div></div></div></div>
+    <div class="col-md-2"><div class="card"><div class="card-body"><div class="small text-muted">Revenue YTD</div><div class="h6 mb-0">{{ revenue_ytd|floatformat:0|intcomma }} VND</div></div></div></div>
+    <div class="col-md-2"><div class="card"><div class="card-body"><div class="small text-muted">Expense YTD</div><div class="h6 mb-0">{{ expense_ytd|floatformat:0|intcomma }} VND</div></div></div></div>
+    <div class="col-md-2"><div class="card"><div class="card-body"><div class="small text-muted">Net Profit</div><div class="h6 mb-0">{{ net_profit|floatformat:0|intcomma }} VND</div></div></div></div>
+    <div class="col-md-2"><div class="card"><div class="card-body"><div class="small text-muted">Employees</div><div class="h4 mb-0">{{ total_employees }}</div></div></div></div>
+    <div class="col-md-2"><div class="card"><div class="card-body"><div class="small text-muted">Avg Progress</div><div class="h4 mb-0">{{ avg_progress }}%</div></div></div></div>
+  </div>
 
-    <!-- Charts Row 2 -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Phân Bổ Trạng Thái Dự Án</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="projectStatusChart" height="200"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Ngân Sách vs Thực Tế</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="budgetVsActualChart" height="200"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
+  <div class="row g-3 mb-4">
+    <div class="col-md-6"><div class="card"><div class="card-header">Revenue Trend (12 months)</div><div class="card-body"><canvas id="revenueTrendChart" height="180"></canvas></div></div></div>
+    <div class="col-md-6"><div class="card"><div class="card-header">Profit By Project</div><div class="card-body"><canvas id="profitByProjectChart" height="180"></canvas></div></div></div>
+  </div>
 
-    <!-- Tables Row -->
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Top 5 Dự Án Lợi Nhuận Nhất</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Dự Án</th>
-                                    <th>Doanh Thu</th>
-                                    <th>Chi Phí</th>
-                                    <th>Lợi Nhuận</th>
-                                    <th>Biên LN</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td colspan="5" class="text-center text-muted">Chưa có dữ liệu</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+  <div class="row g-3 mb-4">
+    <div class="col-md-6"><div class="card"><div class="card-header">Project Status</div><div class="card-body"><canvas id="projectStatusChart" height="180"></canvas></div></div></div>
+    <div class="col-md-6"><div class="card"><div class="card-header">Budget vs Actual</div><div class="card-body"><canvas id="budgetVsActualChart" height="180"></canvas></div></div></div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">Top Profit Projects</div>
+        <div class="card-body table-responsive">
+          <table class="table table-sm">
+            <thead><tr><th>Project</th><th>Revenue</th><th>Cost</th><th>Profit</th><th>Margin</th></tr></thead>
+            <tbody>
+              {% for p in top_profit_projects %}
+              <tr>
+                <td>{{ p.name }}</td>
+                <td>{{ p.revenue|floatformat:0|intcomma }}</td>
+                <td>{{ p.cost|floatformat:0|intcomma }}</td>
+                <td>{{ p.profit|floatformat:0|intcomma }}</td>
+                <td>{{ p.margin|floatformat:1 }}%</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-center text-muted">No data</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Dự Án Có Rủi Ro</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Dự Án</th>
-                                    <th>Vấn Đề</th>
-                                    <th>Tiến Độ</th>
-                                    <th>Ngân Sách</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td colspan="4" class="text-center text-muted">Không có dự án rủi ro</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
+      </div>
     </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">Risky Projects</div>
+        <div class="card-body table-responsive">
+          <table class="table table-sm">
+            <thead><tr><th>Project</th><th>Issue</th><th>Progress</th><th>Budget Used</th></tr></thead>
+            <tbody>
+              {% for p in risky_projects %}
+              <tr>
+                <td>{{ p.name }}</td>
+                <td>{{ p.issue }}</td>
+                <td>{{ p.progress|floatformat:1 }}%</td>
+                <td>{{ p.budget_ratio|floatformat:1 }}%</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted">No risky projects</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+
+{{ revenue_trend_labels|json_script:"exec-revenue-labels" }}
+{{ revenue_trend_data|json_script:"exec-revenue-data" }}
+{{ profit_by_project_labels|json_script:"exec-profit-labels" }}
+{{ profit_by_project_data|json_script:"exec-profit-data" }}
+{{ project_status_labels|json_script:"exec-status-labels" }}
+{{ project_status_data|json_script:"exec-status-data" }}
+{{ budget_vs_actual_labels|json_script:"exec-bv-labels" }}
+{{ budget_vs_actual_budget|json_script:"exec-bv-budget" }}
+{{ budget_vs_actual_actual|json_script:"exec-bv-actual" }}
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Revenue Trend Chart
-    const revenueCtx = document.getElementById('revenueTrendChart').getContext('2d');
-    new Chart(revenueCtx, {
-        type: 'line',
-        data: {
-            labels: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'],
-            datasets: [{
-                label: 'Doanh Thu',
-                data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                borderColor: 'rgb(75, 192, 192)',
-                tension: 0.1,
-                fill: true,
-                backgroundColor: 'rgba(75, 192, 192, 0.1)'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: true
-                }
-            }
-        }
-    });
+document.addEventListener('DOMContentLoaded', function () {
+  const revenueLabels = JSON.parse(document.getElementById('exec-revenue-labels').textContent);
+  const revenueData = JSON.parse(document.getElementById('exec-revenue-data').textContent);
+  const profitLabels = JSON.parse(document.getElementById('exec-profit-labels').textContent);
+  const profitData = JSON.parse(document.getElementById('exec-profit-data').textContent);
+  const statusLabels = JSON.parse(document.getElementById('exec-status-labels').textContent);
+  const statusData = JSON.parse(document.getElementById('exec-status-data').textContent);
+  const bvLabels = JSON.parse(document.getElementById('exec-bv-labels').textContent);
+  const bvBudget = JSON.parse(document.getElementById('exec-bv-budget').textContent);
+  const bvActual = JSON.parse(document.getElementById('exec-bv-actual').textContent);
 
-    // Profit By Project Chart
-    const profitCtx = document.getElementById('profitByProjectChart').getContext('2d');
-    new Chart(profitCtx, {
-        type: 'bar',
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'Lợi Nhuận',
-                data: [],
-                backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                borderColor: 'rgb(54, 162, 235)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        }
-    });
-
-    // Project Status Chart
-    const statusCtx = document.getElementById('projectStatusChart').getContext('2d');
-    new Chart(statusCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Planning', 'Active', 'On Hold', 'Completed'],
-            datasets: [{
-                data: [0, 0, 0, 0],
-                backgroundColor: [
-                    'rgba(255, 206, 86, 0.5)',
-                    'rgba(75, 192, 192, 0.5)',
-                    'rgba(255, 99, 132, 0.5)',
-                    'rgba(54, 162, 235, 0.5)'
-                ]
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false
-        }
-    });
-
-    // Budget vs Actual Chart
-    const budgetCtx = document.getElementById('budgetVsActualChart').getContext('2d');
-    new Chart(budgetCtx, {
-        type: 'bar',
-        data: {
-            labels: [],
-            datasets: [
-                {
-                    label: 'Ngân Sách',
-                    data: [],
-                    backgroundColor: 'rgba(54, 162, 235, 0.5)'
-                },
-                {
-                    label: 'Thực Tế',
-                    data: [],
-                    backgroundColor: 'rgba(255, 99, 132, 0.5)'
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false
-        }
-    });
+  new Chart(document.getElementById('revenueTrendChart').getContext('2d'), { type: 'line', data: { labels: revenueLabels, datasets: [{ label: 'Revenue', data: revenueData, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,.12)', fill: true }] } });
+  new Chart(document.getElementById('profitByProjectChart').getContext('2d'), { type: 'bar', data: { labels: profitLabels, datasets: [{ label: 'Profit', data: profitData, backgroundColor: 'rgba(59,130,246,.45)' }] } });
+  new Chart(document.getElementById('projectStatusChart').getContext('2d'), { type: 'doughnut', data: { labels: statusLabels, datasets: [{ data: statusData }] } });
+  new Chart(document.getElementById('budgetVsActualChart').getContext('2d'), { type: 'bar', data: { labels: bvLabels, datasets: [{ label: 'Budget', data: bvBudget, backgroundColor: 'rgba(59,130,246,.45)' }, { label: 'Actual', data: bvActual, backgroundColor: 'rgba(239,68,68,.45)' }] } });
 });
 </script>
 {% endblock %}

@@ -74,20 +74,20 @@ class Command(BaseCommand):
         time_entries = self.create_time_entries(user, tasks, employees)
         interactions = self.create_client_interactions(user, clients, contacts)
 
-        self.stdout.write(self.style.SUCCESS('\n[HOAN TAT] Hoan tat tao du lieu mau!'))
-        self.stdout.write(self.style.SUCCESS(f'  - {len(departments)} phong ban'))
-        self.stdout.write(self.style.SUCCESS(f'  - {len(employees)} nhan su'))
-        self.stdout.write(self.style.SUCCESS(f'  - {len(clients)} khach hang'))
-        self.stdout.write(self.style.SUCCESS(f'  - {len(contacts)} lien he'))
-        self.stdout.write(self.style.SUCCESS(f'  - {len(projects)} du an'))
-        self.stdout.write(self.style.SUCCESS(f'  - {len(tasks)} cong viec'))
-        self.stdout.write(self.style.SUCCESS(f'  - {len(budgets)} ngan sach'))
-        self.stdout.write(self.style.SUCCESS(f'  - {len(expenses)} chi phi'))
-        self.stdout.write(self.style.SUCCESS(f'  - {len(allocations)} phan bo nhan su'))
-        self.stdout.write(self.style.SUCCESS(f'  - {len(performance_scores)} diem hieu suat'))
-        self.stdout.write(self.style.SUCCESS(f'  - {len(time_entries)} ghi chep thoi gian'))
-        self.stdout.write(self.style.SUCCESS(f'  - {len(interactions)} tuong tac khach hang'))
-        self.stdout.write(self.style.SUCCESS(f'\n[THANH CONG] Tat ca du lieu da duoc gan cho user: {user.username}'))
+        self.stdout.write(self.style.SUCCESS('\n[HOÀN TẤT] Hoàn tất tạo dữ liệu mẫu!'))
+        self.stdout.write(self.style.SUCCESS(f'  - {len(departments)} phòng ban'))
+        self.stdout.write(self.style.SUCCESS(f'  - {len(employees)} nhân sự'))
+        self.stdout.write(self.style.SUCCESS(f'  - {len(clients)} khách hàng'))
+        self.stdout.write(self.style.SUCCESS(f'  - {len(contacts)} liên hệ'))
+        self.stdout.write(self.style.SUCCESS(f'  - {len(projects)} dự án'))
+        self.stdout.write(self.style.SUCCESS(f'  - {len(tasks)} công việc'))
+        self.stdout.write(self.style.SUCCESS(f'  - {len(budgets)} ngân sách'))
+        self.stdout.write(self.style.SUCCESS(f'  - {len(expenses)} chi phí'))
+        self.stdout.write(self.style.SUCCESS(f'  - {len(allocations)} phân bổ nhân sự'))
+        self.stdout.write(self.style.SUCCESS(f'  - {len(performance_scores)} điểm hiệu suất'))
+        self.stdout.write(self.style.SUCCESS(f'  - {len(time_entries)} ghi chép thời gian'))
+        self.stdout.write(self.style.SUCCESS(f'  - {len(interactions)} tương tác khách hàng'))
+        self.stdout.write(self.style.SUCCESS(f'\n[THÀNH CÔNG] Tất cả dữ liệu đã được gán cho user: {user.username}'))
 
     def clear_all_sample_data(self):
         """Xóa tất cả dữ liệu mẫu."""
@@ -104,7 +104,7 @@ class Command(BaseCommand):
         Client.objects.all().delete()
         Employee.objects.all().delete()
         # Không xóa Department và BudgetCategory vì có thể shared
-        self.stdout.write(self.style.SUCCESS('  [OK] Da xoa tat ca du lieu mau'))
+        self.stdout.write(self.style.SUCCESS('  [OK] Đã xoá tất cả dữ liệu mẫu'))
 
     def clear_user_sample_data(self, user):
         """Xóa dữ liệu mẫu của user cụ thể."""

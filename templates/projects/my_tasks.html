@@ -23,6 +23,7 @@
           <option value="in_progress" {% if status_filter == 'in_progress' %}selected{% endif %}>Đang thực hiện</option>
           <option value="review" {% if status_filter == 'review' %}selected{% endif %}>Đang xem xét</option>
           <option value="done" {% if status_filter == 'done' %}selected{% endif %}>Hoàn thành</option>
+          <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Đã hủy</option>
         </select>
       </div>
       <div class="col-md-4">
@@ -112,10 +113,14 @@
           <span class="task-status-badge status-done">
             Hoàn thành
           </span>
+          {% elif task.status == 'cancelled' %}
+          <span class="task-status-badge status-rejected">
+            Đã hủy
+          </span>
           {% endif %}
         </div>
       </div>
-      
+
       <div class="task-meta">
         <div class="task-meta-pills">
           {% if task.department %}
@@ -135,18 +140,21 @@
           <i class="bi bi-pencil me-1"></i>Xem chi tiết
         </a>
         {% if task.assignment_status == 'assigned' %}
-        <button type="button" class="btn btn-sm btn-success" onclick="updateAssignmentStatus({{ task.pk }}, 'accepted')">
+        <button type="button" class="btn btn-sm btn-success"
+          onclick="updateAssignmentStatus({{ task.pk }}, 'accepted')">
           <i class="bi bi-check-circle me-1"></i>Nhận việc
         </button>
         <button type="button" class="btn btn-sm btn-danger" onclick="updateAssignmentStatus({{ task.pk }}, 'rejected')">
           <i class="bi bi-x-circle me-1"></i>Từ chối
         </button>
         {% elif task.assignment_status == 'accepted' %}
-        <button type="button" class="btn btn-sm btn-primary" onclick="updateAssignmentStatus({{ task.pk }}, 'in_progress')">
+        <button type="button" class="btn btn-sm btn-primary"
+          onclick="updateAssignmentStatus({{ task.pk }}, 'in_progress')">
           <i class="bi bi-play-circle me-1"></i>Bắt đầu
         </button>
         {% elif task.assignment_status == 'in_progress' %}
-        <button type="button" class="btn btn-sm btn-info" onclick="showLogTimeModal({{ task.pk }}, '{{ task.name|escapejs }}')">
+        <button type="button" class="btn btn-sm btn-info"
+          onclick="showLogTimeModal({{ task.pk }}, '{{ task.name|escapejs }}')">
           <i class="bi bi-clock me-1"></i>Ghi chép thời gian
         </button>
         <button type="button" class="btn btn-sm btn-success" onclick="completeTaskWithTimeLog({{ task.pk }})">
@@ -173,197 +181,219 @@
 
 {% block extra_js %}
 <script>
-// Set ngày mặc định là hôm nay
-document.addEventListener('DOMContentLoaded', function() {
-  const today = new Date().toISOString().split('T')[0];
-  const logDateInput = document.getElementById('logDate');
-  if (logDateInput) {
-    logDateInput.value = today;
-  }
-});
-
-function showLogTimeModal(taskId, taskName) {
-  document.getElementById('logTaskId').value = taskId;
-  document.getElementById('logTaskName').value = taskName;
-  const modal = new bootstrap.Modal(document.getElementById('quickLogTimeModal'));
-  modal.show();
-}
-
-function submitQuickLogTime() {
-  const taskId = document.getElementById('logTaskId').value;
-  const hours = document.getElementById('logHours').value;
-  const date = document.getElementById('logDate').value;
-  const description = document.getElementById('logDescription').value;
-  
-  if (!hours || parseFloat(hours) <= 0) {
-    window.showNotification('error', 'Vui lòng nhập số giờ hợp lệ.');
-    return;
-  }
-  
-  const formData = new FormData();
-  formData.append('hours', hours);
-  formData.append('date', date);
-  formData.append('description', description);
-  
-  fetch(`/projects/tasks/${taskId}/quick-log-time/`, {
-    method: 'POST',
-    headers: {
-      'X-CSRFToken': '{{ csrf_token }}',
-    },
-    body: formData
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      window.showNotification('success', data.message);
-      bootstrap.Modal.getInstance(document.getElementById('quickLogTimeModal')).hide();
-      // Reset form
-      document.getElementById('quickLogTimeForm').reset();
-      document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
-      setTimeout(() => location.reload(), 1000);
-    } else {
-      window.showNotification('error', data.error || 'Có lỗi xảy ra.');
+  document.addEventListener('DOMContentLoaded', function () {
+    const today = new Date().toISOString().split('T')[0];
+    const logDateInput = document.getElementById('logDate');
+    if (logDateInput) {
+      logDateInput.value = today;
     }
-  })
-  .catch(error => {
-    console.error('Error:', error);
-    window.showNotification('error', 'Có lỗi xảy ra.');
   });
-}
 
-function completeTaskWithTimeLog(taskId) {
-  window.showConfirm(
-    'Bạn có chắc muốn hoàn thành công việc này? Hệ thống sẽ tự động ghi chép thời gian làm việc từ khi bắt đầu đến bây giờ.',
-    'Xác nhận hoàn thành',
-    'Hoàn thành',
-    'Hủy'
-  )
-  .then((confirmed) => {
-    if (!confirmed) return;
-    
-    // Cập nhật assignment_status thành completed
-    return fetch(`/projects/tasks/${taskId}/update-assignment-status/`, {
-      method: 'POST',
-      headers: {
-        'X-CSRFToken': '{{ csrf_token }}',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ assignment_status: 'completed' })
-    });
-  })
-  .then((response) => {
-    if (!response) return null;
-    return response.json();
-  })
-  .then(data => {
-    if (!data || !data.success) {
-      if (data && data.error) {
-        window.showNotification('error', data.error);
-      }
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return '';
+  }
+
+  function getCsrfToken() {
+    return getCookie('csrftoken') || '{{ csrf_token }}';
+  }
+
+  function safeNotify(type, message) {
+    if (window.showNotification) {
+      window.showNotification(type, message);
       return;
     }
-    
-    // Sau khi cập nhật assignment_status thành công, tự động ghi chép thời gian
-    return fetch(`/projects/tasks/${taskId}/auto-log-time/`, {
+    alert(message);
+  }
+
+  function safeConfirm(message, title = 'Xac nhan', okText = 'Dong y', cancelText = 'Huy') {
+    if (window.showConfirm) {
+      return window.showConfirm(message, title, okText, cancelText);
+    }
+    return Promise.resolve(window.confirm(message));
+  }
+
+  async function requestJson(url, options = {}) {
+    const res = await fetch(url, options);
+    const text = await res.text();
+    let data = {};
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (_) {
+      data = { success: false, error: 'Phan hoi khong hop le tu may chu.' };
+    }
+    if (!res.ok) {
+      data.success = false;
+      data.error = data.error || `Loi ${res.status}`;
+    }
+    return data;
+  }
+
+  function showLogTimeModal(taskId, taskName) {
+    document.getElementById('logTaskId').value = taskId;
+    document.getElementById('logTaskName').value = taskName;
+    const modal = new bootstrap.Modal(document.getElementById('quickLogTimeModal'));
+    modal.show();
+  }
+
+  function submitQuickLogTime() {
+    const taskId = document.getElementById('logTaskId').value;
+    const hours = document.getElementById('logHours').value;
+    const date = document.getElementById('logDate').value;
+    const description = document.getElementById('logDescription').value;
+
+    if (!hours || parseFloat(hours) <= 0) {
+      safeNotify('error', 'Vui long nhap so gio hop le.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('hours', hours);
+    formData.append('date', date);
+    formData.append('description', description);
+
+    requestJson(`/projects/tasks/${taskId}/quick-log-time/`, {
       method: 'POST',
       headers: {
-        'X-CSRFToken': '{{ csrf_token }}',
-      }
-    });
-  })
-  .then((response) => {
-    if (!response) return null;
-    return response.json();
-  })
-  .then(data => {
-    if (!data) return;
-    if (data.success) {
-      window.showNotification('success', `Đã hoàn thành công việc. ${data.message}`);
-      setTimeout(() => location.reload(), 1500);
-    } else {
-      window.showNotification('warning', `Đã hoàn thành công việc nhưng ${data.error || 'không thể ghi chép thời gian tự động.'}`);
-      setTimeout(() => location.reload(), 1500);
-    }
-  })
-  .catch(error => {
-    console.error('Error:', error);
-    window.showNotification('error', 'Có lỗi xảy ra.');
-  });
-}
-
-function updateAssignmentStatus(taskId, status) {
-  const statusText = {
-    'accepted': 'nhận việc',
-    'rejected': 'từ chối',
-    'in_progress': 'bắt đầu',
-    'completed': 'hoàn thành'
-  };
-
-  window.showConfirm(`Bạn có chắc muốn ${statusText[status]} công việc này?`, 'Xác nhận', 'Đồng ý', 'Hủy')
-    .then((confirmed) => {
-      if (!confirmed) return;
-      return fetch(`/projects/tasks/${taskId}/update-assignment-status/`, {
-        method: 'POST',
-        headers: {
-          'X-CSRFToken': '{{ csrf_token }}',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ assignment_status: status })
+        'X-CSRFToken': getCsrfToken(),
+      },
+      body: formData
+    })
+      .then(data => {
+        if (data.success) {
+          safeNotify('success', data.message || 'Da ghi chep thoi gian.');
+          bootstrap.Modal.getInstance(document.getElementById('quickLogTimeModal')).hide();
+          document.getElementById('quickLogTimeForm').reset();
+          document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
+          setTimeout(() => location.reload(), 1000);
+        } else {
+          safeNotify('error', data.error || 'Co loi xay ra.');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        safeNotify('error', 'Co loi xay ra.');
       });
-    })
-    .then((response) => {
-      if (!response) return null;
-      return response.json();
-    })
-    .then(data => {
-      if (!data) return;
-      if (data.success) {
-        window.showNotification('success', `Đã ${statusText[status]} công việc thành công.`);
-        setTimeout(() => location.reload(), 1000);
-      } else {
-        window.showNotification('error', data.error || 'Có lỗi xảy ra.');
-      }
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      window.showNotification('error', 'Có lỗi xảy ra.');
-    });
-}
+  }
+
+  function completeTaskWithTimeLog(taskId) {
+    safeConfirm(
+      'Ban co chac muon hoan thanh cong viec nay? He thong se tu dong ghi chep thoi gian.',
+      'Xac nhan hoan thanh',
+      'Hoan thanh',
+      'Huy'
+    )
+      .then((confirmed) => {
+        if (!confirmed) return null;
+        return requestJson(`/projects/tasks/${taskId}/update-assignment-status/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': getCsrfToken(),
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ assignment_status: 'completed' })
+        });
+      })
+      .then(data => {
+        if (!data) return null;
+        if (!data.success) {
+          safeNotify('error', data.error || 'Khong the cap nhat trang thai.');
+          return null;
+        }
+
+        return requestJson(`/projects/tasks/${taskId}/auto-log-time/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': getCsrfToken(),
+          }
+        });
+      })
+      .then(data => {
+        if (!data) return;
+        if (data.success) {
+          safeNotify('success', `Da hoan thanh cong viec. ${data.message || ''}`);
+        } else {
+          safeNotify('warning', `Da hoan thanh cong viec nhung ${data.error || 'khong the ghi chep thoi gian tu dong.'}`);
+        }
+        setTimeout(() => location.reload(), 1200);
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        safeNotify('error', 'Co loi xay ra.');
+      });
+  }
+
+  function updateAssignmentStatus(taskId, status) {
+    const statusText = {
+      'accepted': 'nhan viec',
+      'rejected': 'tu choi',
+      'in_progress': 'bat dau',
+      'completed': 'hoan thanh'
+    };
+
+    safeConfirm(`Ban co chac muon ${statusText[status] || 'cap nhat'} cong viec nay?`, 'Xac nhan', 'Dong y', 'Huy')
+      .then((confirmed) => {
+        if (!confirmed) return null;
+        return requestJson(`/projects/tasks/${taskId}/update-assignment-status/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': getCsrfToken(),
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ assignment_status: status })
+        });
+      })
+      .then(data => {
+        if (!data) return;
+        if (data.success) {
+          safeNotify('success', `Da ${statusText[status] || 'cap nhat'} cong viec thanh cong.`);
+          setTimeout(() => location.reload(), 900);
+        } else {
+          safeNotify('error', data.error || 'Co loi xay ra.');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        safeNotify('error', 'Co loi xay ra.');
+      });
+  }
 </script>
 
-<!-- Modal Ghi chép thời gian nhanh -->
+<!-- Modal Ghi chÃ©p thá»i gian nhanh -->
 <div class="modal fade" id="quickLogTimeModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Ghi chép thời gian</h5>
+        <h5 class="modal-title">Ghi chÃ©p thá»i gian</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <form id="quickLogTimeForm">
           <input type="hidden" id="logTaskId" name="task_id">
           <div class="mb-3">
-            <label class="form-label">Công việc</label>
+            <label class="form-label">CÃ´ng viá»‡c</label>
             <input type="text" class="form-control" id="logTaskName" readonly>
           </div>
           <div class="mb-3">
-            <label for="logHours" class="form-label">Số giờ làm việc</label>
+            <label for="logHours" class="form-label">Sá»‘ giá» lÃ m viá»‡c</label>
             <input type="number" class="form-control" id="logHours" name="hours" step="0.25" min="0.1" required>
-            <small class="form-text text-muted">Nhập số giờ (ví dụ: 7.5, 8, 4.25)</small>
+            <small class="form-text text-muted">Nháº­p sá»‘ giá» (vÃ­ dá»¥: 7.5, 8, 4.25)</small>
           </div>
           <div class="mb-3">
-            <label for="logDate" class="form-label">Ngày làm việc</label>
+            <label for="logDate" class="form-label">NgÃ y lÃ m viá»‡c</label>
             <input type="date" class="form-control" id="logDate" name="date" required>
           </div>
           <div class="mb-3">
-            <label for="logDescription" class="form-label">Mô tả (tùy chọn)</label>
+            <label for="logDescription" class="form-label">MÃ´ táº£ (tÃ¹y chá»n)</label>
             <textarea class="form-control" id="logDescription" name="description" rows="2"></textarea>
           </div>
         </form>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-        <button type="button" class="btn btn-primary" onclick="submitQuickLogTime()">Lưu</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Há»§y</button>
+        <button type="button" class="btn btn-primary" onclick="submitQuickLogTime()">LÆ°u</button>
       </div>
     </div>
   </div>

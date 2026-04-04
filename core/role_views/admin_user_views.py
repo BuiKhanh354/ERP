@@ -262,6 +262,42 @@ class AdminUserResetPasswordView(PermissionRequiredMixin, View):
         return redirect('admin_module:user_list')
 
 
+class AdminUserDeleteView(PermissionRequiredMixin, View):
+    """Xóa tài khoản người dùng."""
+
+    def post(self, request, pk):
+        user = get_object_or_404(User, pk=pk)
+
+        if user == request.user:
+            messages.error(request, 'Không thể xóa tài khoản của chính bạn.')
+            return redirect('admin_module:user_list')
+
+        if user.is_superuser:
+            messages.error(request, 'Không thể xóa tài khoản superuser.')
+            return redirect('admin_module:user_list')
+
+        old_data = {
+            'username': user.username,
+            'email': user.email,
+            'is_active': user.is_active,
+        }
+        username = user.username
+        user_id = user.pk
+        user.delete()
+
+        log_audit(
+            user=request.user,
+            action_type='DELETE',
+            table_name='auth_user',
+            record_id=user_id,
+            old_data=old_data,
+            new_data={'deleted': True},
+            ip_address=get_client_ip(request),
+        )
+        messages.success(request, f'Đã xóa tài khoản "{username}".')
+        return redirect('admin_module:user_list')
+
+
 class AdminAuditLogListView(PermissionRequiredMixin, ListView):
     """Nhật ký hệ thống (Audit Logs)."""
     model = AuditLog

@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import BudgetCategoryViewSet, BudgetViewSet, ExpenseViewSet
 from .web_views import (
-    BudgetListView, BudgetDetailView, BudgetCreateView,
+    BudgetListView, BudgetManageView, BudgetDetailView, BudgetCreateView,
     BudgetUpdateView, BudgetDeleteView, ExpenseCreateView, CreateBudgetCategoryView
 )
 
@@ -14,6 +14,7 @@ router.register(r'expenses', ExpenseViewSet, basename='expense')
 
 urlpatterns = [
     # Web routes - Đặt các route cụ thể trước route có parameter và API routes
+    path('manage/', BudgetManageView.as_view(), name='manage'),
     path('list/', BudgetListView.as_view(), name='list'),
     path('create/', BudgetCreateView.as_view(), name='create'),
     path('expenses/create/', ExpenseCreateView.as_view(), name='expense_create'),

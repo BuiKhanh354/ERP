@@ -1,282 +1,107 @@
 {% extends "shared/layouts/base_role.html" %}
+{% load humanize %}
 {% block title %}Finance Dashboard{% endblock %}
 
 {% block content %}
 <div class="content-wrapper">
-    <div class="top-header">
-        <h2 class="h4 mb-0">Dashboard Tài Chính</h2>
-    </div>
+  <div class="top-header">
+    <h2 class="h4 mb-0">Finance Dashboard</h2>
+  </div>
 
-    <!-- KPI Widgets Row -->
-    <div class="row mb-4">
-        <div class="col-md-2">
-            <div class="card stats-card">
-                <div class="card-body">
-                    <div class="stats-icon">
-                        <i class="bi bi-cash-stack"></i>
-                    </div>
-                    <div class="stats-value">0 ₫</div>
-                    <div class="stats-label">Tổng Ngân Sách</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card stats-card">
-                <div class="card-body">
-                    <div class="stats-icon text-danger">
-                        <i class="bi bi-wallet2"></i>
-                    </div>
-                    <div class="stats-value">0 ₫</div>
-                    <div class="stats-label">Đã Chi</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card stats-card">
-                <div class="card-body">
-                    <div class="stats-icon text-success">
-                        <i class="bi bi-piggy-bank"></i>
-                    </div>
-                    <div class="stats-value">0 ₫</div>
-                    <div class="stats-label">Còn Lại</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card stats-card">
-                <div class="card-body">
-                    <div class="stats-icon text-warning">
-                        <i class="bi bi-hourglass-split"></i>
-                    </div>
-                    <div class="stats-value">0</div>
-                    <div class="stats-label">Chờ Duyệt Ngân Sách</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card stats-card">
-                <div class="card-body">
-                    <div class="stats-icon text-info">
-                        <i class="bi bi-receipt"></i>
-                    </div>
-                    <div class="stats-value">0</div>
-                    <div class="stats-label">Chờ Duyệt Chi Phí</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card stats-card">
-                <div class="card-body">
-                    <div class="stats-icon text-primary">
-                        <i class="bi bi-lock"></i>
-                    </div>
-                    <div class="stats-value">0</div>
-                    <div class="stats-label">Kỳ Đã Khóa</div>
-                </div>
-            </div>
-        </div>
-    </div>
+  <div class="row g-3 mb-4">
+    <div class="col-md-2"><div class="card"><div class="card-body"><div class="small text-muted">Total Budget</div><div class="h6 mb-0">{{ total_budget|floatformat:0|intcomma }} VND</div></div></div></div>
+    <div class="col-md-2"><div class="card"><div class="card-body"><div class="small text-muted">Total Spent</div><div class="h6 mb-0">{{ total_spent|floatformat:0|intcomma }} VND</div></div></div></div>
+    <div class="col-md-2"><div class="card"><div class="card-body"><div class="small text-muted">Remaining</div><div class="h6 mb-0">{{ remaining_budget|floatformat:0|intcomma }} VND</div></div></div></div>
+    <div class="col-md-2"><div class="card"><div class="card-body"><div class="small text-muted">Pending Budget</div><div class="h4 mb-0">{{ pending_budget_count }}</div></div></div></div>
+    <div class="col-md-2"><div class="card"><div class="card-body"><div class="small text-muted">Pending Expense</div><div class="h4 mb-0">{{ pending_expense_count }}</div></div></div></div>
+    <div class="col-md-2"><div class="card"><div class="card-body"><div class="small text-muted">Forecast Periods</div><div class="h4 mb-0">{{ locked_periods }}</div></div></div></div>
+  </div>
 
-    <!-- Charts Row -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Ngân Sách vs Thực Tế</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="budgetVsActualChart" height="200"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Xu Hướng Chi Phí (12 Tháng)</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="spendingTrendChart" height="200"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
+  <div class="row g-3 mb-4">
+    <div class="col-md-6"><div class="card"><div class="card-header">Budget vs Spent</div><div class="card-body"><canvas id="budgetVsActualChart" height="180"></canvas></div></div></div>
+    <div class="col-md-6"><div class="card"><div class="card-header">Spending Trend (12 months)</div><div class="card-body"><canvas id="spendingTrendChart" height="180"></canvas></div></div></div>
+  </div>
 
-    <!-- Expense Categories -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Chi Phí Theo Danh Mục</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="expenseByCategoryChart" height="200"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Tỷ Lệ Sử Dụng Ngân Sách</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="budgetUtilizationChart" height="200"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
+  <div class="row g-3 mb-4">
+    <div class="col-md-6"><div class="card"><div class="card-header">Expense By Category</div><div class="card-body"><canvas id="expenseByCategoryChart" height="180"></canvas></div></div></div>
+    <div class="col-md-6"><div class="card"><div class="card-header">Budget Utilization</div><div class="card-body"><canvas id="budgetUtilizationChart" height="180"></canvas></div></div></div>
+  </div>
 
-    <!-- Pending Approvals Tables -->
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Chờ Duyệt Ngân Sách</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Dự Án</th>
-                                    <th>Số Tiền</th>
-                                    <th>Người Yêu Cầu</th>
-                                    <th>Hành Động</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td colspan="4" class="text-center text-muted">Không có yêu cầu</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">Pending Budget Approvals</div>
+        <div class="card-body table-responsive">
+          <table class="table table-sm">
+            <thead><tr><th>Project</th><th>Category</th><th>Allocated</th><th>Requester</th></tr></thead>
+            <tbody>
+              {% for b in pending_budgets %}
+              <tr>
+                <td>{{ b.project.name }}</td>
+                <td>{{ b.category.name }}</td>
+                <td>{{ b.allocated_amount|floatformat:0|intcomma }}</td>
+                <td>{{ b.created_by.username|default:"-" }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted">No pending budget</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Chờ Duyệt Chi Phí</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Dự Án</th>
-                                    <th>Số Tiền</th>
-                                    <th>Danh Mục</th>
-                                    <th>Hành Động</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td colspan="4" class="text-center text-muted">Không có yêu cầu</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
+      </div>
     </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">Pending Expense Approvals</div>
+        <div class="card-body table-responsive">
+          <table class="table table-sm">
+            <thead><tr><th>Project</th><th>Amount</th><th>Type</th><th>Requester</th></tr></thead>
+            <tbody>
+              {% for e in pending_expenses %}
+              <tr>
+                <td>{{ e.project.name }}</td>
+                <td>{{ e.amount|floatformat:0|intcomma }}</td>
+                <td>{{ e.get_expense_type_display }}</td>
+                <td>{{ e.created_by.username|default:"-" }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted">No pending expense</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+
+{{ budget_vs_actual_labels|json_script:"fin-bva-labels" }}
+{{ budget_vs_actual_budget|json_script:"fin-bva-budget" }}
+{{ budget_vs_actual_actual|json_script:"fin-bva-actual" }}
+{{ spending_trend_labels|json_script:"fin-spend-labels" }}
+{{ spending_trend_data|json_script:"fin-spend-data" }}
+{{ expense_category_labels|json_script:"fin-cat-labels" }}
+{{ expense_category_data|json_script:"fin-cat-data" }}
+{{ utilization_labels|json_script:"fin-util-labels" }}
+{{ utilization_data|json_script:"fin-util-data" }}
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Budget vs Actual Chart
-    const budgetCtx = document.getElementById('budgetVsActualChart').getContext('2d');
-    new Chart(budgetCtx, {
-        type: 'bar',
-        data: {
-            labels: [],
-            datasets: [
-                {
-                    label: 'Ngân Sách',
-                    data: [],
-                    backgroundColor: 'rgba(54, 162, 235, 0.5)'
-                },
-                {
-                    label: 'Thực Tế',
-                    data: [],
-                    backgroundColor: 'rgba(255, 99, 132, 0.5)'
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false
-        }
-    });
+document.addEventListener('DOMContentLoaded', function () {
+  const bvaLabels = JSON.parse(document.getElementById('fin-bva-labels').textContent);
+  const bvaBudget = JSON.parse(document.getElementById('fin-bva-budget').textContent);
+  const bvaActual = JSON.parse(document.getElementById('fin-bva-actual').textContent);
+  const spendLabels = JSON.parse(document.getElementById('fin-spend-labels').textContent);
+  const spendData = JSON.parse(document.getElementById('fin-spend-data').textContent);
+  const catLabels = JSON.parse(document.getElementById('fin-cat-labels').textContent);
+  const catData = JSON.parse(document.getElementById('fin-cat-data').textContent);
+  const utilLabels = JSON.parse(document.getElementById('fin-util-labels').textContent);
+  const utilData = JSON.parse(document.getElementById('fin-util-data').textContent);
 
-    // Spending Trend Chart
-    const trendCtx = document.getElementById('spendingTrendChart').getContext('2d');
-    new Chart(trendCtx, {
-        type: 'line',
-        data: {
-            labels: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'],
-            datasets: [{
-                label: 'Chi Phí',
-                data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                borderColor: 'rgb(255, 99, 132)',
-                tension: 0.1,
-                fill: true,
-                backgroundColor: 'rgba(255, 99, 132, 0.1)'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false
-        }
-    });
-
-    // Expense By Category Chart
-    const categoryCtx = document.getElementById('expenseByCategoryChart').getContext('2d');
-    new Chart(categoryCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Nhân Sự', 'Thiết Bị', 'Marketing', 'Vận Hành', 'Khác'],
-            datasets: [{
-                data: [0, 0, 0, 0, 0],
-                backgroundColor: [
-                    'rgba(54, 162, 235, 0.5)',
-                    'rgba(75, 192, 192, 0.5)',
-                    'rgba(255, 206, 86, 0.5)',
-                    'rgba(255, 99, 132, 0.5)',
-                    'rgba(153, 102, 255, 0.5)'
-                ]
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false
-        }
-    });
-
-    // Budget Utilization Chart
-    const utilizationCtx = document.getElementById('budgetUtilizationChart').getContext('2d');
-    new Chart(utilizationCtx, {
-        type: 'bar',
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'Tỷ Lệ %',
-                data: [],
-                backgroundColor: 'rgba(75, 192, 192, 0.5)'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100
-                }
-            }
-        }
-    });
+  new Chart(document.getElementById('budgetVsActualChart').getContext('2d'), { type: 'bar', data: { labels: bvaLabels, datasets: [{ label: 'Allocated', data: bvaBudget, backgroundColor: 'rgba(59,130,246,.45)' }, { label: 'Spent', data: bvaActual, backgroundColor: 'rgba(239,68,68,.45)' }] } });
+  new Chart(document.getElementById('spendingTrendChart').getContext('2d'), { type: 'line', data: { labels: spendLabels, datasets: [{ label: 'Spent', data: spendData, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,.12)', fill: true }] } });
+  new Chart(document.getElementById('expenseByCategoryChart').getContext('2d'), { type: 'doughnut', data: { labels: catLabels, datasets: [{ data: catData }] } });
+  new Chart(document.getElementById('budgetUtilizationChart').getContext('2d'), { type: 'bar', data: { labels: utilLabels, datasets: [{ label: 'Utilization %', data: utilData, backgroundColor: 'rgba(34,197,94,.45)' }] }, options: { scales: { y: { beginAtZero: true, max: 100 } } } });
 });
 </script>
 {% endblock %}

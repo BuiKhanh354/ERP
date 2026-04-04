@@ -28,6 +28,9 @@
   </div>
   <div>
     {% if user_profile.is_manager %}
+    <a href="{% url 'projects:add_personnel' project.pk %}" class="btn btn-outline-success me-2">
+      <i class="bi bi-person-plus me-1"></i>Thêm nhân sự
+    </a>
     <a href="{% url 'projects:recommend_personnel' project.pk %}" class="btn btn-outline-info me-2">
       <i class="bi bi-people me-1"></i>Đề xuất Nhân sự
     </a>
@@ -413,7 +416,7 @@
       <div class="alert alert-danger mb-0" style="font-size: 0.85rem;">
         <i class="bi bi-exclamation-triangle me-1"></i>
         <strong>Lỗi:</strong> {{ ai_insight_error }}
-        <br><small class="text-muted">Vui lòng kiểm tra cấu hình API key trong settings.</small>
+        <br><small class="text-muted">Vui lòng kiểm tra dịch vụ AI local (Ollama) hoặc dữ liệu đầu vào.</small>
       </div>
       {% elif ai_insight and ai_insight.no_data %}
       <div class="alert alert-info mb-0" style="font-size: 0.85rem;">
@@ -488,6 +491,7 @@
             <option value="in_progress">Đang thực hiện</option>
             <option value="review">Đang xem xét</option>
             <option value="done">Hoàn thành</option>
+            <option value="overdue">Chưa hoàn thành</option>
           </select>
         </div>
         <div class="mb-3">
@@ -572,6 +576,23 @@ function deletePhase(phaseId, phaseName) {
     }
   })
   .catch(() => location.reload());
+}
+
+function deleteTaskFromDetail(url, taskName) {
+  if (!confirm(`Ban co chac muon xoa cong viec "${taskName}"? Hanh dong nay khong the hoan tac.`)) return;
+
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = url;
+
+  const csrfInput = document.createElement('input');
+  csrfInput.type = 'hidden';
+  csrfInput.name = 'csrfmiddlewaretoken';
+  csrfInput.value = getCookie('csrftoken');
+  form.appendChild(csrfInput);
+
+  document.body.appendChild(form);
+  form.submit();
 }
 
 // ============================================================
@@ -1156,3 +1177,4 @@ function showProjectAIInsightsModal() {
 <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.5.0/dist/frappe-gantt.min.js"></script>
 
 {% endblock %}
+

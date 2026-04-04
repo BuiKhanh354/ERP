@@ -4,6 +4,7 @@ from .views import ProjectViewSet, TaskViewSet, TimeEntryViewSet
 from .web_views import (
     ProjectListView, ProjectDetailView, ProjectCreateView,
     ProjectUpdateView, ProjectDeleteView,
+    ProjectAddPersonnelView,
     PersonnelRecommendationView, PersonnelRecommendationDetailView,
     ApplyPersonnelRecommendationView, BudgetMonitoringView
 )
@@ -19,6 +20,9 @@ from .time_entry_views import (
 from .phase_views import (
     PhaseCreateView, PhaseUpdateView, PhaseDeleteView,
     PhaseReorderAPIView, GanttDataAPIView, TaskProgressUpdateView
+)
+from .delay_views import (
+    DelayKPIDashboardView, DelayKPIDataAPIView, DelayKPIExportCSVView
 )
 
 # API routes
@@ -36,6 +40,7 @@ urlpatterns = [
     path('', ProjectListView.as_view(), name='list'),
     path('create/', ProjectCreateView.as_view(), name='create'),
     path('<int:pk>/', ProjectDetailView.as_view(), name='detail'),
+    path('<int:project_id>/add-personnel/', ProjectAddPersonnelView.as_view(), name='add_personnel'),
     path('<int:pk>/edit/', ProjectUpdateView.as_view(), name='edit'),
     path('<int:pk>/delete/', ProjectDeleteView.as_view(), name='delete'),
     
@@ -70,6 +75,9 @@ urlpatterns = [
     path('recommendations/<int:pk>/', PersonnelRecommendationDetailView.as_view(), name='recommendation_detail'),
     path('recommendations/<int:recommendation_id>/apply/', ApplyPersonnelRecommendationView.as_view(), name='apply_recommendation'),
     path('<int:project_id>/budget-monitoring/', BudgetMonitoringView.as_view(), name='budget_monitoring'),
+    path('delay-kpi/dashboard/', DelayKPIDashboardView.as_view(), name='delay_kpi_dashboard'),
+    path('api/delay-kpi/', DelayKPIDataAPIView.as_view(), name='delay_kpi_data'),
+    path('api/delay-kpi/export-csv/', DelayKPIExportCSVView.as_view(), name='delay_kpi_export_csv'),
 ]
 
 

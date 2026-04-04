@@ -78,17 +78,36 @@ ADMIN_INDEX_TITLE = "Chào mừng đến với trang quản trị ERP"
 
 WSGI_APPLICATION = 'ERP.wsgi.application'
 
+db_trusted_connection = os.getenv('DB_TRUSTED_CONNECTION', 'true').lower() == 'true'
+
+db_options = {
+    'driver': os.getenv('DB_DRIVER', 'ODBC Driver 17 for SQL Server'),
+    'trusted_connection': 'yes' if db_trusted_connection else 'no',
+}
+
+db_extra_params = os.getenv('DB_EXTRA_PARAMS', '').strip()
+if db_extra_params:
+    db_options['extra_params'] = db_extra_params
+
 DATABASES = {
     'default': {
         'ENGINE': 'mssql',
         'NAME': os.getenv('DB_NAME', 'ERP_DB'),
         'HOST': os.getenv('DB_HOST', 'localhost'),
-        'OPTIONS': {
-            'driver': 'ODBC Driver 17 for SQL Server',
-            'trusted_connection': 'yes' if os.getenv('DB_TRUSTED_CONNECTION', 'true').lower() == 'true' else 'no',
-        },
+        'OPTIONS': db_options,
     }
 }
+
+db_port = os.getenv('DB_PORT', '').strip()
+db_user = os.getenv('DB_USER', '').strip()
+db_password = os.getenv('DB_PASSWORD', '')
+
+if db_port:
+    DATABASES['default']['PORT'] = db_port
+
+if db_user:
+    DATABASES['default']['USER'] = db_user
+    DATABASES['default']['PASSWORD'] = db_password
 
 AUTH_PASSWORD_VALIDATORS = [
     {

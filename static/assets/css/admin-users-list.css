@@ -70,6 +70,8 @@
   .btn-action.edit:hover { color: #4f46e5; }
   .btn-action.toggle:hover { color: #f59e0b; }
   .btn-action.reset:hover { color: #dc2626; }
+  .btn-action.delete:hover { color: #b91c1c; background: #fee2e2; }
+  .actions-cell { white-space: nowrap; }
 
   .user-avatar-sm {
     width: 34px; height: 34px; border-radius: 50%;

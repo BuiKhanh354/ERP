@@ -42,10 +42,10 @@ class HRDashboardView(PermissionRequiredMixin, TemplateView):
 
         # Department distribution
         dept_data = Department.objects.annotate(
-            employee_count=Count('employees')
-        ).order_by('-employee_count')[:5]
+            dept_employee_count=Count('employee', filter=Q(employee__is_active=True))
+        ).order_by('-dept_employee_count')[:5]
         context['department_labels'] = [d.name for d in dept_data]
-        context['department_counts'] = [d.employee_count for d in dept_data]
+        context['department_counts'] = [d.dept_employee_count for d in dept_data]
 
         # Employment type distribution
         employment_types = Employee.objects.filter(

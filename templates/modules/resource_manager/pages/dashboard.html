@@ -3,208 +3,77 @@
 
 {% block content %}
 <div class="content-wrapper">
-    <div class="top-header">
-        <h2 class="h4 mb-0">Dashboard Nguồn Lực</h2>
-    </div>
+  <div class="top-header">
+    <h2 class="h4 mb-0">Resource Dashboard</h2>
+  </div>
 
-    <!-- KPI Widgets Row -->
-    <div class="row mb-4">
-        <div class="col-md-2">
-            <div class="card stats-card">
-                <div class="card-body">
-                    <div class="stats-icon">
-                        <i class="bi bi-people"></i>
-                    </div>
-                    <div class="stats-value">0</div>
-                    <div class="stats-label">Tổng Nhân Viên</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card stats-card">
-                <div class="card-body">
-                    <div class="stats-icon text-success">
-                        <i class="bi bi-check-circle"></i>
-                    </div>
-                    <div class="stats-value">0</div>
-                    <div class="stats-label">Đã Phân Bổ</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card stats-card">
-                <div class="card-body">
-                    <div class="stats-icon text-warning">
-                        <i class="bi bi-pause-circle"></i>
-                    </div>
-                    <div class="stats-value">0</div>
-                    <div class="stats-label">Chưa Phân Bổ</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card stats-card">
-                <div class="card-body">
-                    <div class="stats-icon text-primary">
-                        <i class="bi bi-speedometer2"></i>
-                    </div>
-                    <div class="stats-value">0%</div>
-                    <div class="stats-label">Utilization TB</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card stats-card">
-                <div class="card-body">
-                    <div class="stats-icon text-danger">
-                        <i class="bi bi-exclamation-triangle"></i>
-                    </div>
-                    <div class="stats-value">0</div>
-                    <div class="stats-label">Over-utilized</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card stats-card">
-                <div class="card-body">
-                    <div class="stats-icon text-info">
-                        <i class="bi bi-folder"></i>
-                    </div>
-                    <div class="stats-value">0</div>
-                    <div class="stats-label">Cần Nguồn Lực</div>
-                </div>
-            </div>
-        </div>
-    </div>
+  <div class="row g-3 mb-4">
+    <div class="col-md-2"><div class="card"><div class="card-body"><div class="small text-muted">Total Employees</div><div class="h4 mb-0">{{ total_employees }}</div></div></div></div>
+    <div class="col-md-2"><div class="card"><div class="card-body"><div class="small text-muted">Allocated</div><div class="h4 mb-0">{{ allocated_count }}</div></div></div></div>
+    <div class="col-md-2"><div class="card"><div class="card-body"><div class="small text-muted">Unallocated</div><div class="h4 mb-0">{{ unallocated_count }}</div></div></div></div>
+    <div class="col-md-2"><div class="card"><div class="card-body"><div class="small text-muted">Avg Utilization</div><div class="h4 mb-0">{{ avg_utilization }}%</div></div></div></div>
+    <div class="col-md-2"><div class="card"><div class="card-body"><div class="small text-muted">Over-utilized</div><div class="h4 mb-0">{{ over_utilized_count }}</div></div></div></div>
+    <div class="col-md-2"><div class="card"><div class="card-body"><div class="small text-muted">Need Resource</div><div class="h4 mb-0">{{ needs_resource_count }}</div></div></div></div>
+  </div>
 
-    <!-- Charts Row -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Phân Bổ Utilization</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="utilizationDistributionChart" height="200"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Phân Bổ Theo Phòng Ban</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="allocationByDepartmentChart" height="200"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
+  <div class="row g-3 mb-4">
+    <div class="col-md-6"><div class="card"><div class="card-header">Utilization Distribution</div><div class="card-body"><canvas id="utilizationDistributionChart" height="180"></canvas></div></div></div>
+    <div class="col-md-6"><div class="card"><div class="card-header">Allocation By Department</div><div class="card-body"><canvas id="allocationByDepartmentChart" height="180"></canvas></div></div></div>
+  </div>
 
-    <!-- Alert Tables -->
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Nhân Viên Over-utilized (>100%)</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Nhân Viên</th>
-                                    <th>Phòng Ban</th>
-                                    <th>Utilization</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td colspan="3" class="text-center text-muted">Không có</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">Over-utilized Employees (&gt;100%)</div>
+        <div class="card-body table-responsive">
+          <table class="table table-sm">
+            <thead><tr><th>Name</th><th>Department</th><th>Utilization</th></tr></thead>
+            <tbody>
+              {% for row in over_utilized_employees %}
+              <tr><td>{{ row.name }}</td><td>{{ row.department }}</td><td>{{ row.utilization }}%</td></tr>
+              {% empty %}
+              <tr><td colspan="3" class="text-center text-muted">No over-utilized employee</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Nhân Viên Under-utilized (<50%)</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Nhân Viên</th>
-                                    <th>Phòng Ban</th>
-                                    <th>Utilization</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td colspan="3" class="text-center text-muted">Không có</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
+      </div>
     </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">Under-utilized Employees (&lt;50%)</div>
+        <div class="card-body table-responsive">
+          <table class="table table-sm">
+            <thead><tr><th>Name</th><th>Department</th><th>Utilization</th></tr></thead>
+            <tbody>
+              {% for row in under_utilized_employees %}
+              <tr><td>{{ row.name }}</td><td>{{ row.department }}</td><td>{{ row.utilization }}%</td></tr>
+              {% empty %}
+              <tr><td colspan="3" class="text-center text-muted">No under-utilized employee</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+
+{{ utilization_labels|json_script:"rm-util-labels" }}
+{{ utilization_data|json_script:"rm-util-data" }}
+{{ allocation_dept_labels|json_script:"rm-dept-labels" }}
+{{ allocation_dept_data|json_script:"rm-dept-data" }}
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Utilization Distribution Chart
-    const utilCtx = document.getElementById('utilizationDistributionChart').getContext('2d');
-    new Chart(utilCtx, {
-        type: 'bar',
-        data: {
-            labels: ['0-25%', '25-50%', '50-75%', '75-100%', '>100%'],
-            datasets: [{
-                label: 'Số Nhân Viên',
-                data: [0, 0, 0, 0, 0],
-                backgroundColor: [
-                    'rgba(255, 99, 132, 0.5)',
-                    'rgba(255, 159, 64, 0.5)',
-                    'rgba(255, 205, 86, 0.5)',
-                    'rgba(75, 192, 192, 0.5)',
-                    'rgba(255, 99, 132, 0.8)'
-                ]
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false
-        }
-    });
+document.addEventListener('DOMContentLoaded', function () {
+  const utilLabels = JSON.parse(document.getElementById('rm-util-labels').textContent);
+  const utilData = JSON.parse(document.getElementById('rm-util-data').textContent);
+  const deptLabels = JSON.parse(document.getElementById('rm-dept-labels').textContent);
+  const deptData = JSON.parse(document.getElementById('rm-dept-data').textContent);
 
-    // Allocation By Department Chart
-    const deptCtx = document.getElementById('allocationByDepartmentChart').getContext('2d');
-    new Chart(deptCtx, {
-        type: 'doughnut',
-        data: {
-            labels: [],
-            datasets: [{
-                data: [],
-                backgroundColor: [
-                    'rgba(54, 162, 235, 0.5)',
-                    'rgba(75, 192, 192, 0.5)',
-                    'rgba(255, 206, 86, 0.5)',
-                    'rgba(255, 99, 132, 0.5)',
-                    'rgba(153, 102, 255, 0.5)'
-                ]
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false
-        }
-    });
+  new Chart(document.getElementById('utilizationDistributionChart').getContext('2d'), { type: 'bar', data: { labels: utilLabels, datasets: [{ label: 'Employees', data: utilData, backgroundColor: 'rgba(59,130,246,.45)' }] } });
+  new Chart(document.getElementById('allocationByDepartmentChart').getContext('2d'), { type: 'doughnut', data: { labels: deptLabels, datasets: [{ data: deptData }] } });
 });
 </script>
 {% endblock %}

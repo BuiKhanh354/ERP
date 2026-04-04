@@ -1,14 +1,14 @@
 """Scheduled tasks for projects module."""
 from django.utils import timezone
 from .models import Project, Task
+from .delay_kpi_service import DelayKPIService
 
 
 def check_overdue_tasks():
     """Check and update overdue tasks."""
-    today = timezone.now().date()
-    overdue_tasks = Task.objects.filter(
-        due_date__lt=today,
-        status__in=['todo', 'in_progress']
-    )
-    return overdue_tasks
+    candidates = Task.objects.filter(
+        status__in=['todo', 'in_progress', 'review', 'overdue']
+    ).select_related('project', 'assigned_to')
+    DelayKPIService.sync_overdue_tasks(candidates)
+    return candidates.filter(status='overdue')
 

@@ -16,6 +16,8 @@ from django.views.generic import CreateView, UpdateView, DeleteView
 from .models import Project, ProjectPhase, Task, TaskProgressLog
 from .forms import PhaseForm
 from core.mixins import ManagerRequiredMixin
+from .delay_kpi_service import DelayKPIService
+from .task_history_service import TaskHistoryService
 
 
 # ============================================================
@@ -23,7 +25,7 @@ from core.mixins import ManagerRequiredMixin
 # ============================================================
 
 class PhaseCreateView(LoginRequiredMixin, ManagerRequiredMixin, CreateView):
-    """Tạo giai đoạn mới cho dự án."""
+    """Táº¡o giai Ä‘oáº¡n má»›i cho dá»± Ã¡n."""
     model = ProjectPhase
     form_class = PhaseForm
     template_name = 'projects/phase_form.html'
@@ -31,6 +33,11 @@ class PhaseCreateView(LoginRequiredMixin, ManagerRequiredMixin, CreateView):
     def dispatch(self, request, *args, **kwargs):
         self.project = get_object_or_404(Project, pk=kwargs['project_id'])
         return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['project'] = self.project
+        return kwargs
 
     def form_valid(self, form):
         phase = form.save(commit=False)
@@ -42,38 +49,43 @@ class PhaseCreateView(LoginRequiredMixin, ManagerRequiredMixin, CreateView):
         phase.order_index = max_order + 1
         phase.created_by = self.request.user
         phase.save()
-        messages.success(self.request, f'Đã tạo giai đoạn "{phase.phase_name}" thành công.')
+        messages.success(self.request, f'ÄÃ£ táº¡o giai Ä‘oáº¡n "{phase.phase_name}" thÃ nh cÃ´ng.')
         return redirect(reverse('projects:detail', kwargs={'pk': self.project.pk}))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['project'] = self.project
-        context['title'] = 'Thêm giai đoạn'
+        context['title'] = 'ThÃªm giai Ä‘oáº¡n'
         return context
 
 
 class PhaseUpdateView(LoginRequiredMixin, ManagerRequiredMixin, UpdateView):
-    """Cập nhật giai đoạn dự án."""
+    """Cáº­p nháº­t giai Ä‘oáº¡n dá»± Ã¡n."""
     model = ProjectPhase
     form_class = PhaseForm
     template_name = 'projects/phase_form.html'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['project'] = self.get_object().project
+        return kwargs
 
     def form_valid(self, form):
         phase = form.save(commit=False)
         phase.updated_by = self.request.user
         phase.save()
-        messages.success(self.request, f'Đã cập nhật giai đoạn "{phase.phase_name}" thành công.')
+        messages.success(self.request, f'ÄÃ£ cáº­p nháº­t giai Ä‘oáº¡n "{phase.phase_name}" thÃ nh cÃ´ng.')
         return redirect(reverse('projects:detail', kwargs={'pk': phase.project.pk}))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['project'] = self.object.project
-        context['title'] = 'Sửa giai đoạn'
+        context['title'] = 'Sá»­a giai Ä‘oáº¡n'
         return context
 
 
 class PhaseDeleteView(LoginRequiredMixin, ManagerRequiredMixin, View):
-    """Xóa giai đoạn dự án (AJAX)."""
+    """XÃ³a giai Ä‘oáº¡n dá»± Ã¡n (AJAX)."""
 
     def post(self, request, pk):
         phase = get_object_or_404(ProjectPhase, pk=pk)
@@ -85,9 +97,9 @@ class PhaseDeleteView(LoginRequiredMixin, ManagerRequiredMixin, View):
         phase.delete()
 
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({'success': True, 'message': f'Đã xóa giai đoạn "{phase_name}".'})
+            return JsonResponse({'success': True, 'message': f'ÄÃ£ xÃ³a giai Ä‘oáº¡n "{phase_name}".'})
 
-        messages.success(request, f'Đã xóa giai đoạn "{phase_name}" thành công.')
+        messages.success(request, f'ÄÃ£ xÃ³a giai Ä‘oáº¡n "{phase_name}" thÃ nh cÃ´ng.')
         return redirect(reverse('projects:detail', kwargs={'pk': project_pk}))
 
 
@@ -96,7 +108,7 @@ class PhaseDeleteView(LoginRequiredMixin, ManagerRequiredMixin, View):
 # ============================================================
 
 class PhaseReorderAPIView(LoginRequiredMixin, View):
-    """API endpoint để sắp xếp lại thứ tự giai đoạn (drag & drop)."""
+    """API endpoint Ä‘á»ƒ sáº¯p xáº¿p láº¡i thá»© tá»± giai Ä‘oáº¡n (drag & drop)."""
 
     def post(self, request):
         try:
@@ -104,12 +116,12 @@ class PhaseReorderAPIView(LoginRequiredMixin, View):
             phase_ids = data.get('phase_ids', [])
 
             if not phase_ids:
-                return JsonResponse({'success': False, 'error': 'Danh sách phase trống.'}, status=400)
+                return JsonResponse({'success': False, 'error': 'Danh sÃ¡ch phase trá»‘ng.'}, status=400)
 
             for index, phase_id in enumerate(phase_ids):
                 ProjectPhase.objects.filter(pk=phase_id).update(order_index=index)
 
-            return JsonResponse({'success': True, 'message': 'Đã cập nhật thứ tự giai đoạn.'})
+            return JsonResponse({'success': True, 'message': 'ÄÃ£ cáº­p nháº­t thá»© tá»± giai Ä‘oáº¡n.'})
         except (json.JSONDecodeError, Exception) as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
@@ -119,7 +131,7 @@ class PhaseReorderAPIView(LoginRequiredMixin, View):
 # ============================================================
 
 class GanttDataAPIView(LoginRequiredMixin, View):
-    """API trả về dữ liệu Gantt Chart cho dự án (JSON)."""
+    """API tráº£ vá» dá»¯ liá»‡u Gantt Chart cho dá»± Ã¡n (JSON)."""
 
     def get(self, request, project_id):
         project = get_object_or_404(Project, pk=project_id)
@@ -186,10 +198,14 @@ class GanttDataAPIView(LoginRequiredMixin, View):
 # ============================================================
 
 class TaskProgressUpdateView(LoginRequiredMixin, View):
-    """API cập nhật tiến độ task (progress %, status, ghi chú)."""
+    """API cáº­p nháº­t tiáº¿n Ä‘á»™ task (progress %, status, ghi chÃº)."""
 
     def post(self, request, pk):
         task = get_object_or_404(Task, pk=pk)
+        employee = getattr(request.user, "employee", None)
+        if employee and task.assigned_to_id and task.assigned_to_id != employee.id:
+            if not DelayKPIService.can_approve_others(request.user):
+                return JsonResponse({'success': False, 'error': 'KPI duoi nguong. Ban khong duoc phe duyet task cua nguoi khac.'}, status=403)
 
         try:
             data = json.loads(request.body)
@@ -200,6 +216,7 @@ class TaskProgressUpdateView(LoginRequiredMixin, View):
         progress = data.get('progress_percent')
         status = data.get('status')
         note = data.get('note', '')
+        delay_explanation = data.get('delay_explanation', '')
 
         updated_fields = []
 
@@ -218,7 +235,7 @@ class TaskProgressUpdateView(LoginRequiredMixin, View):
                         task.status = 'in_progress'
                         updated_fields.append('status')
             except (ValueError, TypeError):
-                return JsonResponse({'success': False, 'error': 'Giá trị tiến độ không hợp lệ.'}, status=400)
+                return JsonResponse({'success': False, 'error': 'GiÃ¡ trá»‹ tiáº¿n Ä‘á»™ khÃ´ng há»£p lá»‡.'}, status=400)
 
         if status and status in dict(Task.STATUS_CHOICES):
             task.status = status
@@ -230,9 +247,27 @@ class TaskProgressUpdateView(LoginRequiredMixin, View):
                 task.progress_percent = 100
                 if 'progress_percent' not in updated_fields:
                     updated_fields.append('progress_percent')
+            if status == 'done' and not task.completed_at:
+                task.completed_at = timezone.now()
+                if 'completed_at' not in updated_fields:
+                    updated_fields.append('completed_at')
+
+        if delay_explanation:
+            task.delay_explanation = str(delay_explanation).strip()
+
+        config = DelayKPIService.get_active_config()
+        due_days_late = 0
+        if task.due_date:
+            due_days_late = max((timezone.now().date() - task.due_date).days, 0)
+        if (status == 'done' or task.status == 'done') and due_days_late > int(config.requires_explanation_after_days):
+            if not (task.delay_explanation or note or '').strip():
+                return JsonResponse({'success': False, 'error': 'Task tre han qua nguong, vui long nhap giai trinh.'}, status=400)
 
         task.updated_by = request.user
+        TaskHistoryService.update_task_snapshots(task)
         task.save()
+        DelayKPIService.update_task_delay_metrics(task, actor=request.user)
+        TaskHistoryService.log(task, actor=request.user, event_type='status_changed', note='Progress/Status updated from phase board')
 
         # Create progress log
         TaskProgressLog.objects.create(
@@ -245,7 +280,7 @@ class TaskProgressUpdateView(LoginRequiredMixin, View):
 
         return JsonResponse({
             'success': True,
-            'message': 'Đã cập nhật tiến độ thành công.',
+            'message': 'ÄÃ£ cáº­p nháº­t tiáº¿n Ä‘á»™ thÃ nh cÃ´ng.',
             'progress_percent': task.progress_percent,
             'status': task.status,
             'status_display': task.get_status_display(),

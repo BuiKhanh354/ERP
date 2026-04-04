@@ -313,6 +313,23 @@
           </div>
         </div>
 
+        <div class="row mb-3">
+          <div class="col-md-12">
+            <div class="form-check">
+              {{ form.confirm_add_employees }}
+              <label class="form-check-label" for="{{ form.confirm_add_employees.id_for_label }}">
+                {{ form.confirm_add_employees.label }}
+              </label>
+            </div>
+            {% if form.confirm_add_employees.help_text %}
+            <small class="text-muted d-block mt-1">{{ form.confirm_add_employees.help_text }}</small>
+            {% endif %}
+            {% if form.confirm_add_employees.errors %}
+            <span class="text-danger small">{{ form.confirm_add_employees.errors.0 }}</span>
+            {% endif %}
+          </div>
+        </div>
+
         <!-- Thời gian và ngân sách -->
         <div class="form-section">
           <div class="form-section-title">
@@ -445,3 +462,5 @@
 <script src="{% static 'assets/js/projects-form.js' %}"></script>
 
 {% endblock %}
+
+

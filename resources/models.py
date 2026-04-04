@@ -86,6 +86,13 @@ class Employee(BaseModel):
     hire_date = models.DateField(null=True, blank=True)
     hourly_rate = models.DecimalField(max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(0)])
     is_active = models.BooleanField(default=True)
+    kpi_current = models.DecimalField(max_digits=5, decimal_places=2, default=100)
+    total_delay_score = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    penalty_level = models.IntegerField(default=0)
+    bonus_reduction_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    warning_count = models.IntegerField(default=0)
+    at_risk = models.BooleanField(default=False)
+    delay_penalty_enabled = models.BooleanField(default=True)
 
     class Meta:
         ordering = ['last_name', 'first_name']

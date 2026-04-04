@@ -9,9 +9,10 @@ from django.utils import timezone
 from datetime import timedelta
 
 from .models import Project, Task, TimeEntry, PersonnelRecommendation
-from .forms import ProjectForm
+from .forms import ProjectForm, ProjectPersonnelAllocationForm
 from .personnel_forms import PersonnelRecommendationForm
 from .personnel_services import PersonnelRecommendationService, BudgetMonitoringService
+from .delay_kpi_service import DelayKPIService
 from resources.models import ResourceAllocation, Employee
 from budgeting.models import Budget, Expense
 from ai.services import AIService
@@ -20,6 +21,31 @@ from core.notification_service import NotificationService
 from core.models import Notification
 from django.http import JsonResponse
 from django.views import View
+
+
+def _get_eligible_employee_ids_for_project(project, departments):
+    """
+    Only employees with suitable tasks in this project are eligible for auto-allocation.
+    Suitable = active employee + in selected departments + has at least one task in project.
+    """
+    department_ids = [dept.id for dept in departments]
+    if not department_ids:
+        return set()
+
+    task_employee_ids = set(
+        project.tasks.filter(
+            assigned_to__isnull=False,
+            department_id__in=department_ids
+        ).values_list('assigned_to_id', flat=True)
+    )
+    active_ids = set(
+        Employee.objects.filter(
+            id__in=task_employee_ids,
+            is_active=True,
+            department_id__in=department_ids
+        ).values_list('id', flat=True)
+    )
+    return active_ids
 
 
 class ProjectListView(LoginRequiredMixin, ListView):
@@ -132,6 +158,10 @@ class ProjectDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         project = self.get_object()
+        DelayKPIService.sync_overdue_tasks(
+            project.tasks.filter(status__in=['todo', 'in_progress', 'review', 'overdue']).select_related('project', 'assigned_to'),
+            actor=self.request.user
+        )
 
         # Tasks
         context['tasks'] = project.tasks.select_related('assigned_to', 'phase').order_by('due_date', 'created_at')
@@ -167,44 +197,52 @@ class ProjectDetailView(LoginRequiredMixin, DetailView):
         context['total_spent'] = sum(b.spent_amount for b in budgets)
         context['remaining_budget'] = context['total_allocated'] - context['total_spent']
         context['budget_utilization'] = (context['total_spent'] / context['total_allocated'] * 100) if context['total_allocated'] > 0 else 0
+        context['personnel_budget_info'] = BudgetMonitoringService.calculate_personnel_budget_usage(project)
+        context['personnel_budget_limits_report'] = BudgetMonitoringService.calculate_budget_limits_report(project)
 
-        # Resource allocations - tính từ tasks thay vì allocations
-        # Lấy tất cả employees được gán công việc trong dự án (gộp trùng lặp)
-        from django.db.models import Count, Sum, Q
-        from resources.models import Employee
-        
-        # Sử dụng dictionary để gộp các employee trùng lặp
+        # Resource allocations: hien thi ca nhan su da phan bo va nhan su dang duoc gan task.
+        task_count_map = {
+            row['assigned_to_id']: row['count']
+            for row in project.tasks.filter(assigned_to__isnull=False)
+            .order_by()
+            .values('assigned_to_id')
+            .annotate(count=Count('id'))
+        }
+        total_tasks = context['task_stats']['total']
         employee_dict = {}
-        
-        # Lấy tất cả tasks có assigned_to
-        tasks_with_employees = project.tasks.filter(assigned_to__isnull=False).select_related('assigned_to')
-        
-        for task in tasks_with_employees:
+
+        for allocation in project.allocations.select_related('employee__department').order_by('-start_date'):
+            employee = allocation.employee
+            if not employee or employee.id in employee_dict:
+                continue
+            employee_dict[employee.id] = {
+                'employee': employee,
+                'department': employee.department,
+                'allocation_percentage': allocation.allocation_percentage,
+                'task_count': task_count_map.get(employee.id, 0),
+                'start_date': allocation.start_date,
+                'end_date': allocation.end_date,
+            }
+
+        for task in project.tasks.filter(assigned_to__isnull=False).select_related('assigned_to__department'):
             employee = task.assigned_to
-            employee_id = employee.id
-            
-            if employee_id not in employee_dict:
-                # Đếm số công việc của employee trong dự án
-                task_count = project.tasks.filter(assigned_to=employee).count()
-                total_tasks = context['task_stats']['total']
-                # Tính % phân bổ dựa trên số công việc
-                allocation_percentage = (task_count / total_tasks * 100) if total_tasks > 0 else 0
-                
-                # Lấy allocation từ ResourceAllocation nếu có
-                allocation = project.allocations.filter(employee=employee).first()
-                
-                employee_dict[employee_id] = {
-                    'employee': employee,
-                    'department': employee.department,
-                    'allocation_percentage': round(allocation_percentage, 1),
-                    'task_count': task_count,
-                    'start_date': allocation.start_date if allocation else project.start_date,
-                    'end_date': allocation.end_date if allocation else project.end_date,
-                }
-        
-        # Chuyển dictionary thành list và sắp xếp theo allocation_percentage giảm dần
+            if not employee or employee.id in employee_dict:
+                continue
+            fallback_allocation = (task_count_map.get(employee.id, 0) / total_tasks * 100) if total_tasks > 0 else 0
+            employee_dict[employee.id] = {
+                'employee': employee,
+                'department': employee.department,
+                'allocation_percentage': round(fallback_allocation, 1),
+                'task_count': task_count_map.get(employee.id, 0),
+                'start_date': project.start_date,
+                'end_date': project.end_date,
+            }
+
         employee_allocations = list(employee_dict.values())
-        employee_allocations.sort(key=lambda x: x['allocation_percentage'], reverse=True)
+        employee_allocations.sort(
+            key=lambda x: (float(x['allocation_percentage']), x['task_count']),
+            reverse=True
+        )
         context['employee_allocations'] = employee_allocations
 
         # Time entries
@@ -258,6 +296,39 @@ class ProjectDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
+class ProjectAddPersonnelView(ManagerRequiredMixin, CreateView):
+    """Them nhan su vao du an tu trang chi tiet."""
+    model = ResourceAllocation
+    form_class = ProjectPersonnelAllocationForm
+    template_name = 'projects/add_personnel.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.project = get_object_or_404(Project, pk=self.kwargs.get('project_id'))
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['project'] = self.project
+        return kwargs
+
+    def form_valid(self, form):
+        allocation = form.save(commit=False)
+        allocation.project = self.project
+        allocation.created_by = self.request.user
+        allocation.save()
+        messages.success(
+            self.request,
+            f'Đã thêm nhân sự "{allocation.employee.full_name}" vào dự án "{self.project.name}".'
+        )
+        return redirect('projects:detail', pk=self.project.pk)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['project'] = self.project
+        context['page_title'] = 'Thêm nhân sự vào dự án'
+        return context
+
+
 class ProjectCreateView(ManagerRequiredMixin, CreateView):
     """Tạo dự án mới - chỉ quản lý mới có quyền."""
     model = Project
@@ -268,28 +339,28 @@ class ProjectCreateView(ManagerRequiredMixin, CreateView):
     def form_valid(self, form):
         form.instance.created_by = self.request.user
         response = super().form_valid(form)
-        
-        # Lưu departments
+
         project = form.instance
         departments = form.cleaned_data.get('departments', [])
+        required_departments = form.cleaned_data.get('required_departments', [])
         project.departments.set(departments)
-        
-        # Tạo ResourceAllocation cho tất cả employees thuộc các departments đã chọn
-        from resources.models import Employee, ResourceAllocation
+        project.required_departments.set(required_departments)
+
+        from resources.models import ResourceAllocation
         from django.utils import timezone
-        
+
+        confirm_add_employees = form.cleaned_data.get('confirm_add_employees', False)
         employees_added = []
-        for department in departments:
-            employees = Employee.objects.filter(department=department, is_active=True)
-            for employee in employees:
-                # Kiểm tra xem đã có allocation chưa
+
+        if confirm_add_employees:
+            eligible_employee_ids = _get_eligible_employee_ids_for_project(project, departments)
+            for employee in Employee.objects.filter(id__in=eligible_employee_ids):
                 existing_allocation = ResourceAllocation.objects.filter(
                     employee=employee,
                     project=project
                 ).first()
-                
+
                 if not existing_allocation:
-                    # Tạo ResourceAllocation mới với allocation_percentage mặc định 50%
                     ResourceAllocation.objects.create(
                         employee=employee,
                         project=project,
@@ -300,23 +371,25 @@ class ProjectCreateView(ManagerRequiredMixin, CreateView):
                     )
                     employees_added.append(employee.full_name)
 
-                    # Thông báo cho nhân viên
                     if getattr(employee, "user", None):
                         NotificationService.notify(
                             user=employee.user,
-                            title=f"Bạn được thêm vào dự án: {project.name}",
-                            message=f"Bạn vừa được thêm vào dự án \"{project.name}\".",
+                            title=f"Ban duoc them vao du an: {project.name}",
+                            message=f"Ban vua duoc them vao du an \"{project.name}\".",
                             level=Notification.LEVEL_INFO,
                             url=f"/projects/{project.pk}/",
                             actor=self.request.user,
                         )
-        
-        if employees_added:
-            messages.info(self.request, f'Đã gán {len(employees_added)} nhân sự từ {len(departments)} phòng ban vào dự án.')
-        
-        messages.success(self.request, f'Đã tạo dự án "{form.instance.name}" thành công.')
-        return response
 
+            if employees_added:
+                messages.info(self.request, f'Da gan {len(employees_added)} nhan su co cong viec phu hop vao du an.')
+            else:
+                messages.warning(self.request, 'Khong co nhan vien phu hop (da co cong viec trong du an) de them.')
+        else:
+            messages.info(self.request, 'Chua xac nhan them nhan vien tu dong. Du an van duoc tao binh thuong.')
+
+        messages.success(self.request, f'Da tao du an "{form.instance.name}" thanh cong.')
+        return response
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_title'] = 'Tạo dự án mới'
@@ -345,71 +418,67 @@ class ProjectUpdateView(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         form.instance.updated_by = self.request.user
         response = super().form_valid(form)
-        
-        # Cập nhật departments
+
         project = form.instance
         departments = form.cleaned_data.get('departments', [])
+        required_departments = form.cleaned_data.get('required_departments', [])
         project.departments.set(departments)
-        
-        # Cập nhật ResourceAllocation cho employees thuộc các departments
-        from resources.models import Employee, ResourceAllocation
-        from django.utils import timezone
-        
-        # Lấy tất cả employees hiện tại trong project
-        current_employees = set(project.allocations.values_list('employee_id', flat=True))
-        
-        # Lấy tất cả employees từ departments mới
-        new_employees = set()
-        for department in departments:
-            employees = Employee.objects.filter(department=department, is_active=True)
-            new_employees.update(employees.values_list('id', flat=True))
-        
-        # Thêm employees mới
-        employees_to_add = new_employees - current_employees
-        employees_added = []
-        for employee_id in employees_to_add:
-            employee = Employee.objects.get(id=employee_id)
-            existing_allocation = ResourceAllocation.objects.filter(
-                employee=employee,
-                project=project
-            ).first()
-            
-            if not existing_allocation:
-                ResourceAllocation.objects.create(
-                    employee=employee,
-                    project=project,
-                    allocation_percentage=50.0,
-                    start_date=project.start_date or timezone.now().date(),
-                    end_date=project.end_date,
-                    created_by=self.request.user
-                )
-                employees_added.append(employee.full_name)
+        project.required_departments.set(required_departments)
 
-                # Thông báo cho nhân viên
-                if getattr(employee, "user", None):
-                    NotificationService.notify(
-                        user=employee.user,
-                        title=f"Bạn được thêm vào dự án: {project.name}",
-                        message=f"Bạn vừa được thêm vào dự án \"{project.name}\".",
-                        level=Notification.LEVEL_INFO,
-                        url=f"/projects/{project.pk}/",
-                        actor=self.request.user,
+        from resources.models import ResourceAllocation
+        from django.utils import timezone
+
+        current_employees = set(project.allocations.values_list('employee_id', flat=True))
+        eligible_employee_ids = _get_eligible_employee_ids_for_project(project, departments)
+
+        confirm_add_employees = form.cleaned_data.get('confirm_add_employees', False)
+        employees_added = []
+
+        if confirm_add_employees:
+            employees_to_add = eligible_employee_ids - current_employees
+            for employee in Employee.objects.filter(id__in=employees_to_add):
+                existing_allocation = ResourceAllocation.objects.filter(
+                    employee=employee,
+                    project=project
+                ).first()
+
+                if not existing_allocation:
+                    ResourceAllocation.objects.create(
+                        employee=employee,
+                        project=project,
+                        allocation_percentage=50.0,
+                        start_date=project.start_date or timezone.now().date(),
+                        end_date=project.end_date,
+                        created_by=self.request.user
                     )
-        
-        # Xóa allocations của employees không còn thuộc departments đã chọn
-        employees_to_remove = current_employees - new_employees
+                    employees_added.append(employee.full_name)
+
+                    if getattr(employee, "user", None):
+                        NotificationService.notify(
+                            user=employee.user,
+                            title=f"Ban duoc them vao du an: {project.name}",
+                            message=f"Ban vua duoc them vao du an \"{project.name}\".",
+                            level=Notification.LEVEL_INFO,
+                            url=f"/projects/{project.pk}/",
+                            actor=self.request.user,
+                        )
+
+            if employees_added:
+                messages.info(self.request, f'Da cap nhat: them {len(employees_added)} nhan su phu hop vao du an.')
+            else:
+                messages.warning(self.request, 'Khong co nhan vien moi phu hop de them vao du an.')
+        else:
+            messages.info(self.request, 'Chua xac nhan them nhan vien moi. He thong khong tu dong them allocation.')
+
+        employees_to_remove = current_employees - eligible_employee_ids
         if employees_to_remove:
             ResourceAllocation.objects.filter(
                 project=project,
                 employee_id__in=employees_to_remove
             ).delete()
-        
-        if employees_added:
-            messages.info(self.request, f'Đã cập nhật: thêm {len(employees_added)} nhân sự vào dự án.')
-        
-        messages.success(self.request, f'Đã cập nhật dự án "{form.instance.name}" thành công.')
-        return response
 
+        messages.success(self.request, f'Da cap nhat du an "{form.instance.name}" thanh cong.')
+        return response
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_title'] = f'Chỉnh sửa: {self.get_object().name}'
@@ -643,6 +712,14 @@ class BudgetMonitoringView(ManagerRequiredMixin, View):
         
         budget_info = BudgetMonitoringService.calculate_personnel_budget_usage(project)
         budget_warning = BudgetMonitoringService.check_budget_warning(project)
+        limits_report = BudgetMonitoringService.calculate_budget_limits_report(project)
+        phases = list(
+            project.phases.order_by('order_index', 'created_at').values(
+                'id', 'phase_name', 'start_date', 'end_date', 'order_index'
+            )
+        )
+        departments = list(project.departments.values('id', 'name'))
+        required_departments = list(project.required_departments.values('id', 'name'))
         
         return JsonResponse({
             'allocated_budget': float(budget_info['allocated_budget']),
@@ -653,4 +730,14 @@ class BudgetMonitoringView(ManagerRequiredMixin, View):
             'has_warning': budget_warning['has_warning'],
             'warning_message': budget_warning['message'],
             'warning_severity': budget_warning['severity'],
+            'project_phases': phases,
+            'employee_salary_allocations': limits_report.get('employee_costs', []),
+            'departments': departments,
+            'required_departments': required_departments,
+            'budget_limits_report': limits_report,
+            'new_employee_confirmation_status': {
+                'confirmation_required': True,
+                'rule': 'only_add_when_confirmed_and_has_matching_task'
+            },
         })
+

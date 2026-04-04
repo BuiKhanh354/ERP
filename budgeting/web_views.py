@@ -15,6 +15,7 @@ from .models import Budget, Expense, BudgetCategory
 from .forms import BudgetForm, ExpenseForm
 from projects.models import Project
 from core.mixins import ManagerRequiredMixin
+from core.rbac import get_user_role_names
 
 
 class BudgetListView(LoginRequiredMixin, ListView):
@@ -24,10 +25,23 @@ class BudgetListView(LoginRequiredMixin, ListView):
     context_object_name = 'budgets'
     paginate_by = 20
 
+    def _has_budget_admin_scope(self, user):
+        if not user or not user.is_authenticated:
+            return False
+        if user.is_superuser:
+            return True
+        profile_manager = hasattr(user, 'profile') and user.profile.is_manager()
+        role_names = get_user_role_names(user)
+        elevated_roles = {
+            'ADMIN', 'CFO', 'HR_ADMIN', 'PROJECT_MANAGER',
+            'FINANCE_ADMIN', 'EXECUTIVE', 'RESOURCE_MANAGER', 'ACCOUNTANT',
+        }
+        return profile_manager or bool(role_names & elevated_roles)
+
     def get_queryset(self):
         # Quản lý xem tất cả, nhân viên chỉ xem budgets của projects được phân bổ
         user = self.request.user
-        is_manager = hasattr(user, 'profile') and user.profile.is_manager()
+        is_manager = self._has_budget_admin_scope(user)
         
         if is_manager:
             queryset = Budget.objects.all().select_related('project', 'category').annotate(
@@ -84,7 +98,7 @@ class BudgetListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         # Quản lý xem tất cả, nhân viên chỉ projects được phân bổ
         user = self.request.user
-        is_manager = hasattr(user, 'profile') and user.profile.is_manager()
+        is_manager = self._has_budget_admin_scope(user)
         if is_manager:
             context['projects'] = Project.objects.all()
         else:
@@ -192,6 +206,11 @@ class BudgetListView(LoginRequiredMixin, ListView):
         context['monthly_spending_data'] = [float(v) for v in sorted_monthly.values()]
         
         return context
+
+
+class BudgetManageView(BudgetListView):
+    """Trang quản lí ngân sách (stats/filter/chart), tách khỏi form tạo mới."""
+    template_name = 'budgeting/manage.html'
 
 
 class BudgetDetailView(LoginRequiredMixin, DetailView):

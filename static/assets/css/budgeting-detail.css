@@ -15,8 +15,60 @@
   .utilization-medium { background-color: #f59e0b; }
   .utilization-high { background-color: #ef4444; }
 
-  .expense-item {
+.expense-item {
     border-left: 3px solid #0000cd;
     padding-left: 1rem;
     margin-bottom: 1rem;
+  }
+
+  .card {
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  }
+
+  .card-header {
+    border-radius: 12px 12px 0 0 !important;
+  }
+
+  .card-header h5 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1e293b;
+  }
+
+  .table thead th {
+    background-color: #f8fafc;
+    color: #334155;
+    font-weight: 700;
+    font-size: 0.85rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .table tbody tr:hover {
+    background-color: #f8fafc;
+  }
+
+  .table .badge {
+    border-radius: 999px;
+    font-weight: 600;
+  }
+
+  .progress {
+    border-radius: 999px;
+    background-color: #e2e8f0;
+  }
+
+  .progress .progress-bar {
+    border-radius: 999px;
+  }
+
+  .btn-primary {
+    background-color: #0000cd;
+    border-color: #0000cd;
+  }
+
+  .btn-primary:hover {
+    background-color: #0000aa;
+    border-color: #0000aa;
   }

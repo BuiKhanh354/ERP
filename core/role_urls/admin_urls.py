@@ -18,6 +18,7 @@ from core.role_views.admin_user_views import (
     AdminUserEditView,
     AdminUserToggleStatusView,
     AdminUserResetPasswordView,
+    AdminUserDeleteView,
     AdminAuditLogListView,
 )
 
@@ -32,6 +33,7 @@ urlpatterns = [
     path('users/<int:pk>/edit/', AdminUserEditView.as_view(), name='user_edit'),
     path('users/<int:pk>/toggle-status/', AdminUserToggleStatusView.as_view(), name='user_toggle_status'),
     path('users/<int:pk>/reset-password/', AdminUserResetPasswordView.as_view(), name='user_reset_password'),
+    path('users/<int:pk>/delete/', AdminUserDeleteView.as_view(), name='user_delete'),
 
     # Department management
     path('departments/', AdminDepartmentListView.as_view(), name='department_list'),

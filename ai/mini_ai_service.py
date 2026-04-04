@@ -35,6 +35,14 @@ def _to_float(value: Any, default: float = 0.0) -> float:
     except (TypeError, ValueError):
         return default
 
+def _is_time_question(text: str) -> bool:
+    t = (text or "").strip().lower()
+    keywords = [
+        "mấy giờ", "may gio", "bây giờ", "bay gio", "hiện tại", "hien tai",
+        "giờ", "gio", "thời gian", "thoi gian", "hôm nay", "hom nay",
+    ]
+    return any(k in t for k in keywords)
+
 
 def _normalize_text_items(items: Iterable[str]) -> list[str]:
     return [str(item).strip() for item in items if str(item).strip()]
@@ -407,15 +415,23 @@ def answer_chat(message: str, role: str | None = None, context: dict[str, Any] |
         "Answer briefly, practically, and in Vietnamese if the user asks in Vietnamese."
     )
     user_prompt = message.strip()
+    if _is_time_question(user_prompt):
+        now = timezone.localtime()
+        answer = now.strftime("Hiện tại là %H:%M:%S, ngày %d/%m/%Y.")
+        return {"answer": answer, "source": "rule_based_time", "context": context or {}}
+
     content = _ollama_chat(system_prompt, user_prompt, context)
     if content:
         return {"answer": content, "source": "ollama", "context": context or {}}
 
-    response_parts = [f"Bạn hỏi: {message.strip()}"]
-    if context:
-        response_parts.append(f"Dữ liệu hỗ trợ: {json.dumps(context, ensure_ascii=False)}")
-    response_parts.append("Ollama chưa sẵn sàng nên đây là phản hồi fallback từ rule-based context.")
-    return {"answer": " ".join(response_parts), "source": "fallback", "context": context or {}}
+    clean_message = message.strip()
+    fallback = (
+        "Hiện AI đang bận hoặc tạm thời chưa sẵn sàng. "
+        f"Bạn vừa hỏi: \"{clean_message}\". "
+        "Bạn có thể thử lại sau vài giây, hoặc bổ sung thông tin cụ thể "
+        "(mã dự án, khoảng thời gian, phòng ban) để mình hỗ trợ tốt hơn."
+    )
+    return {"answer": fallback, "source": "fallback", "context": context or {}}
 
 
 def build_chat_context(

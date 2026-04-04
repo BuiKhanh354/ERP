@@ -19,14 +19,21 @@ class AnalyticsView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
+        profile = getattr(user, 'profile', None)
+        role_names = set(user.user_roles.values_list('role__name', flat=True))
         
         # Project statistics - filter theo user
-        is_manager = hasattr(user, 'profile') and user.profile.is_manager()
+        is_manager = (
+            user.is_superuser
+            or user.is_staff
+            or bool(profile and profile.is_manager())
+            or bool(role_names & {'PROJECT_MANAGER', 'HR_ADMIN', 'CFO', 'EXECUTIVE', 'RESOURCE_MANAGER'})
+        )
+        employee = Employee.objects.filter(user=user, is_active=True).first()
         if is_manager:
             user_projects = Project.objects.all()
         else:
             # Nhân viên chỉ xem projects được phân bổ
-            employee = getattr(user, 'employee', None)
             if employee:
                 allocated_project_ids = ResourceAllocation.objects.filter(
                     employee=employee
@@ -167,7 +174,11 @@ class AnalyticsView(LoginRequiredMixin, TemplateView):
         # Top performing employees - filter theo user
         top_employees = []
         for employee in employees:
-            scores = PerformanceScore.objects.filter(employee=employee, created_by=user)
+            scores = (
+                PerformanceScore.objects.filter(employee=employee)
+                if is_manager
+                else PerformanceScore.objects.filter(employee=employee, created_by=user)
+            )
             avg_score = scores.aggregate(avg=Avg('overall_score'))['avg'] or 0
             if avg_score > 0:
                 top_employees.append({

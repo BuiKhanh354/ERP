@@ -12,114 +12,7 @@
 {% endblock %}
 
 {% block content %}
-<!-- Stats Summary -->
-<div class="row mb-4">
-  <div class="col-md-4 mb-3">
-    <div class="stats-card">
-      <div class="stats-value" style="color: #3b82f6;">{{ total_allocated|intcomma }} VNĐ</div>
-      <div class="stats-label">Tổng phân bổ</div>
-    </div>
-  </div>
-  <div class="col-md-4 mb-3">
-    <div class="stats-card">
-      <div class="stats-value" style="color: #ef4444;">{{ total_spent|intcomma }} VNĐ</div>
-      <div class="stats-label">Tổng chi tiêu</div>
-    </div>
-  </div>
-  <div class="col-md-4 mb-3">
-    <div class="stats-card">
-      <div class="stats-value" style="color: #22c55e;">{{ total_remaining|intcomma }} VNĐ</div>
-      <div class="stats-label">Còn lại</div>
-    </div>
-  </div>
-</div>
-
-<!-- Filters -->
-<div class="filter-card">
-  <form method="get" class="row g-3">
-    <div class="col-md-4">
-      <label class="form-label fw-semibold">Dự án</label>
-      <select name="project" class="form-select">
-        <option value="">Tất cả</option>
-        {% for project in projects %}
-        <option value="{{ project.id }}" {% if project_filter == project.id|stringformat:"s" %}selected{% endif %}>
-          {{ project.name }}
-        </option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-3">
-      <label class="form-label fw-semibold">Danh mục</label>
-      <select name="category" class="form-select">
-        <option value="">Tất cả</option>
-        {% for category in categories %}
-        <option value="{{ category.id }}" {% if category_filter == category.id|stringformat:"s" %}selected{% endif %}>
-          {{ category.name }}
-        </option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-3">
-      <label class="form-label fw-semibold">Năm tài chính</label>
-      <select name="fiscal_year" class="form-select">
-        <option value="">Tất cả</option>
-        {% for year in fiscal_years %}
-        <option value="{{ year }}" {% if fiscal_year_filter == year|stringformat:"s" %}selected{% endif %}>
-          {{ year }}
-        </option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-2 d-flex align-items-end">
-      <button type="submit" class="btn btn-primary w-100">
-        <i class="bi bi-search me-1"></i>Lọc
-      </button>
-    </div>
-  </form>
-</div>
-
-<!-- Charts Section -->
-<div class="row mb-4">
-  <div class="col-md-6 mb-3">
-    <div class="chart-card">
-      <h5 class="mb-3"><i class="bi bi-pie-chart me-2"></i>Phân bổ Ngân sách theo Dự án</h5>
-      <div class="chart-container">
-        <canvas id="budgetByProjectChart"></canvas>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-6 mb-3">
-    <div class="chart-card">
-      <h5 class="mb-3"><i class="bi bi-bar-chart me-2"></i>Chi tiêu theo Danh mục</h5>
-      <div class="chart-container">
-        <canvas id="spendingByCategoryChart"></canvas>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="row mb-4">
-  <div class="col-md-6 mb-3">
-    <div class="chart-card">
-      <h5 class="mb-3"><i class="bi bi-graph-up me-2"></i>Tỷ lệ Sử dụng theo Dự án</h5>
-      <div class="chart-container">
-        <canvas id="utilizationByProjectChart"></canvas>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-6 mb-3">
-    <div class="chart-card">
-      <h5 class="mb-3"><i class="bi bi-line-chart me-2"></i>Chi tiêu theo Tháng (6 tháng gần nhất)</h5>
-      <div class="chart-container">
-        <canvas id="monthlySpendingChart"></canvas>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- AI Expense Optimization Button -->
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h5 class="mb-0">Danh sách ngân sách</h5>
+<h5 class="mb-0">Danh sách ngân sách</h5>
   <div>
     {% if user.profile.is_manager %}
     <a href="{% url 'core:ai-expense-optimization' %}" class="btn btn-outline-info me-2">
@@ -365,7 +258,7 @@
   }
 
   // --- Charts: bọc try/catch để lỗi chart không làm gãy toàn bộ trang ---
-  (function initChartsSafely() {
+  window.addEventListener('load', function initChartsSafely() {
     try {
       if (typeof Chart === 'undefined') return;
       // Đăng ký plugin ChartDataLabels
@@ -483,6 +376,42 @@
           }
         }]
           });
+        } else {
+          new Chart(budgetByProjectCtx, {
+            type: 'doughnut',
+            data: {
+              labels: ['Chưa có dữ liệu'],
+              datasets: [{
+                data: [1],
+                backgroundColor: ['#e2e8f0'],
+                borderWidth: 0
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: { enabled: false },
+                datalabels: { display: false }
+              }
+            },
+            plugins: [{
+              id: 'noDataBudgetByProject',
+              afterDraw: function(chart) {
+                const ctx = chart.ctx;
+                const width = chart.width;
+                const height = chart.height;
+                ctx.save();
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#64748b';
+                ctx.fillText('Chưa có dữ liệu phân bổ ngân sách', width / 2, height / 2);
+                ctx.restore();
+              }
+            }]
+          });
         }
       }
 
@@ -553,6 +482,45 @@
             }
           }
         }
+      });
+    } else {
+      new Chart(spendingByCategoryCtx, {
+        type: 'bar',
+        data: {
+          labels: ['Chưa có dữ liệu'],
+          datasets: [{
+            label: 'Chi tiêu (VNĐ)',
+            data: [0],
+            backgroundColor: '#e2e8f0'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: false },
+            datalabels: { display: false }
+          },
+          scales: {
+            y: { beginAtZero: true }
+          }
+        },
+        plugins: [{
+          id: 'noDataSpendingByCategory',
+          afterDraw: function(chart) {
+            const ctx = chart.ctx;
+            const width = chart.width;
+            const height = chart.height;
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = '14px Arial';
+            ctx.fillStyle = '#64748b';
+            ctx.fillText('Chưa có dữ liệu chi tiêu theo danh mục', width / 2, height / 2);
+            ctx.restore();
+          }
+        }]
       });
     }
       }
@@ -818,7 +786,7 @@
     } catch (err) {
       console.error('Chart init failed:', err);
     }
-  })();
+  });
 
   // Handle delete budget
   async function handleDeleteBudget(url, budgetName) {

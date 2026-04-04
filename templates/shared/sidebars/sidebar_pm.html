@@ -5,21 +5,37 @@
             class="menu-item {% if 'projects' in request.resolver_match.namespace and request.resolver_match.url_name in 'list,detail,create,edit,delete' and 'task' not in request.resolver_match.url_name %}active{% endif %}"
           >
             <i class="bi bi-folder"></i>
-            <span>Dự án</span>
+            <span>Dự Án</span>
           </a>
-          <a
-            href="{% url 'budgeting:list' %}"
-            class="menu-item {% if 'budgeting' in request.resolver_match.namespace %}active{% endif %}"
-          >
-            <i class="bi bi-cash-stack"></i>
-            <span>Ngân sách</span>
-          </a>
+          <details class="menu-dropdown" {% if 'budgeting' in request.resolver_match.namespace %}open{% endif %}>
+            <summary class="menu-item menu-dropdown-toggle {% if 'budgeting' in request.resolver_match.namespace %}active{% endif %}">
+              <i class="bi bi-cash-stack"></i>
+              <span>Ngân sách</span>
+              <i class="bi bi-chevron-down menu-chevron"></i>
+            </summary>
+            <div class="menu-submenu">
+              <a
+                href="{% url 'budgeting:manage' %}"
+                class="menu-subitem {% if 'budgeting' in request.resolver_match.namespace and request.resolver_match.url_name == 'manage' %}active{% endif %}"
+              >
+                <i class="bi bi-folder-plus"></i>
+                <span>Quản Lí Ngân Sách </span>
+              </a>
+              <a
+                href="{% url 'budgeting:list' %}"
+                class="menu-subitem {% if 'budgeting' in request.resolver_match.namespace and request.resolver_match.url_name in 'list,detail,expense_create,create,edit,delete' %}active{% endif %}"
+              >
+                <i class="bi bi-list-ul"></i>
+                <span>Danh sách ngân sách</span>
+              </a>
+            </div>
+          </details>
           <a
             href="{% url 'projects:tasks' %}"
             class="menu-item {% if 'projects' in request.resolver_match.namespace and request.resolver_match.url_name in 'tasks,task_create,task_edit,task_delete,task_update_status' %}active{% endif %}"
           >
             <i class="bi bi-check-square"></i>
-            <span>Công việc</span>
+            <span> Quản Lý Công Việc</span>
             {% if pending_tasks_count > 0 %}
             <span class="badge" id="task-badge">{{ pending_tasks_count }}</span>
             {% else %}
@@ -27,18 +43,25 @@
             {% endif %}
           </a>
           <a
+            href="{% url 'projects:delay_kpi_dashboard' %}"
+            class="menu-item {% if 'projects' in request.resolver_match.namespace and request.resolver_match.url_name in 'delay_kpi_dashboard,delay_kpi_data,delay_kpi_export_csv' %}active{% endif %}"
+          >
+            <i class="bi bi-exclamation-triangle"></i>
+            <span>Delay KPI Team</span>
+          </a>
+          <a
             href="{% url 'core:analytics' %}"
             class="menu-item {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}"
           >
             <i class="bi bi-graph-up"></i>
-            <span>Phân tích</span>
+            <span>Phân Tích</span>
           </a>
            <a
             href="{% url 'core:analytics' %}"
             class="menu-item "
           >
             <i class="bi bi-ticket"></i>
-            <span>Phiếu đề xuất chi phí</span>
+            <span>Phiếu đề xuất chi phí­</span>
           </a>
         </div>
 

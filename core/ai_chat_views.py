@@ -1,6 +1,7 @@
 """AI Chat views for PRM AI."""
 from __future__ import annotations
 
+import json
 import uuid
 
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -10,6 +11,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.views.generic import ListView, TemplateView
 
+from ai.mini_ai_service import answer_chat, build_chat_context
 from core.models import AIChatHistory
 
 
@@ -44,13 +46,51 @@ class AIChatView(LoginRequiredMixin, TemplateView):
 
 @method_decorator(csrf_exempt, name="dispatch")
 class AIChatAPIView(LoginRequiredMixin, View):
-    """Deprecated AI chat API."""
+    """Compatibility AI chat API used by web chat UI."""
 
     def post(self, request):
-        return JsonResponse(
-            {"message": "Feature temporarily disabled to refactor AI"},
-            status=501,
-        )
+        try:
+            payload = json.loads(request.body.decode("utf-8") or "{}")
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return JsonResponse({"success": False, "error": "Payload không hợp lệ."}, status=400)
+
+        message = str(payload.get("message", "")).strip()
+        session_id = str(payload.get("session_id", "")).strip() or str(uuid.uuid4())
+        if not message:
+            return JsonResponse({"success": False, "error": "message is required."}, status=400)
+
+        try:
+            context = build_chat_context(message=message)
+            result = answer_chat(
+                message=message,
+                role=getattr(getattr(request.user, "profile", None), "role", None),
+                context=context,
+            )
+
+            response_text = (
+                result.get("answer")
+                or result.get("summary")
+                or result.get("message")
+                or "Xin lỗi, tôi chưa có phản hồi phù hợp."
+            )
+
+            AIChatHistory.objects.create(
+                user=request.user,
+                message=message,
+                response=response_text,
+                session_id=session_id,
+            )
+
+            return JsonResponse(
+                {
+                    "success": True,
+                    "response": response_text,
+                    "session_id": session_id,
+                    "source": result.get("source", "fallback"),
+                }
+            )
+        except Exception as exc:
+            return JsonResponse({"success": False, "error": str(exc)}, status=500)
 
 
 class AIChatHistoryView(LoginRequiredMixin, ListView):

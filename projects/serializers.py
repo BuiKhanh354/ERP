@@ -27,6 +27,31 @@ class TaskSerializer(serializers.ModelSerializer):
             return obj.assigned_to.full_name
         return None
 
+    def validate(self, attrs):
+        project = attrs.get('project') or getattr(self.instance, 'project', None)
+        name = attrs.get('name', getattr(self.instance, 'name', ''))
+        if isinstance(name, str):
+            name = name.strip()
+            attrs['name'] = name
+
+        if project and name:
+            duplicate_qs = Task.objects.filter(project=project, name__iexact=name)
+            if self.instance and self.instance.pk:
+                duplicate_qs = duplicate_qs.exclude(pk=self.instance.pk)
+            if duplicate_qs.exists():
+                raise serializers.ValidationError({
+                    'name': 'Tên công việc đã tồn tại trong dự án này. Vui lòng đặt tên khác.'
+                })
+
+        priority = attrs.get('priority', getattr(self.instance, 'priority', 'medium'))
+        assigned_to = attrs.get('assigned_to', getattr(self.instance, 'assigned_to', None))
+        if priority == 'critical' and assigned_to and assigned_to.kpi_current < 70:
+            raise serializers.ValidationError({
+                'assigned_to': 'Nhan su duoc giao task critical phai co KPI >= 70.'
+            })
+
+        return attrs
+
 
 class TimeEntrySerializer(serializers.ModelSerializer):
     employee_name = serializers.SerializerMethodField()

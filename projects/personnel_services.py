@@ -339,44 +339,29 @@ class BudgetMonitoringService:
     @staticmethod
     def calculate_personnel_budget_usage(project):
         """
-        Tính mức sử dụng ngân sách nhân sự của dự án.
-        
-        Args:
-            project: Project instance
-        
-        Returns:
-            dict: {
-                'allocated_budget': Decimal,
-                'used_budget': Decimal,
-                'remaining_budget': Decimal,
-                'usage_percentage': float,
-                'is_over_budget': bool
-            }
+        Tinh muc su dung ngan sach nhan su cua du an.
         """
         allocated_budget = project.budget_for_personnel or Decimal('0')
-        
-        # Tính chi phí từ các allocation hiện tại
+
         used_budget = Decimal('0')
+        today = timezone.now().date()
         allocations = project.allocations.filter(
-            end_date__isnull=True  # Chỉ tính allocation đang active
-        ) | project.allocations.filter(
-            end_date__gte=timezone.now().date()
-        )
-        
+            Q(end_date__isnull=True) | Q(end_date__gte=today)
+        ).select_related('employee')
+
         for allocation in allocations:
-            # Tính chi phí dựa trên allocation
-            estimated_hours = Decimal('160')  # Giả sử 160 giờ/tháng
+            estimated_hours = Decimal('160')
             cost = PersonnelRecommendationService.calculate_employee_cost(
                 allocation.employee,
                 estimated_hours,
                 allocation.allocation_percentage
             )
             used_budget += cost
-        
+
         remaining_budget = allocated_budget - used_budget
         usage_percentage = (float(used_budget) / float(allocated_budget) * 100) if allocated_budget > 0 else 0
         is_over_budget = used_budget > allocated_budget
-        
+
         return {
             'allocated_budget': allocated_budget,
             'used_budget': used_budget,
@@ -386,36 +371,111 @@ class BudgetMonitoringService:
         }
 
     @staticmethod
-    def check_budget_warning(project, threshold=0.8):
+    def calculate_budget_limits_report(project):
         """
-        Kiểm tra cảnh báo ngân sách.
-        
-        Args:
-            project: Project instance
-            threshold: Ngưỡng cảnh báo (0.8 = 80%)
-        
-        Returns:
-            dict: {
-                'has_warning': bool,
-                'message': str,
-                'severity': 'warning' hoặc 'danger'
-            }
+        Detailed report with budget limits by employee/task/total.
         """
         budget_info = BudgetMonitoringService.calculate_personnel_budget_usage(project)
-        
+        allocated_budget = budget_info['allocated_budget']
+
+        per_employee_limit = (allocated_budget * Decimal('0.40')).quantize(Decimal('0.01')) if allocated_budget > 0 else Decimal('0')
+        task_count = max(project.tasks.count(), 1)
+        per_task_limit = (allocated_budget / Decimal(str(task_count))).quantize(Decimal('0.01')) if allocated_budget > 0 else Decimal('0')
+
+        employee_costs = []
+        task_costs = []
+        warnings = []
+
+        today = timezone.now().date()
+        allocations = project.allocations.filter(
+            Q(end_date__isnull=True) | Q(end_date__gte=today)
+        ).select_related('employee')
+
+        for allocation in allocations:
+            estimated_hours = Decimal('160')
+            cost = PersonnelRecommendationService.calculate_employee_cost(
+                allocation.employee,
+                estimated_hours,
+                allocation.allocation_percentage
+            )
+            is_over_limit = per_employee_limit > 0 and cost > per_employee_limit
+            employee_costs.append({
+                'employee_id': allocation.employee_id,
+                'employee_name': allocation.employee.full_name,
+                'allocation_percentage': float(allocation.allocation_percentage),
+                'estimated_cost': float(cost),
+                'limit': float(per_employee_limit),
+                'is_over_limit': is_over_limit,
+            })
+            if is_over_limit:
+                warnings.append(f"Employee {allocation.employee.full_name} exceeds per-employee budget limit.")
+
+        tasks = project.tasks.select_related('assigned_to')
+        for task in tasks:
+            if not task.assigned_to:
+                continue
+            task_hours = task.estimated_hours or Decimal('0')
+            task_cost = PersonnelRecommendationService.calculate_employee_cost(
+                task.assigned_to,
+                task_hours,
+                allocation_percentage=100
+            )
+            is_over_task_limit = per_task_limit > 0 and task_cost > per_task_limit
+            task_costs.append({
+                'task_id': task.id,
+                'task_name': task.name,
+                'employee_name': task.assigned_to.full_name,
+                'estimated_hours': float(task_hours),
+                'estimated_cost': float(task_cost),
+                'limit': float(per_task_limit),
+                'is_over_limit': is_over_task_limit,
+            })
+            if is_over_task_limit:
+                warnings.append(f"Task '{task.name}' exceeds per-task budget limit.")
+
+        if budget_info['is_over_budget']:
+            warnings.append("Total personnel budget exceeded.")
+
+        return {
+            'allocated_budget': float(allocated_budget),
+            'used_budget': float(budget_info['used_budget']),
+            'remaining_budget': float(budget_info['remaining_budget']),
+            'usage_percentage': budget_info['usage_percentage'],
+            'is_over_budget': budget_info['is_over_budget'],
+            'per_employee_limit': float(per_employee_limit),
+            'per_task_limit': float(per_task_limit),
+            'employee_costs': employee_costs,
+            'task_costs': task_costs,
+            'warnings': warnings,
+        }
+
+    @staticmethod
+    def check_budget_warning(project, threshold=0.8):
+        """
+        Kiem tra canh bao ngan sach.
+        """
+        budget_info = BudgetMonitoringService.calculate_personnel_budget_usage(project)
+        limits_report = BudgetMonitoringService.calculate_budget_limits_report(project)
+
         if budget_info['is_over_budget']:
             return {
                 'has_warning': True,
-                'message': f'Ngân sách nhân sự đã vượt quá {budget_info["allocated_budget"]:,.0f} VNĐ!',
+                'message': f'Ngan sach nhan su da vuot qua {budget_info["allocated_budget"]:,.0f} VND!',
                 'severity': 'danger'
+            }
+        elif limits_report['warnings']:
+            return {
+                'has_warning': True,
+                'message': limits_report['warnings'][0],
+                'severity': 'warning'
             }
         elif budget_info['usage_percentage'] >= threshold * 100:
             return {
                 'has_warning': True,
-                'message': f'Ngân sách nhân sự đã sử dụng {budget_info["usage_percentage"]:.1f}% ({budget_info["used_budget"]:,.0f} VNĐ / {budget_info["allocated_budget"]:,.0f} VNĐ)',
+                'message': f'Ngan sach nhan su da su dung {budget_info["usage_percentage"]:.1f}% ({budget_info["used_budget"]:,.0f} VND / {budget_info["allocated_budget"]:,.0f} VND)',
                 'severity': 'warning'
             }
-        
+
         return {
             'has_warning': False,
             'message': '',
