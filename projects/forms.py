@@ -8,20 +8,20 @@ from .delay_kpi_service import DelayKPIService
 
 
 class ProjectForm(forms.ModelForm):
-    # Override choices vá»›i tiáº¿ng Viá»‡t
+    # Override choices với tiếng Việt
     STATUS_CHOICES = [
-        ('planning', 'LÃªn káº¿ hoáº¡ch'),
-        ('active', 'Äang cháº¡y'),
-        ('on_hold', 'Táº¡m dá»«ng'),
-        ('completed', 'HoÃ n thÃ nh'),
-        ('cancelled', 'ÄÃ£ há»§y'),
+        ('planning', 'Lên kế hoạch'),
+        ('active', 'Đang chạy'),
+        ('on_hold', 'Tạm dừng'),
+        ('completed', 'Hoàn thành'),
+        ('cancelled', 'Đã hủy'),
     ]
 
     PRIORITY_CHOICES = [
-        ('low', 'Tháº¥p'),
-        ('medium', 'Trung bÃ¬nh'),
+        ('low', 'Thấp'),
+        ('medium', 'Trung bình'),
         ('high', 'Cao'),
-        ('urgent', 'Kháº©n cáº¥p'),
+        ('urgent', 'Khẩn cấp'),
     ]
 
     status = forms.ChoiceField(
@@ -29,7 +29,7 @@ class ProjectForm(forms.ModelForm):
         widget=forms.Select(attrs={
             'class': 'form-select'
         }),
-        label='Tráº¡ng thÃ¡i'
+        label='Trạng thái'
     )
 
     priority = forms.ChoiceField(
@@ -37,7 +37,7 @@ class ProjectForm(forms.ModelForm):
         widget=forms.Select(attrs={
             'class': 'form-select'
         }),
-        label='Æ¯u tiÃªn'
+        label='Ưu tiên'
     )
 
     departments = forms.ModelMultipleChoiceField(
@@ -45,9 +45,9 @@ class ProjectForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxSelectMultiple(attrs={
             'class': 'form-check-input',
-            'style': 'display: none;'  # áº¨n widget máº·c Ä‘á»‹nh, dÃ¹ng custom dropdown
+            'style': 'display: none;'  # Ẩn widget mặc định, dùng custom dropdown
         }),
-        label='PhÃ²ng ban phá»¥ trÃ¡ch'
+        label='Phòng ban phụ trách'
     )
 
     required_departments = forms.ModelMultipleChoiceField(
@@ -55,9 +55,9 @@ class ProjectForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxSelectMultiple(attrs={
             'class': 'form-check-input',
-            'style': 'display: none;'  # áº¨n widget máº·c Ä‘á»‹nh, dÃ¹ng custom dropdown
+            'style': 'display: none;'  # Ẩn widget mặc định, dùng custom dropdown
         }),
-        label='PhÃ²ng ban báº¯t buá»™c tham gia'
+        label='Phòng ban bắt buộc tham gia'
     )
 
     confirm_add_employees = forms.BooleanField(
@@ -75,12 +75,12 @@ class ProjectForm(forms.ModelForm):
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'TÃªn dá»± Ã¡n'
+                'placeholder': 'Tên dự án'
             }),
             'description': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 4,
-                'placeholder': 'MÃ´ táº£ dá»± Ã¡n'
+                'placeholder': 'Mô tả dự án'
             }),
             'client': forms.Select(attrs={
                 'class': 'form-select'
@@ -102,23 +102,23 @@ class ProjectForm(forms.ModelForm):
                 'class': 'form-control',
                 'type': 'text',
                 'style': 'min-width: 150px; padding-right: 60px;',
-                'placeholder': 'NgÃ¢n sÃ¡ch nhÃ¢n sá»±'
+                'placeholder': 'Ngân sách nhân sự'
             }),
             'estimated_employees': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'min': '0',
-                'placeholder': 'Sá»‘ nhÃ¢n sá»± dá»± kiáº¿n'
+                'placeholder': 'Số nhân sự dự kiến'
             }),
         }
         labels = {
-            'name': 'TÃªn dá»± Ã¡n',
+            'name': 'Tên dự án',
             'description': 'Mo ta',
-            'client': 'KhÃ¡ch hÃ ng',
-            'start_date': 'NgÃ y báº¯t Ä‘áº§u',
-            'end_date': 'NgÃ y káº¿t thÃºc',
-            'estimated_budget': 'NgÃ¢n sÃ¡ch dá»± kiáº¿n',
-            'budget_for_personnel': 'NgÃ¢n sÃ¡ch nhÃ¢n sá»±',
-            'estimated_employees': 'Sá»‘ nhÃ¢n sá»± dá»± kiáº¿n',
+            'client': 'Khách hàng',
+            'start_date': 'Ngày bắt đầu',
+            'end_date': 'Ngày kết thúc',
+            'estimated_budget': 'Ngân sách dự kiến',
+            'budget_for_personnel': 'Ngân sách nhân sự',
+            'estimated_employees': 'Số nhân sự dự kiến',
         }
 
     def clean(self):
@@ -144,7 +144,7 @@ class ProjectForm(forms.ModelForm):
         max_available = Employee.objects.filter(is_active=True).count()
         if estimated > max_available:
             raise forms.ValidationError(
-                f'Sá»‘ nhÃ¢n sá»± dá»± kiáº¿n khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ nhÃ¢n sá»± hiá»‡n cÃ³ trong há»‡ thá»‘ng.'
+                f'Số nhân sự dự kiến không được vượt quá nhân sự hiện có trong hệ thống.'
             )
         return estimated
 
@@ -162,12 +162,12 @@ class PhaseForm(forms.ModelForm):
         widgets = {
             'phase_name': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'TÃªn giai Ä‘oáº¡n (VD: Requirement Analysis)'
+                'placeholder': 'Tên giai đoạn (VD: Requirement Analysis)'
             }),
             'description': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3,
-                'placeholder': 'MÃ´ táº£ giai Ä‘oáº¡n'
+                'placeholder': 'Mô tả giai đoạn'
             }),
             'start_date': forms.DateInput(attrs={
                 'type': 'date',
@@ -179,10 +179,10 @@ class PhaseForm(forms.ModelForm):
             }),
         }
         labels = {
-            'phase_name': 'TÃªn giai Ä‘oáº¡n',
+            'phase_name': 'Tên giai đoạn',
             'description': 'Mo ta',
-            'start_date': 'NgÃ y báº¯t Ä‘áº§u',
-            'end_date': 'NgÃ y káº¿t thÃºc',
+            'start_date': 'Ngày bắt đầu',
+            'end_date': 'Ngày kết thúc',
         }
 
     def clean(self):
@@ -268,11 +268,11 @@ class TaskForm(forms.ModelForm):
     ]
 
     ASSIGNMENT_STATUS_CHOICES = [
-        ('assigned', 'ÄÃ£ giao'),
-        ('accepted', 'ÄÃ£ nháº­n'),
-        ('in_progress', 'Äang thá»±c hiá»‡n'),
-        ('completed', 'HoÃ n thÃ nh'),
-        ('rejected', 'Tá»« chá»‘i'),
+        ('assigned', 'Đã giao'),
+        ('accepted', 'Đã nhận'),
+        ('in_progress', 'Đang thực hiện'),
+        ('completed', 'Hoàn thành'),
+        ('rejected', 'Từ chối'),
     ]
 
     phase = forms.ModelChoiceField(
@@ -281,7 +281,7 @@ class TaskForm(forms.ModelForm):
         widget=forms.Select(attrs={
             'class': 'form-select'
         }),
-        label='Giai Ä‘oáº¡n dá»± Ã¡n'
+        label='Giai đoạn dự án'
     )
 
     progress_percent = forms.IntegerField(
@@ -296,7 +296,7 @@ class TaskForm(forms.ModelForm):
             'max': '100',
             'step': '5',
         }),
-        label='Tiáº¿n Ä‘á»™ hoÃ n thÃ nh (%)'
+        label='Tiến độ hoàn thành (%)'
     )
 
     status = forms.ChoiceField(
@@ -304,7 +304,7 @@ class TaskForm(forms.ModelForm):
         widget=forms.Select(attrs={
             'class': 'form-select'
         }),
-        label='Tráº¡ng thÃ¡i'
+        label='Trạng thái'
     )
 
     department = forms.ModelChoiceField(
@@ -314,7 +314,7 @@ class TaskForm(forms.ModelForm):
             'class': 'form-select',
             'id': 'id_department'
         }),
-        label='PhÃ²ng ban phá»¥ trÃ¡ch'
+        label='Phòng ban phụ trách'
     )
 
     assignment_status = forms.ChoiceField(
@@ -322,18 +322,18 @@ class TaskForm(forms.ModelForm):
         widget=forms.Select(attrs={
             'class': 'form-select'
         }),
-        label='Tráº¡ng thÃ¡i giao/nháº­n',
+        label='Trạng thái giao/nhận',
         required=False
     )
 
     estimated_hours = forms.CharField(
         required=False,
-        label='Giá» Æ°á»›c tÃ­nh',
+        label='Giờ ước tính',
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'VÃ­ dá»¥: 7:30, 10:00h, 30p, 90p'
+            'placeholder': 'Ví dụ: 7:30, 10:00h, 30p, 90p'
         }),
-        help_text='Há»— trá»£: hh:mm (7:30), giá» (2.5), phÃºt (30p/30m).'
+        help_text='Hỗ trợ: hh:mm (7:30), giờ (2.5), phút (30p/30m).'
     )
 
     class Meta:
@@ -346,7 +346,7 @@ class TaskForm(forms.ModelForm):
             }),
             'name': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'TÃªn cÃ´ng viá»‡c'
+                'placeholder': 'Tên công việc'
             }),
             'description': forms.Textarea(attrs={
                 'class': 'form-control',
@@ -368,19 +368,19 @@ class TaskForm(forms.ModelForm):
             }),
         }
         labels = {
-            'project': 'Dá»± Ã¡n',
-            'name': 'TÃªn cÃ´ng viá»‡c',
+            'project': 'Dự án',
+            'name': 'Tên công việc',
             'description': 'Mo ta',
             'required_skills': 'Ky nang yeu cau',
-            'assigned_to': 'NhÃ¢n viÃªn thá»±c hiá»‡n',
-            'due_date': 'Háº¡n chÃ³t',
+            'assigned_to': 'Nhân viên thực hiện',
+            'due_date': 'Hạn chót',
         }
 
     def __init__(self, *args, **kwargs):
         project = kwargs.pop('project', None)
         super().__init__(*args, **kwargs)
 
-        # Lá»c phases theo project
+        # Lọc phases theo project
         if project:
             self.fields['project'].initial = project
             self.fields['phase'].queryset = ProjectPhase.objects.filter(project=project)
@@ -404,7 +404,7 @@ class TaskForm(forms.ModelForm):
                 ).distinct()
         self.fields['assigned_to'].queryset = assigned_to_qs.order_by('last_name', 'first_name')
 
-        # Hiá»ƒn thá»‹ dáº¡ng hh:mm cho instance náº¿u cÃ³
+        # Hiển thị dạng hh:mm cho instance nếu có
         try:
             val = getattr(self.instance, 'estimated_hours', None)
             if val is not None and Decimal(val) > 0:
@@ -421,27 +421,27 @@ class TaskForm(forms.ModelForm):
             return Decimal('0')
 
         s = raw.replace(' ', '')
-        # Chuáº©n hoÃ¡ háº­u tá»‘
+        # Chuẩn hoá hậu tố
         if s.endswith('h'):
             s = s[:-1]
-        if s.endswith('giá»') or s.endswith('gio'):
-            s = s.replace('giá»', '').replace('gio', '')
+        if s.endswith('giờ') or s.endswith('gio'):
+            s = s.replace('giờ', '').replace('gio', '')
 
-        # Äá»‹nh dáº¡ng hh:mm
+        # Định dạng hh:mm
         if ':' in s:
             parts = s.split(':', 1)
             if len(parts) != 2:
-                raise forms.ValidationError('Giá» Æ°á»›c tÃ­nh khÃ´ng há»£p lá»‡. VÃ­ dá»¥ Ä‘Ãºng: 7:30')
+                raise forms.ValidationError('Giờ ước tính không hợp lệ. Ví dụ đúng: 7:30')
             try:
                 h = int(parts[0] or '0')
                 m = int(parts[1] or '0')
             except ValueError:
-                raise forms.ValidationError('Giá» Æ°á»›c tÃ­nh khÃ´ng há»£p lá»‡. VÃ­ dá»¥ Ä‘Ãºng: 7:30')
+                raise forms.ValidationError('Giờ ước tính không hợp lệ. Ví dụ đúng: 7:30')
             if h < 0 or m < 0 or m >= 60:
-                raise forms.ValidationError('PhÃºt pháº£i náº±m trong khoáº£ng 0-59.')
+                raise forms.ValidationError('Phút phải nằm trong khoảng 0-59.')
             return (Decimal(h) + (Decimal(m) / Decimal(60))).quantize(Decimal('0.01'))
 
-        # Äá»‹nh dáº¡ng phÃºt: 30p / 30m / 30phut
+        # Định dạng phút: 30p / 30m / 30phut
         is_minutes = False
         if s.endswith('p') or s.endswith('m'):
             is_minutes = True
@@ -453,19 +453,19 @@ class TaskForm(forms.ModelForm):
         try:
             num = Decimal(s)
         except (InvalidOperation, ValueError):
-            raise forms.ValidationError('Giá» Æ°á»›c tÃ­nh khÃ´ng há»£p lá»‡. VÃ­ dá»¥: 7:30, 2.5, 30p')
+            raise forms.ValidationError('Giờ ước tính không hợp lệ. Ví dụ: 7:30, 2.5, 30p')
 
         if num < 0:
-            raise forms.ValidationError('Giá» Æ°á»›c tÃ­nh pháº£i >= 0.')
+            raise forms.ValidationError('Giờ ước tính phải >= 0.')
 
-        # Heuristic: sá»‘ nguyÃªn lá»›n (vd 30) máº·c Ä‘á»‹nh hiá»ƒu lÃ  phÃºt
+        # Heuristic: số nguyên lớn (vd 30) mặc định hiểu là phút
         if not is_minutes and num == num.to_integral_value() and num > 12:
             is_minutes = True
 
         if is_minutes:
             return (num / Decimal(60)).quantize(Decimal('0.01'))
 
-        # Máº·c Ä‘á»‹nh: giá» (cÃ³ thá»ƒ lÃ  sá»‘ tháº­p phÃ¢n)
+        # Mặc định: giờ (có thể là số thập phân)
         return num.quantize(Decimal('0.01'))
 
 
@@ -486,7 +486,7 @@ class TaskForm(forms.ModelForm):
                 duplicate_qs = duplicate_qs.exclude(pk=self.instance.pk)
 
             if duplicate_qs.exists():
-                self.add_error('name', 'TÃªn cÃ´ng viá»‡c Ä‘Ã£ tá»“n táº¡i trong dá»± Ã¡n nÃ y. Vui lÃ²ng Ä‘áº·t tÃªn khÃ¡c')
+                self.add_error('name', 'Tên công việc đã tồn tại trong dự án này. Vui lòng đặt tên khác')
 
 
         due_date = cleaned_data.get('due_date')
@@ -519,11 +519,11 @@ class ProjectPersonnelAllocationForm(forms.ModelForm):
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
         labels = {
-            'employee': 'NhÃ¢n sá»±',
-            'allocation_percentage': 'Tá»· lá»‡ phÃ¢n bá»• (%)',
-            'start_date': 'NgÃ y báº¯t Ä‘áº§u',
-            'end_date': 'NgÃ y káº¿t thÃºc',
-            'notes': 'Ghi chÃº',
+            'employee': 'Nhân sự',
+            'allocation_percentage': 'Tỷ lệ phân bổ (%)',
+            'start_date': 'Ngày bắt đầu',
+            'end_date': 'Ngày kết thúc',
+            'notes': 'Ghi chú',
         }
 
     def __init__(self, *args, **kwargs):
@@ -574,33 +574,33 @@ class TimeEntryForm(forms.ModelForm):
         }
     
     def __init__(self, *args, **kwargs):
-        # Láº¥y employee vÃ  tasks tá»« kwargs
+        # Lấy employee và tasks từ kwargs
         employee = kwargs.pop('employee', None)
         tasks = kwargs.pop('tasks', None)
         
         super().__init__(*args, **kwargs)
         
-        # Chá»‰ cho phÃ©p chá»n tasks Ä‘Æ°á»£c gÃ¡n cho nhÃ¢n viÃªn
+        # Chỉ cho phép chọn tasks được gán cho nhân viên
         if tasks is not None:
             self.fields['task'] = forms.ModelChoiceField(
                 queryset=tasks,
                 widget=forms.Select(attrs={'class': 'form-select'}),
-                label='CÃ´ng viá»‡c',
+                label='Công việc',
                 required=True
             )
         else:
-            # Náº¿u khÃ´ng cÃ³ tasks, áº©n field nÃ y
+            # Nếu không có tasks, ẩn field này
             if 'task' in self.fields:
                 del self.fields['task']
         
-        # áº¨n employee field (tá»± Ä‘á»™ng set tá»« user)
+        # Ẩn employee field (tự động set từ user)
         if 'employee' in self.fields:
             del self.fields['employee']
         
-        # Cáº­p nháº­t labels
-        self.fields['date'].label = 'NgÃ y lÃ m viá»‡c'
-        self.fields['hours'].label = 'Sá»‘ giá»'
-        self.fields['description'].label = 'MÃ´ táº£ cÃ´ng viá»‡c (tÃ¹y chá»n)'
+        # Cập nhật labels
+        self.fields['date'].label = 'Ngày làm việc'
+        self.fields['hours'].label = 'Số giờ'
+        self.fields['description'].label = 'Mô tả công việc (tùy chọn)'
 
 
 

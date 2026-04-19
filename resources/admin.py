@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Department, Employee, ResourceAllocation
+from .models import Department, Employee, ResourceAllocation, Skill, EmployeeSkill
 
 
 @admin.register(Department)
@@ -25,4 +25,18 @@ class ResourceAllocationAdmin(admin.ModelAdmin):
     list_filter = ['start_date', 'project']
     search_fields = ['employee__first_name', 'employee__last_name', 'project__name']
     date_hierarchy = 'start_date'
+
+
+@admin.register(Skill)
+class SkillAdmin(admin.ModelAdmin):
+    list_display = ['name', 'category', 'is_active']
+    list_filter = ['category', 'is_active']
+    search_fields = ['name', 'category']
+
+
+@admin.register(EmployeeSkill)
+class EmployeeSkillAdmin(admin.ModelAdmin):
+    list_display = ['employee', 'skill', 'proficiency', 'years_of_experience']
+    list_filter = ['proficiency', 'skill__category']
+    search_fields = ['employee__first_name', 'employee__last_name', 'skill__name']
 

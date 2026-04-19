@@ -20,7 +20,7 @@ from .task_history_service import TaskHistoryService
 
 
 class TaskListView(LoginRequiredMixin, ListView):
-    """Danh sÃƒÂ¡ch cÃƒÂ´ng viÃ¡Â»â€¡c dÃ¡ÂºÂ¡ng checklist cho project."""
+    """Danh sách công việc dạng checklist cho project."""
     model = Task
     template_name = 'projects/tasks.html'
     context_object_name = 'tasks'
@@ -30,7 +30,7 @@ class TaskListView(LoginRequiredMixin, ListView):
         user = self.request.user
         is_manager = hasattr(user, 'profile') and user.profile.is_manager()
         
-        # LÃ¡ÂºÂ¥y employee cÃ¡Â»Â§a user hiÃ¡Â»â€¡n tÃ¡ÂºÂ¡i (nÃ¡ÂºÂ¿u cÃƒÂ³)
+        # Lấy employee của user hiện tại (nếu có)
         employee = None
         if hasattr(user, 'employee'):
             employee = user.employee
@@ -39,18 +39,18 @@ class TaskListView(LoginRequiredMixin, ListView):
             try:
                 project_id_int = int(project_id)
                 if is_manager:
-                    # QuÃ¡ÂºÂ£n lÃƒÂ½ xem tÃ¡ÂºÂ¥t cÃ¡ÂºÂ£ tasks cÃ¡Â»Â§a project
+                    # Quản lý xem tất cả tasks của project
                     qs = Task.objects.filter(
                         project_id=project_id_int
                     )
                 else:
-                    # NhÃƒÂ¢n viÃƒÂªn xem tasks Ã„â€˜Ã†Â°Ã¡Â»Â£c gÃƒÂ¡n cho mÃƒÂ¬nh hoÃ¡ÂºÂ·c tasks cÃ¡Â»Â§a projects do mÃƒÂ¬nh tÃ¡ÂºÂ¡o
+                    # Nhân viên xem tasks được gán cho mình hoặc tasks của projects do mình tạo
                     qs = Task.objects.filter(
                         Q(project_id=project_id_int) & (
                             Q(assigned_to=employee) | Q(project__created_by=user)
                         )
                     )
-                # Auto mark overdue: Ã„â€˜ÃƒÂ£ quÃƒÂ¡ due_date hoÃ¡ÂºÂ·c quÃƒÂ¡ estimated_end_at
+                # Auto mark overdue: đã quá due_date hoặc quá estimated_end_at
                 candidates = qs.filter(status__in=['todo', 'in_progress', 'review', 'overdue']).select_related('project', 'assigned_to')
                 DelayKPIService.sync_overdue_tasks(candidates, actor=user)
                 return qs.select_related('project', 'assigned_to', 'department').order_by('status', 'due_date', 'created_at')
@@ -65,7 +65,7 @@ class TaskListView(LoginRequiredMixin, ListView):
         user = self.request.user
         is_manager = hasattr(user, 'profile') and user.profile.is_manager()
         
-        # LÃ¡ÂºÂ¥y employee cÃ¡Â»Â§a user hiÃ¡Â»â€¡n tÃ¡ÂºÂ¡i (nÃ¡ÂºÂ¿u cÃƒÂ³)
+        # Lấy employee của user hiện tại (nếu có)
         employee = None
         if hasattr(user, 'employee'):
             employee = user.employee
@@ -74,10 +74,10 @@ class TaskListView(LoginRequiredMixin, ListView):
             try:
                 project_id_int = int(project_id)
                 if is_manager:
-                    # QuÃ¡ÂºÂ£n lÃƒÂ½ xem tÃ¡ÂºÂ¥t cÃ¡ÂºÂ£ projects
+                    # Quản lý xem tất cả projects
                     project = get_object_or_404(Project, pk=project_id_int)
                 else:
-                    # NhÃƒÂ¢n viÃƒÂªn xem project Ã„â€˜Ã†Â°Ã¡Â»Â£c gÃƒÂ¡n hoÃ¡ÂºÂ·c do mÃƒÂ¬nh tÃ¡ÂºÂ¡o
+                    # Nhân viên xem project được gán hoặc do mình tạo
                     project = get_object_or_404(
                         Project, 
                         pk=project_id_int
@@ -95,12 +95,12 @@ class TaskListView(LoginRequiredMixin, ListView):
             except (ValueError, TypeError):
                 pass
         
-        # QuÃ¡ÂºÂ£n lÃƒÂ½ xem tÃ¡ÂºÂ¥t cÃ¡ÂºÂ£, nhÃƒÂ¢n viÃƒÂªn chÃ¡Â»â€° cÃ¡Â»Â§a mÃƒÂ¬nh
+        # Quản lý xem tất cả, nhân viên chỉ của mình
         if is_manager:
             context['projects'] = Project.objects.all()
             context['employees'] = Employee.objects.filter(is_active=True)
         else:
-            # NhÃƒÂ¢n viÃƒÂªn xem projects Ã„â€˜Ã†Â°Ã¡Â»Â£c gÃƒÂ¡n cho mÃƒÂ¬nh hoÃ¡ÂºÂ·c do mÃƒÂ¬nh tÃ¡ÂºÂ¡o
+            # Nhân viên xem projects được gán cho mình hoặc do mình tạo
             if employee:
                 context['projects'] = Project.objects.filter(
                     Q(allocations__employee=employee) | Q(created_by=user)
@@ -115,7 +115,7 @@ class TaskListView(LoginRequiredMixin, ListView):
 
 
 class TaskCreateView(ManagerRequiredMixin, CreateView):
-    """TÃ¡ÂºÂ¡o cÃƒÂ´ng viÃ¡Â»â€¡c mÃ¡Â»â€ºi - chÃ¡Â»â€° quÃ¡ÂºÂ£n lÃƒÂ½."""
+    """Tạo công việc mới - chỉ quản lý."""
     model = Task
     form_class = TaskForm
     template_name = 'projects/task_form.html'
@@ -135,10 +135,10 @@ class TaskCreateView(ManagerRequiredMixin, CreateView):
         from_page = self.request.GET.get('from', 'tasks')
         
         if from_page == 'detail':
-            # NÃ¡ÂºÂ¿u Ã„â€˜Ã¡ÂºÂ¿n tÃ¡Â»Â« trang chi tiÃ¡ÂºÂ¿t dÃ¡Â»Â± ÃƒÂ¡n, quay vÃ¡Â»Â Ã„â€˜ÃƒÂ³
+            # Nếu đến từ trang chi tiết dự án, quay về đó
             return reverse_lazy('projects:detail', kwargs={'pk': project_id})
         else:
-            # NÃ¡ÂºÂ¿u Ã„â€˜Ã¡ÂºÂ¿n tÃ¡Â»Â« trang cÃƒÂ´ng viÃ¡Â»â€¡c, quay vÃ¡Â»Â Ã„â€˜ÃƒÂ³
+            # Nếu đến từ trang công việc, quay về đó
             return reverse_lazy('projects:tasks') + f'?project={project_id}'
     
     def form_valid(self, form):
@@ -148,7 +148,7 @@ class TaskCreateView(ManagerRequiredMixin, CreateView):
         if project_id and project_id != 'None' and project_id.strip():
             try:
                 project_id_int = int(project_id)
-                # QuÃ¡ÂºÂ£n lÃƒÂ½ cÃƒÂ³ thÃ¡Â»Æ’ tÃ¡ÂºÂ¡o task cho bÃ¡ÂºÂ¥t kÃ¡Â»Â³ project nÃƒÂ o
+                # Quản lý có thể tạo task cho bất kỳ project nào
                 form.instance.project = get_object_or_404(Project, pk=project_id_int)
             except (ValueError, TypeError):
                 pass
@@ -167,7 +167,7 @@ class TaskCreateView(ManagerRequiredMixin, CreateView):
         if self.object.assigned_to_id:
             TaskHistoryService.log(self.object, actor=user, event_type='assigned', note='Task assigned to employee')
 
-        # ThÃƒÂ´ng bÃƒÂ¡o cho nhÃƒÂ¢n viÃƒÂªn Ã„â€˜Ã†Â°Ã¡Â»Â£c giao viÃ¡Â»â€¡c (nÃ¡ÂºÂ¿u cÃƒÂ³)
+        # Thông báo cho nhân viên được giao việc (nếu có)
         try:
             task = self.object
             assigned_emp = getattr(task, "assigned_to", None)
@@ -175,8 +175,8 @@ class TaskCreateView(ManagerRequiredMixin, CreateView):
             if assigned_user:
                 NotificationService.notify(
                     user=assigned_user,
-                    title=f"BÃ¡ÂºÂ¡n Ã„â€˜Ã†Â°Ã¡Â»Â£c giao cÃƒÂ´ng viÃ¡Â»â€¡c: {task.name}",
-                    message=f"BÃ¡ÂºÂ¡n Ã„â€˜Ã†Â°Ã¡Â»Â£c giao cÃƒÂ´ng viÃ¡Â»â€¡c \"{task.name}\" trong dÃ¡Â»Â± ÃƒÂ¡n \"{task.project.name}\".",
+                    title=f"Bạn được giao công việc: {task.name}",
+                    message=f"Bạn được giao công việc \"{task.name}\" trong dự án \"{task.project.name}\".",
                     level=Notification.LEVEL_INFO,
                     url=f"/projects/tasks/{task.pk}/edit/",
                     actor=self.request.user,
@@ -184,7 +184,7 @@ class TaskCreateView(ManagerRequiredMixin, CreateView):
         except Exception:
             pass
 
-        messages.success(self.request, f'Ã„ÂÃƒÂ£ tÃ¡ÂºÂ¡o cÃƒÂ´ng viÃ¡Â»â€¡c "{form.instance.name}" thÃƒÂ nh cÃƒÂ´ng.')
+        messages.success(self.request, f'Đã tạo công việc "{form.instance.name}" thành công.')
         return response
     
     def get_context_data(self, **kwargs):
@@ -192,8 +192,8 @@ class TaskCreateView(ManagerRequiredMixin, CreateView):
         user = self.request.user
         is_manager = hasattr(user, 'profile') and user.profile.is_manager()
         
-        context['page_title'] = 'TÃ¡ÂºÂ¡o cÃƒÂ´ng viÃ¡Â»â€¡c mÃ¡Â»â€ºi'
-        context['submit_text'] = 'TÃ¡ÂºÂ¡o cÃƒÂ´ng viÃ¡Â»â€¡c'
+        context['page_title'] = 'Tạo công việc mới'
+        context['submit_text'] = 'Tạo công việc'
         if is_manager:
             context['projects'] = Project.objects.all()
             context['employees'] = Employee.objects.filter(is_active=True)
@@ -203,17 +203,17 @@ class TaskCreateView(ManagerRequiredMixin, CreateView):
         context['selected_project'] = self.request.GET.get('project')
         context['departments'] = Department.objects.all()
         
-        # XÃƒÂ¡c Ã„â€˜Ã¡Â»â€¹nh nguÃ¡Â»â€œn (tÃ¡Â»Â« detail hay tÃ¡Â»Â« tasks)
+        # Xác định nguồn (từ detail hay từ tasks)
         context['from_page'] = self.request.GET.get('from', 'tasks')
         context['back_url'] = None
         
         if context['from_page'] == 'detail':
-            # NÃ¡ÂºÂ¿u Ã„â€˜Ã¡ÂºÂ¿n tÃ¡Â»Â« trang chi tiÃ¡ÂºÂ¿t, quay vÃ¡Â»Â Ã„â€˜ÃƒÂ³
+            # Nếu đến từ trang chi tiết, quay về đó
             project_id = self.request.GET.get('project')
             if project_id:
                 context['back_url'] = reverse_lazy('projects:detail', kwargs={'pk': project_id})
         else:
-            # NÃ¡ÂºÂ¿u Ã„â€˜Ã¡ÂºÂ¿n tÃ¡Â»Â« trang cÃƒÂ´ng viÃ¡Â»â€¡c, quay vÃ¡Â»Â Ã„â€˜ÃƒÂ³
+            # Nếu đến từ trang công việc, quay về đó
             project_id = self.request.GET.get('project')
             if project_id:
                 context['back_url'] = reverse_lazy('projects:tasks') + f'?project={project_id}'
@@ -237,7 +237,7 @@ class TaskCreateView(ManagerRequiredMixin, CreateView):
 
 
 class TaskUpdateView(LoginRequiredMixin, UpdateView):
-    """CÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t cÃƒÂ´ng viÃ¡Â»â€¡c - quÃ¡ÂºÂ£n lÃƒÂ½ cÃƒÂ³ thÃ¡Â»Æ’ sÃ¡Â»Â­a, nhÃƒÂ¢n viÃƒÂªn chÃ¡Â»â€° xem."""
+    """Cập nhật công việc - quản lý có thể sửa, nhân viên chỉ xem."""
     model = Task
     form_class = TaskForm
     template_name = 'projects/task_form.html'
@@ -250,29 +250,29 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
         return kwargs
     
     def get_queryset(self):
-        """QuÃ¡ÂºÂ£n lÃƒÂ½ xem tÃ¡ÂºÂ¥t cÃ¡ÂºÂ£, nhÃƒÂ¢n viÃƒÂªn chÃ¡Â»â€° xem tasks Ã„â€˜Ã†Â°Ã¡Â»Â£c gÃƒÂ¡n cho mÃƒÂ¬nh."""
+        """Quản lý xem tất cả, nhân viên chỉ xem tasks được gán cho mình."""
         user = self.request.user
         is_manager = hasattr(user, 'profile') and user.profile.is_manager()
         
         if is_manager:
             return Task.objects.all()
         else:
-            # NhÃƒÂ¢n viÃƒÂªn chÃ¡Â»â€° xem tasks Ã„â€˜Ã†Â°Ã¡Â»Â£c gÃƒÂ¡n cho mÃƒÂ¬nh
+            # Nhân viên chỉ xem tasks được gán cho mình
             employee = getattr(user, 'employee', None)
             if employee:
                 return Task.objects.filter(assigned_to=employee)
             return Task.objects.none()
     
     def dispatch(self, request, *args, **kwargs):
-        """KiÃ¡Â»Æ’m tra quyÃ¡Â»Ân trÃ†Â°Ã¡Â»â€ºc khi xÃ¡Â»Â­ lÃƒÂ½ request."""
+        """Kiểm tra quyền trước khi xử lý request."""
         response = super().dispatch(request, *args, **kwargs)
         user = request.user
         is_manager = hasattr(user, 'profile') and user.profile.is_manager()
         
-        # NÃ¡ÂºÂ¿u khÃƒÂ´ng phÃ¡ÂºÂ£i quÃ¡ÂºÂ£n lÃƒÂ½, chÃ¡Â»â€° cho phÃƒÂ©p GET (xem), khÃƒÂ´ng cho POST (sÃ¡Â»Â­a)
+        # Nếu không phải quản lý, chỉ cho phép GET (xem), không cho POST (sửa)
         if not is_manager and request.method == 'POST':
             from django.contrib import messages
-            messages.error(request, 'BÃ¡ÂºÂ¡n khÃƒÂ´ng cÃƒÂ³ quyÃ¡Â»Ân chÃ¡Â»â€°nh sÃ¡Â»Â­a cÃƒÂ´ng viÃ¡Â»â€¡c nÃƒÂ y.')
+            messages.error(request, 'Bạn không có quyền chỉnh sửa công việc này.')
             return redirect('projects:my_tasks')
         
         return response
@@ -284,7 +284,7 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
         user = self.request.user
         is_manager = hasattr(user, 'profile') and user.profile.is_manager()
 
-        # LÃ†Â°u lÃ¡ÂºÂ¡i assigned_to cÃ…Â© Ã„â€˜Ã¡Â»Æ’ detect thay Ã„â€˜Ã¡Â»â€¢i
+        # Lưu lại assigned_to cũ để detect thay đổi
         old_task = self.get_object()
         old_assigned_id = old_task.assigned_to_id
 
@@ -302,7 +302,7 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
         DelayKPIService.update_task_delay_metrics(self.object, actor=user)
         TaskHistoryService.log(self.object, actor=user, event_type='updated', note='Task updated')
 
-        # NÃ¡ÂºÂ¿u quÃ¡ÂºÂ£n lÃƒÂ½ Ã„â€˜Ã¡Â»â€¢i ngÃ†Â°Ã¡Â»Âi Ã„â€˜Ã†Â°Ã¡Â»Â£c giao -> thÃƒÂ´ng bÃƒÂ¡o cho ngÃ†Â°Ã¡Â»Âi mÃ¡Â»â€ºi
+        # Nếu quản lý đổi người được giao -> thông báo cho người mới
         if is_manager:
             try:
                 task = self.object
@@ -314,8 +314,8 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
                     if assigned_user:
                         NotificationService.notify(
                             user=assigned_user,
-                            title=f"BÃ¡ÂºÂ¡n Ã„â€˜Ã†Â°Ã¡Â»Â£c giao cÃƒÂ´ng viÃ¡Â»â€¡c: {task.name}",
-                            message=f"BÃ¡ÂºÂ¡n Ã„â€˜Ã†Â°Ã¡Â»Â£c giao cÃƒÂ´ng viÃ¡Â»â€¡c \"{task.name}\" trong dÃ¡Â»Â± ÃƒÂ¡n \"{task.project.name}\".",
+                            title=f"Bạn được giao công việc: {task.name}",
+                            message=f"Bạn được giao công việc \"{task.name}\" trong dự án \"{task.project.name}\".",
                             level=Notification.LEVEL_INFO,
                             url=f"/projects/tasks/{task.pk}/edit/",
                             actor=user,
@@ -323,7 +323,7 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
             except Exception:
                 pass
 
-        messages.success(self.request, f'Ã„ÂÃƒÂ£ cÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t cÃƒÂ´ng viÃ¡Â»â€¡c "{form.instance.name}" thÃƒÂ nh cÃƒÂ´ng.')
+        messages.success(self.request, f'Đã cập nhật công việc "{form.instance.name}" thành công.')
         return response
     
     def get_context_data(self, **kwargs):
@@ -333,15 +333,15 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
         
         task = self.get_object()
         
-        # NhÃƒÂ¢n viÃƒÂªn chÃ¡Â»â€° xem, khÃƒÂ´ng sÃ¡Â»Â­a
+        # Nhân viên chỉ xem, không sửa
         if is_manager:
-            context['page_title'] = f'ChÃ¡Â»â€°nh sÃ¡Â»Â­a: {task.name}'
-            context['submit_text'] = 'CÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t'
+            context['page_title'] = f'Chỉnh sửa: {task.name}'
+            context['submit_text'] = 'Cập nhật'
             context['is_readonly'] = False
         else:
-            context['page_title'] = f'Chi tiÃ¡ÂºÂ¿t cÃƒÂ´ng viÃ¡Â»â€¡c: {task.name}'
-            context['submit_text'] = 'CÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t'
-            context['is_readonly'] = True  # ChÃ¡ÂºÂ¿ Ã„â€˜Ã¡Â»â„¢ chÃ¡Â»â€° Ã„â€˜Ã¡Â»Âc cho nhÃƒÂ¢n viÃƒÂªn
+            context['page_title'] = f'Chi tiết công việc: {task.name}'
+            context['submit_text'] = 'Cập nhật'
+            context['is_readonly'] = True  # Chế độ chỉ đọc cho nhân viên
         
         if is_manager:
             context['projects'] = Project.objects.all()
@@ -359,7 +359,7 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
         else:
             context['initial_employees'] = Employee.objects.none()
         
-        # ThÃƒÂªm back URL cho nhÃƒÂ¢n viÃƒÂªn
+        # Thêm back URL cho nhân viên
         if not is_manager:
             context['back_url'] = reverse_lazy('projects:my_tasks')
         
@@ -367,11 +367,11 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
 
 
 class TaskDeleteView(ManagerRequiredMixin, DeleteView):
-    """XÃƒÂ³a cÃƒÂ´ng viÃ¡Â»â€¡c - chÃ¡Â»â€° quÃ¡ÂºÂ£n lÃƒÂ½."""
+    """Xóa công việc - chỉ quản lý."""
     model = Task
     
     def get_queryset(self):
-        """QuÃ¡ÂºÂ£n lÃƒÂ½ cÃƒÂ³ thÃ¡Â»Æ’ xÃƒÂ³a tÃ¡ÂºÂ¥t cÃ¡ÂºÂ£."""
+        """Quản lý có thể xóa tất cả."""
         return Task.objects.all()
     
     def get_success_url(self):
@@ -379,12 +379,12 @@ class TaskDeleteView(ManagerRequiredMixin, DeleteView):
     
     def delete(self, request, *args, **kwargs):
         task = self.get_object()
-        messages.success(request, f'Ã„ÂÃƒÂ£ xÃƒÂ³a cÃƒÂ´ng viÃ¡Â»â€¡c "{task.name}".')
+        messages.success(request, f'Đã xóa công việc "{task.name}".')
         return super().delete(request, *args, **kwargs)
 
 
 class TaskUpdateStatusView(LoginRequiredMixin, View):
-    """CÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t trÃ¡ÂºÂ¡ng thÃƒÂ¡i cÃƒÂ´ng viÃ¡Â»â€¡c (AJAX) - quÃ¡ÂºÂ£n lÃƒÂ½ vÃƒÂ  nhÃƒÂ¢n viÃƒÂªn Ã„â€˜Ã¡Â»Âu Ã„â€˜Ã†Â°Ã¡Â»Â£c phÃƒÂ©p."""
+    """Cập nhật trạng thái công việc (AJAX) - quản lý và nhân viên đều được phép."""
     def post(self, request, pk):
         from django.http import JsonResponse
         import json
@@ -392,7 +392,7 @@ class TaskUpdateStatusView(LoginRequiredMixin, View):
         user = request.user
         is_manager = hasattr(user, 'profile') and user.profile.is_manager()
         
-        # LÃ¡ÂºÂ¥y employee cÃ¡Â»Â§a user hiÃ¡Â»â€¡n tÃ¡ÂºÂ¡i (nÃ¡ÂºÂ¿u cÃƒÂ³)
+        # Lấy employee của user hiện tại (nếu có)
         employee = None
         if hasattr(user, 'employee'):
             employee = user.employee
@@ -402,19 +402,19 @@ class TaskUpdateStatusView(LoginRequiredMixin, View):
             if not DelayKPIService.can_approve_others(user):
                 return JsonResponse({'success': False, 'error': 'KPI duoi nguong. Ban khong duoc phe duyet task cua nguoi khac.'}, status=403)
         else:
-            # NhÃƒÂ¢n viÃƒÂªn chÃ¡Â»â€° cÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t tasks Ã„â€˜Ã†Â°Ã¡Â»Â£c gÃƒÂ¡n cho mÃƒÂ¬nh hoÃ¡ÂºÂ·c tasks cÃ¡Â»Â§a projects do mÃƒÂ¬nh tÃ¡ÂºÂ¡o
+            # Nhân viên chỉ cập nhật tasks được gán cho mình hoặc tasks của projects do mình tạo
             try:
                 task = Task.objects.filter(
                     Q(assigned_to=employee) | Q(project__created_by=user)
                 ).get(pk=pk)
             except Task.DoesNotExist:
-                return JsonResponse({'success': False, 'error': 'KhÃƒÂ´ng tÃƒÂ¬m thÃ¡ÂºÂ¥y cÃƒÂ´ng viÃ¡Â»â€¡c.'})
+                return JsonResponse({'success': False, 'error': 'Không tìm thấy công việc.'})
         
         data = json.loads(request.body)
         new_status = data.get('status')
         
         if new_status not in dict(Task.STATUS_CHOICES):
-            return JsonResponse({'success': False, 'error': 'TrÃ¡ÂºÂ¡ng thÃƒÂ¡i khÃƒÂ´ng hÃ¡Â»Â£p lÃ¡Â»â€¡.'})
+            return JsonResponse({'success': False, 'error': 'Trạng thái không hợp lệ.'})
         
         task.status = new_status
         if new_status == 'done' and not task.completed_at:
@@ -431,7 +431,7 @@ class TaskUpdateStatusView(LoginRequiredMixin, View):
 
 
 class GetEmployeesByDepartmentView(LoginRequiredMixin, View):
-    """API endpoint Ã„â€˜Ã¡Â»Æ’ lÃ¡ÂºÂ¥y danh sÃƒÂ¡ch nhÃƒÂ¢n viÃƒÂªn theo phÃƒÂ²ng ban (AJAX)."""
+    """API endpoint để lấy danh sách nhân viên theo phòng ban (AJAX)."""
     def get(self, request):
         department_id = request.GET.get('department_id')
         project_id = request.GET.get('project_id')
@@ -463,7 +463,7 @@ class GetEmployeesByDepartmentView(LoginRequiredMixin, View):
 
 
 class UpdateAssignmentStatusView(LoginRequiredMixin, View):
-    """CÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t trÃ¡ÂºÂ¡ng thÃƒÂ¡i giao/nhÃ¡ÂºÂ­n viÃ¡Â»â€¡c (AJAX)."""
+    """Cập nhật trạng thái giao/nhận việc (AJAX)."""
     def post(self, request, pk):
         import json
         from django.utils import timezone
@@ -474,16 +474,16 @@ class UpdateAssignmentStatusView(LoginRequiredMixin, View):
             employee = user.employee
         
         if not employee:
-            return JsonResponse({'success': False, 'error': 'BÃ¡ÂºÂ¡n khÃƒÂ´ng phÃ¡ÂºÂ£i lÃƒÂ  nhÃƒÂ¢n viÃƒÂªn.'})
+            return JsonResponse({'success': False, 'error': 'Bạn không phải là nhân viên.'})
         
-        # ChÃ¡Â»â€° cho phÃƒÂ©p nhÃƒÂ¢n viÃƒÂªn Ã„â€˜Ã†Â°Ã¡Â»Â£c gÃƒÂ¡n cÃƒÂ´ng viÃ¡Â»â€¡c cÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t trÃ¡ÂºÂ¡ng thÃƒÂ¡i
+        # Chỉ cho phép nhân viên được gán công việc cập nhật trạng thái
         task = get_object_or_404(Task, pk=pk, assigned_to=employee)
         
         data = json.loads(request.body)
         new_status = data.get('assignment_status')
         
         if new_status not in dict(Task.ASSIGNMENT_STATUS_CHOICES):
-            return JsonResponse({'success': False, 'error': 'TrÃ¡ÂºÂ¡ng thÃƒÂ¡i khÃƒÂ´ng hÃ¡Â»Â£p lÃ¡Â»â€¡.'})
+            return JsonResponse({'success': False, 'error': 'Trạng thái không hợp lệ.'})
         
         task.assignment_status = new_status
         if new_status == 'in_progress' and task.started_at is None:
@@ -524,7 +524,7 @@ class UpdateAssignmentStatusView(LoginRequiredMixin, View):
 
 
 class MyTasksView(LoginRequiredMixin, ListView):
-    """Trang xem cÃƒÂ´ng viÃ¡Â»â€¡c Ã„â€˜Ã†Â°Ã¡Â»Â£c gÃƒÂ¡n cho user hiÃ¡Â»â€¡n tÃ¡ÂºÂ¡i."""
+    """Trang xem công việc được gán cho user hiện tại."""
     model = Task
     template_name = 'projects/my_tasks.html'
     context_object_name = 'tasks'
@@ -533,24 +533,24 @@ class MyTasksView(LoginRequiredMixin, ListView):
         user = self.request.user
         employee = None
         
-        # LÃ¡ÂºÂ¥y employee cÃ¡Â»Â§a user hiÃ¡Â»â€¡n tÃ¡ÂºÂ¡i
+        # Lấy employee của user hiện tại
         if hasattr(user, 'employee'):
             employee = user.employee
         
         if not employee:
             return Task.objects.none()
         
-        # LÃ¡ÂºÂ¥y tÃ¡ÂºÂ¥t cÃ¡ÂºÂ£ tasks Ã„â€˜Ã†Â°Ã¡Â»Â£c gÃƒÂ¡n cho employee nÃƒÂ y
+        # Lấy tất cả tasks được gán cho employee này
         queryset = Task.objects.filter(
             assigned_to=employee
         ).select_related('project', 'department').order_by('-due_date', '-created_at')
         
-        # Filter theo trÃ¡ÂºÂ¡ng thÃƒÂ¡i nÃ¡ÂºÂ¿u cÃƒÂ³
+        # Filter theo trạng thái nếu có
         status_filter = self.request.GET.get('status')
         if status_filter:
             queryset = queryset.filter(status=status_filter)
         
-        # Filter theo trÃ¡ÂºÂ¡ng thÃƒÂ¡i giao/nhÃ¡ÂºÂ­n nÃ¡ÂºÂ¿u cÃƒÂ³
+        # Filter theo trạng thái giao/nhận nếu có
         assignment_status_filter = self.request.GET.get('assignment_status')
         if assignment_status_filter:
             queryset = queryset.filter(assignment_status=assignment_status_filter)

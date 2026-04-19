@@ -24,6 +24,7 @@ from .phase_views import (
 from .delay_views import (
     DelayKPIDashboardView, DelayKPIDataAPIView, DelayKPIExportCSVView
 )
+from core.role_views.pm_views import PMRequestMemberView, PMMemberApprovalView
 
 # API routes
 router = DefaultRouter()
@@ -75,6 +76,8 @@ urlpatterns = [
     path('recommendations/<int:pk>/', PersonnelRecommendationDetailView.as_view(), name='recommendation_detail'),
     path('recommendations/<int:recommendation_id>/apply/', ApplyPersonnelRecommendationView.as_view(), name='apply_recommendation'),
     path('<int:project_id>/budget-monitoring/', BudgetMonitoringView.as_view(), name='budget_monitoring'),
+    path('<int:project_id>/request-member/', PMRequestMemberView.as_view(), name='request_member'),
+    path('<int:project_id>/member-approval/', PMMemberApprovalView.as_view(), name='member_approval'),
     path('delay-kpi/dashboard/', DelayKPIDashboardView.as_view(), name='delay_kpi_dashboard'),
     path('api/delay-kpi/', DelayKPIDataAPIView.as_view(), name='delay_kpi_data'),
     path('api/delay-kpi/export-csv/', DelayKPIExportCSVView.as_view(), name='delay_kpi_export_csv'),

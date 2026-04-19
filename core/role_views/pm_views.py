@@ -1,10 +1,12 @@
 from django.db.models import Count, Q
+from django.contrib import messages
 from django.views.generic import TemplateView
+from django.shortcuts import redirect
 
 from core.models import UserRole
 from core.rbac import PermissionRequiredMixin
 from projects.models import Project, Task
-from resources.models import Employee
+from resources.models import Employee, ResourceAllocation, EmployeeSkill
 
 class PMDashboardView(PermissionRequiredMixin, TemplateView):
     permission_required = 'VIEW_PROJECT'
@@ -157,4 +159,81 @@ class PMDashboardView(PermissionRequiredMixin, TemplateView):
 
         context["related_accounts"] = related_accounts
         context["related_accounts_count"] = len(related_accounts)
+        return context
+
+
+class PMRequestMemberView(PermissionRequiredMixin, TemplateView):
+    """PM is not allowed to add/request members."""
+
+    template_name = 'modules/projects/pages/project_request_member.html'
+    permission_required = 'VIEW_ALL_PROJECTS'
+
+    def get(self, request, *args, **kwargs):
+        messages.error(request, 'PM khong co quyen them nhan vien vao du an.')
+        return redirect('projects:list')
+
+    def post(self, request, *args, **kwargs):
+        messages.error(request, 'PM khong co quyen them nhan vien vao du an.')
+        return redirect('projects:list')
+
+    def get_context_data(self, **kwargs):
+        return super().get_context_data(**kwargs)
+
+
+class PMMemberApprovalView(PermissionRequiredMixin, TemplateView):
+    """PM can remove project members, but cannot add members."""
+
+    template_name = 'modules/projects/pages/project_member_approval.html'
+    permission_required = 'VIEW_ALL_PROJECTS'
+
+    def post(self, request, *args, **kwargs):
+        project_id = kwargs.get('project_id')
+        project = Project.objects.filter(pk=project_id).first()
+        if not project:
+            messages.error(request, 'Project not found.')
+            return redirect('projects:member_approval', project_id=project_id)
+
+        allocation_id = request.POST.get('allocation_id')
+        action = request.POST.get('action')
+
+        allocation = ResourceAllocation.objects.filter(
+            pk=allocation_id,
+            project=project,
+        ).select_related('employee').first()
+        if not allocation:
+            messages.error(request, 'Khong tim thay thanh vien trong du an.')
+            return redirect('projects:member_approval', project_id=project.id)
+
+        if action == 'remove_member':
+            employee_name = allocation.employee.full_name
+            allocation.delete()
+            messages.success(request, f'PM da loai {employee_name} khoi du an.')
+            return redirect('projects:member_approval', project_id=project.id)
+
+        messages.warning(request, 'Hanh dong khong hop le.')
+        return redirect('projects:member_approval', project_id=project.id)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        project_id = kwargs.get('project_id')
+        project = Project.objects.filter(pk=project_id).first()
+
+        if not project:
+            context['error'] = 'Project not found'
+            return context
+
+        allocations = ResourceAllocation.objects.filter(project=project).select_related('employee__department')
+        members = []
+        for allocation in allocations:
+            employee = allocation.employee
+            skills = EmployeeSkill.objects.filter(employee=employee).select_related('skill').order_by('-proficiency')
+            members.append(
+                {
+                    'employee': employee,
+                    'allocation': allocation,
+                    'skills': skills,
+                }
+            )
+
+        context.update({'project': project, 'members': members})
         return context

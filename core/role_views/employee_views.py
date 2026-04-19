@@ -1,10 +1,13 @@
 from django.views.generic import TemplateView, CreateView, ListView
 from django.urls import reverse_lazy
+from django.shortcuts import redirect
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils import timezone
+from django.db import IntegrityError
 from django.db.models import Sum
 from core.rbac import PermissionRequiredMixin
-from resources.models import Employee
+from resources.models import Employee, Skill, EmployeeSkill
 from projects.models import TimeEntry, Task
 
 
@@ -121,4 +124,132 @@ class EmployeeTimeEntryListView(LoginRequiredMixin, ListView):
             context['total_hours_this_month'] = total_hours
         except Employee.DoesNotExist:
             context['total_hours_this_month'] = 0
+        return context
+
+
+class EmployeeSkillsView(PermissionRequiredMixin, TemplateView):
+    """View for employees to manage their own skills."""
+
+    template_name = 'modules/employee/pages/skills.html'
+    permission_required = 'VIEW_ASSIGNED_TASK'
+
+    def post(self, request, *args, **kwargs):
+        action = request.POST.get('action')
+
+        try:
+            employee = Employee.objects.get(user=request.user)
+        except Employee.DoesNotExist:
+            messages.error(request, 'Khong tim thay ho so nhan vien.')
+            return redirect('employee_module:skills')
+
+        if action == 'add':
+            return self._add_skill(request, employee)
+        if action == 'edit':
+            return self._edit_skill(request, employee)
+        if action == 'delete':
+            return self._delete_skill(request, employee)
+
+        messages.warning(request, 'Hanh dong khong hop le.')
+        return redirect('employee_module:skills')
+
+    def _add_skill(self, request, employee):
+        skill_id = request.POST.get('skill_id')
+        proficiency = request.POST.get('proficiency', 'beginner')
+        years_of_experience = request.POST.get('years_of_experience') or 0
+        notes = request.POST.get('notes', '').strip()
+
+        if not skill_id:
+            messages.error(request, 'Vui long chon ky nang.')
+            return redirect('employee_module:skills')
+
+        try:
+            skill = Skill.objects.get(pk=skill_id, is_active=True)
+            EmployeeSkill.objects.create(
+                employee=employee,
+                skill=skill,
+                proficiency=proficiency,
+                years_of_experience=years_of_experience,
+                notes=notes,
+                created_by=request.user,
+                updated_by=request.user,
+            )
+            messages.success(request, 'Da them ky nang thanh cong.')
+        except Skill.DoesNotExist:
+            messages.error(request, 'Ky nang khong ton tai hoac da ngung hoat dong.')
+        except IntegrityError:
+            messages.warning(request, 'Ky nang nay da ton tai trong danh sach cua ban.')
+
+        return redirect('employee_module:skills')
+
+    def _edit_skill(self, request, employee):
+        employee_skill_id = request.POST.get('employee_skill_id')
+        proficiency = request.POST.get('proficiency', 'beginner')
+        years_of_experience = request.POST.get('years_of_experience') or 0
+        notes = request.POST.get('notes', '').strip()
+
+        if not employee_skill_id:
+            messages.error(request, 'Khong tim thay ky nang can cap nhat.')
+            return redirect('employee_module:skills')
+
+        employee_skill = EmployeeSkill.objects.filter(
+            pk=employee_skill_id,
+            employee=employee,
+        ).select_related('skill').first()
+
+        if not employee_skill:
+            messages.error(request, 'Ban khong co quyen sua ky nang nay.')
+            return redirect('employee_module:skills')
+
+        employee_skill.proficiency = proficiency
+        employee_skill.years_of_experience = years_of_experience
+        employee_skill.notes = notes
+        employee_skill.updated_by = request.user
+        employee_skill.save(update_fields=['proficiency', 'years_of_experience', 'notes', 'updated_by', 'updated_at'])
+        messages.success(request, f'Da cap nhat ky nang {employee_skill.skill.name}.')
+        return redirect('employee_module:skills')
+
+    def _delete_skill(self, request, employee):
+        employee_skill_id = request.POST.get('employee_skill_id')
+
+        if not employee_skill_id:
+            messages.error(request, 'Khong tim thay ky nang can xoa.')
+            return redirect('employee_module:skills')
+
+        employee_skill = EmployeeSkill.objects.filter(
+            pk=employee_skill_id,
+            employee=employee,
+        ).select_related('skill').first()
+
+        if not employee_skill:
+            messages.error(request, 'Ban khong co quyen xoa ky nang nay.')
+            return redirect('employee_module:skills')
+
+        skill_name = employee_skill.skill.name
+        employee_skill.delete()
+        messages.success(request, f'Da xoa ky nang {skill_name}.')
+        return redirect('employee_module:skills')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        try:
+            employee = Employee.objects.get(user=self.request.user)
+            employee_skills = EmployeeSkill.objects.filter(employee=employee).select_related('skill')
+            all_skills = Skill.objects.filter(is_active=True).order_by('category', 'name')
+            context.update(
+                {
+                    'employee': employee,
+                    'employee_skills': employee_skills,
+                    'all_skills': all_skills,
+                    'proficiency_choices': EmployeeSkill.PROFICIENCY_CHOICES,
+                }
+            )
+        except Employee.DoesNotExist:
+            context.update(
+                {
+                    'employee': None,
+                    'employee_skills': [],
+                    'all_skills': Skill.objects.filter(is_active=True),
+                    'proficiency_choices': EmployeeSkill.PROFICIENCY_CHOICES,
+                }
+            )
         return context

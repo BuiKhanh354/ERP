@@ -4,10 +4,10 @@ Services for personnel recommendation and budget management.
 from decimal import Decimal
 from django.db.models import Q, Avg, Sum
 from django.utils import timezone
-from resources.models import Employee, Department
+from resources.models import Employee, Department, EmployeeSkill, ResourceAllocation
 from resources.salary_services import HourlyRateService
 from performance.models import PerformanceScore
-from .models import Project, PersonnelRecommendation, PersonnelRecommendationDetail
+from .models import Project, Task, PersonnelRecommendation, PersonnelRecommendationDetail
 
 
 class PersonnelRecommendationService:
@@ -88,212 +88,356 @@ class PersonnelRecommendationService:
         return employees.filter(department__in=required_departments)
 
     @staticmethod
+    def extract_required_skills(project):
+        """Extract required skill keywords from project tasks."""
+        required = set()
+        task_rows = Task.objects.filter(project=project).exclude(required_skills='').values_list('required_skills', flat=True)
+        for raw in task_rows:
+            if not raw:
+                continue
+            chunks = str(raw).replace(';', ',').split(',')
+            for chunk in chunks:
+                token = chunk.strip().lower()
+                if token:
+                    required.add(token)
+        return required
+
+    @staticmethod
+    def get_employee_skill_keywords(employee):
+        """Get normalized skill keywords for employee."""
+        skills = set()
+        skill_rows = EmployeeSkill.objects.filter(employee=employee).select_related('skill')
+        for row in skill_rows:
+            skills.add((row.skill.name or '').strip().lower())
+            if row.skill.category:
+                skills.add((row.skill.category or '').strip().lower())
+        # Position can also contain useful keywords
+        if employee.position:
+            for token in str(employee.position).replace('/', ' ').replace('-', ' ').split():
+                t = token.strip().lower()
+                if t:
+                    skills.add(t)
+        return skills
+
+    @staticmethod
+    def calculate_skill_match_score(required_skills, employee_keywords):
+        """Return score in range 0..100 based on keyword overlap."""
+        if not required_skills:
+            return 60.0
+        matched = sum(1 for sk in required_skills if sk in employee_keywords)
+        return round((matched / max(len(required_skills), 1)) * 100, 2)
+
+    @staticmethod
+    def get_employee_workload_score(employee):
+        """Convert current allocation load to 0..100 availability score."""
+        today = timezone.localdate()
+        total_alloc = (
+            ResourceAllocation.objects.filter(employee=employee)
+            .filter(Q(end_date__isnull=True) | Q(end_date__gte=today))
+            .aggregate(total=Sum('allocation_percentage'))['total']
+            or 0
+        )
+        availability = max(0, 100 - float(total_alloc))
+        return round(availability, 2), round(float(total_alloc), 2)
+
+    @staticmethod
     def rule_based_recommendation(project, optimization_goal='balanced', max_employees=10):
         """
-        Đề xuất nhân sự dựa trên quy tắc (rule-based).
-        
-        Args:
-            project: Project instance
-            optimization_goal: 'performance', 'cost', hoặc 'balanced'
-            max_employees: Số nhân sự tối đa đề xuất
-        
-        Returns:
-            list: Danh sách dict với thông tin đề xuất
+        De xuat nhan su dua tren scoring noi bo (khong train model).
         """
-        # Lấy nhân sự từ các phòng ban yêu cầu
-        employees = Employee.objects.filter(is_active=True)
+        employees = Employee.objects.filter(is_active=True).select_related('department')
         if project.required_departments.exists():
             employees = PersonnelRecommendationService.filter_employees_by_departments(
                 employees,
                 project.required_departments.all()
             )
-        
+
+        required_skills = PersonnelRecommendationService.extract_required_skills(project)
         recommendations = []
-        
-        # Bước 1: Tính toán tất cả thông tin trước
-        for employee in employees[:max_employees * 2]:  # Lấy nhiều hơn để filter
-            # Tính điểm hiệu suất
-            performance_score = PersonnelRecommendationService.get_employee_performance_score(
-                employee,
-                project
-            )
-            
-            # Tính chi phí ước tính (giả sử 160 giờ/tháng)
+
+        for employee in employees[: max_employees * 4]:
+            performance_score = PersonnelRecommendationService.get_employee_performance_score(employee, project)
+            availability_score, current_load = PersonnelRecommendationService.get_employee_workload_score(employee)
+            employee_keywords = PersonnelRecommendationService.get_employee_skill_keywords(employee)
+            skill_match_score = PersonnelRecommendationService.calculate_skill_match_score(required_skills, employee_keywords)
+
             estimated_hours = Decimal('160')
             estimated_cost = PersonnelRecommendationService.calculate_employee_cost(
                 employee,
                 estimated_hours,
                 allocation_percentage=100
             )
-            
-            recommendations.append({
-                'employee': employee,
-                'performance_score': performance_score,
-                'estimated_cost': estimated_cost,
-                'estimated_hours': estimated_hours,
-                'allocation_percentage': 100,  # Mặc định
-                'reasoning': f"Hiệu suất: {performance_score:.1f}/100, Chi phí: {estimated_cost:,.0f} VNĐ"
-            })
-        
-        # Bước 2: Tính max_cost để normalize (sau khi đã có tất cả chi phí)
-        if recommendations:
-            max_cost = max(r['estimated_cost'] for r in recommendations)
-            min_cost = min(r['estimated_cost'] for r in recommendations)
-        else:
-            max_cost = Decimal('50000000')
-            min_cost = Decimal('0')
-        
-        # Bước 3: Tính điểm tổng hợp và sắp xếp
+
+            recommendations.append(
+                {
+                    'employee': employee,
+                    'performance_score': float(performance_score),
+                    'availability_score': float(availability_score),
+                    'current_load': float(current_load),
+                    'skill_match_score': float(skill_match_score),
+                    'estimated_cost': estimated_cost,
+                    'estimated_hours': estimated_hours,
+                    'allocation_percentage': 100,
+                }
+            )
+
+        if not recommendations:
+            return []
+
+        max_cost = max(r['estimated_cost'] for r in recommendations)
+        min_cost = min(r['estimated_cost'] for r in recommendations)
+
         for rec in recommendations:
+            if max_cost > min_cost:
+                cost_score = (1 - float(rec['estimated_cost'] - min_cost) / float(max_cost - min_cost)) * 100
+            else:
+                cost_score = 100
+            rec['cost_score'] = round(cost_score, 2)
+
             if optimization_goal == 'performance':
-                # Ưu tiên hiệu suất - sắp xếp theo performance_score giảm dần
-                rec['combined_score'] = rec['performance_score']
+                combined = (
+                    rec['performance_score'] * 0.5
+                    + rec['skill_match_score'] * 0.25
+                    + rec['availability_score'] * 0.15
+                    + rec['cost_score'] * 0.10
+                )
             elif optimization_goal == 'cost':
-                # Ưu tiên chi phí thấp - chi phí càng thấp, score càng cao
-                if max_cost > min_cost:
-                    # Normalize: chi phí thấp nhất = 100, chi phí cao nhất = 0
-                    cost_score = (1 - float(rec['estimated_cost'] - min_cost) / float(max_cost - min_cost)) * 100
-                else:
-                    cost_score = 100
-                # Ưu tiên 95% chi phí, 5% hiệu suất tối thiểu (chỉ để đảm bảo chất lượng)
-                rec['combined_score'] = cost_score * 0.95 + min(rec['performance_score'], 50) * 0.05
-            else:  # balanced
-                # Cân bằng - kết hợp hiệu suất và chi phí
-                if max_cost > min_cost:
-                    cost_score = (1 - float(rec['estimated_cost'] - min_cost) / float(max_cost - min_cost)) * 100
-                else:
-                    cost_score = 100
-                rec['combined_score'] = (rec['performance_score'] * 0.6 + cost_score * 0.4)
-        
-        # Sắp xếp theo điểm tổng hợp (giảm dần)
+                combined = (
+                    rec['cost_score'] * 0.55
+                    + rec['skill_match_score'] * 0.20
+                    + rec['availability_score'] * 0.15
+                    + rec['performance_score'] * 0.10
+                )
+            else:
+                combined = (
+                    rec['performance_score'] * 0.35
+                    + rec['skill_match_score'] * 0.30
+                    + rec['cost_score'] * 0.20
+                    + rec['availability_score'] * 0.15
+                )
+
+            rec['combined_score'] = round(combined, 2)
+            rec['reasoning'] = (
+                f"Match skill {rec['skill_match_score']:.1f}, "
+                f"performance {rec['performance_score']:.1f}, "
+                f"availability {rec['availability_score']:.1f} (load {rec['current_load']:.1f}%), "
+                f"cost score {rec['cost_score']:.1f}."
+            )
+
         recommendations.sort(key=lambda x: x['combined_score'], reverse=True)
-        
-        # Chỉ lấy top N
         return recommendations[:max_employees]
 
     @staticmethod
     def ai_recommendation(project, optimization_goal='balanced', rule_based_results=None):
-        """
-        Đề xuất nhân sự bằng lớp AI hiện tại.
-        
-        Args:
-            project: Project instance
-            optimization_goal: 'performance', 'cost', hoặc 'balanced'
-            rule_based_results: Kết quả từ rule-based (tùy chọn)
-        
-        Returns:
-            dict: {
-                'recommendations': list,
-                'reasoning': str,
-                'total_cost': Decimal
-            }
-        """
+        """Get AI explanation for ranked candidates."""
         from ai.services import AIService
-        
-        # Chuẩn bị context
+
         context = {
             'project_name': project.name,
             'project_description': project.description,
             'budget_for_personnel': float(project.budget_for_personnel),
             'required_departments': [dept.name for dept in project.required_departments.all()],
             'optimization_goal': optimization_goal,
+            'required_skills': list(PersonnelRecommendationService.extract_required_skills(project)),
         }
-        
-        # Lấy danh sách nhân sự khả dụng
-        employees = Employee.objects.filter(is_active=True)
-        if project.required_departments.exists():
-            employees = PersonnelRecommendationService.filter_employees_by_departments(
-                employees,
-                project.required_departments.all()
-            )
-        
-        employee_data = []
-        for emp in employees[:20]:  # Giới hạn để không quá dài
-            perf_score = PersonnelRecommendationService.get_employee_performance_score(emp)
-            hourly_rate_obj = HourlyRateService.get_current_hourly_rate(emp)
-            hourly_rate = hourly_rate_obj.hourly_rate if hourly_rate_obj else 0
-            
-            employee_data.append({
-                'id': emp.id,
-                'name': emp.full_name,
-                'department': emp.department.name if emp.department else 'N/A',
-                'position': emp.position,
-                'performance_score': perf_score,
-                'hourly_rate': float(hourly_rate),
-            })
-        
-        context['available_employees'] = employee_data
-        
-        # Gọi AI service (cần tạo method mới trong AIService)
-        try:
-            ai_result = AIService.recommend_personnel_for_project(context)
-            return ai_result
-        except Exception as e:
-            # Fallback về rule-based nếu AI lỗi
-            if rule_based_results:
-                return {
-                    'recommendations': rule_based_results,
-                    'reasoning': 'Sử dụng thuật toán rule-based do lỗi AI.',
-                    'total_cost': sum(r['estimated_cost'] for r in rule_based_results)
+
+        ranked_rows = []
+        for row in (rule_based_results or [])[:10]:
+            ranked_rows.append(
+                {
+                    'name': row['employee'].full_name,
+                    'department': row['employee'].department.name if row['employee'].department else 'N/A',
+                    'combined_score': float(row.get('combined_score', 0)),
+                    'skill_match_score': float(row.get('skill_match_score', 0)),
+                    'performance_score': float(row.get('performance_score', 0)),
+                    'availability_score': float(row.get('availability_score', 0)),
+                    'estimated_cost': float(row.get('estimated_cost', 0)),
                 }
+            )
+        context['ranked_candidates'] = ranked_rows
+
+        try:
+            return AIService.recommend_personnel_for_project(context)
+        except Exception:
             return None
 
     @staticmethod
-    def recommend_personnel(project, optimization_goal='balanced', use_ai=True):
+    def llm_first_recommendation(project, optimization_goal='balanced', max_employees=10):
         """
-        Đề xuất nhân sự cho dự án (kết hợp rule-based + AI).
-        
-        Args:
-            project: Project instance
-            optimization_goal: 'performance', 'cost', hoặc 'balanced'
-            use_ai: Có sử dụng AI không (mặc định True)
-        
-        Returns:
-            dict: {
-                'recommendations': list,
-                'reasoning': str,
-                'total_cost': Decimal,
-                'method': str
+        LLM-first recommendation:
+        - LLM la bo chon ung vien chinh
+        - scoring noi bo dung de tao candidate pool + fallback + hard constraints
+        """
+        from ai.services import AIService
+
+        # Candidate pool duoc tao tu scoring de cung cap metric cho model
+        candidate_pool = PersonnelRecommendationService.rule_based_recommendation(
+            project,
+            optimization_goal=optimization_goal,
+            max_employees=max(max_employees, 8),
+        )
+        if not candidate_pool:
+            return None
+
+        required_skills = list(PersonnelRecommendationService.extract_required_skills(project))
+        context = {
+            'project_name': project.name,
+            'project_description': (project.description or '')[:500],
+            'budget_for_personnel': float(project.budget_for_personnel or 0),
+            'optimization_goal': optimization_goal,
+            'required_departments': [d.name for d in project.required_departments.all()],
+            'required_skills': required_skills,
+            'max_recommendations': max_employees,
+            'hard_constraints': {
+                'allocation_percentage_min': 10,
+                'allocation_percentage_max': 100,
+                'exclude_if_overallocated': True,
+                'prefer_skill_match': True,
+            },
+            'candidate_pool': [
+                {
+                    'employee_id': row['employee'].id,
+                    'name': row['employee'].full_name,
+                    'department': row['employee'].department.name if row['employee'].department else 'N/A',
+                    'skill_match_score': float(row.get('skill_match_score', 0)),
+                    'performance_score': float(row.get('performance_score', 0)),
+                    'availability_score': float(row.get('availability_score', 0)),
+                    'current_load': float(row.get('current_load', 0)),
+                    'cost_score': float(row.get('cost_score', 0)),
+                    'combined_score': float(row.get('combined_score', 0)),
+                    'estimated_cost_full_allocation': float(row.get('estimated_cost', 0)),
+                    'estimated_hours_full_allocation': float(row.get('estimated_hours', 160)),
+                }
+                for row in candidate_pool
+            ],
+        }
+
+        ai_pick = AIService.select_personnel_for_project(context)
+        if not ai_pick:
+            return None
+
+        pool_by_id = {row['employee'].id: row for row in candidate_pool}
+        recommendations = []
+
+        for item in ai_pick.get('selected_candidates', []):
+            if isinstance(item, int):
+                item = {'employee_id': item}
+            elif isinstance(item, str) and item.strip().isdigit():
+                item = {'employee_id': int(item.strip())}
+            elif not isinstance(item, dict):
+                continue
+            try:
+                employee_id = int(item.get('employee_id'))
+            except (TypeError, ValueError):
+                continue
+
+            base = pool_by_id.get(employee_id)
+            if not base:
+                continue
+
+            # Hard requirement: tat ca truong chi phi/gio/% phai do AI tra ve.
+            try:
+                allocation_percentage = Decimal(str(item['allocation_percentage']))
+                estimated_hours = Decimal(str(item['estimated_hours']))
+                estimated_cost = Decimal(str(item['estimated_cost']))
+            except Exception:
+                continue
+            allocation_percentage = max(Decimal('0'), min(Decimal('100'), allocation_percentage))
+            if allocation_percentage <= 0:
+                continue
+            if estimated_hours <= 0:
+                continue
+            if estimated_cost < 0:
+                continue
+
+            # Hard constraints: tranh nhan su da qua tai
+            if float(base.get('availability_score', 0)) <= 0:
+                continue
+
+            # Neu project co required skills, bo qua nguoi match qua thap
+            if required_skills and float(base.get('skill_match_score', 0)) < 10:
+                continue
+
+            recommendations.append(
+                {
+                    'employee': base['employee'],
+                    'performance_score': base.get('performance_score', 0),
+                    'availability_score': base.get('availability_score', 0),
+                    'current_load': base.get('current_load', 0),
+                    'skill_match_score': base.get('skill_match_score', 0),
+                    'cost_score': base.get('cost_score', 0),
+                    'combined_score': base.get('combined_score', 0),
+                    'estimated_cost': estimated_cost.quantize(Decimal('0.01')),
+                    'estimated_hours': estimated_hours.quantize(Decimal('0.01')),
+                    'allocation_percentage': float(allocation_percentage),
+                    'reasoning': str(item.get('reasoning', '')).strip() or base.get('reasoning', ''),
+                }
+            )
+            if len(recommendations) >= max_employees:
+                break
+
+        if not recommendations:
+            return {
+                'recommendations': [],
+                'reasoning': str(ai_pick.get('error') or 'Model khong tra ve de xuat hop le.'),
+                'total_cost': Decimal('0'),
+                'method': 'llm-first-required-failed',
             }
-        """
-        # Bước 1: Rule-based recommendation
+
+        total_cost = sum((r['estimated_cost'] for r in recommendations), Decimal('0'))
+        overall_reasoning = ai_pick.get('overall_reasoning', '').strip()
+        timestamp = timezone.now().strftime('%d/%m/%Y %H:%M:%S')
+        reasoning = (
+            f"De xuat theo che do LLM-first (model la bo chon chinh). "
+            f"{overall_reasoning} (tao luc {timestamp})"
+        )
+
+        return {
+            'recommendations': recommendations,
+            'reasoning': reasoning,
+            'total_cost': total_cost,
+            'method': 'llm-first',
+        }
+
+    @staticmethod
+    def recommend_personnel(project, optimization_goal='balanced', use_ai=True):
+        """Recommend personnel with hard LLM-first mode when AI is enabled."""
+        if use_ai:
+            llm_result = PersonnelRecommendationService.llm_first_recommendation(
+                project,
+                optimization_goal=optimization_goal,
+            )
+            if llm_result and (
+                llm_result.get('recommendations') or llm_result.get('method') == 'llm-first-required-failed'
+            ):
+                return llm_result
+            # Hard LLM-first: KHONG fallback scoring khi bat AI
+            return {
+                'recommendations': [],
+                'reasoning': (
+                    'LLM-first bat buoc dang duoc kich hoat. '
+                    'Model khong tra ve de xuat hop le nen he thong dung lai, khong fallback scoring.'
+                ),
+                'total_cost': Decimal('0'),
+                'method': 'llm-first-required-failed',
+            }
+
+        # Chi dung scoring khi tat AI.
         rule_based_results = PersonnelRecommendationService.rule_based_recommendation(
             project,
             optimization_goal
         )
-        
-        # Bước 2: AI recommendation (nếu được yêu cầu)
-        if use_ai:
-            ai_result = PersonnelRecommendationService.ai_recommendation(
-                project,
-                optimization_goal,
-                rule_based_results
-            )
-            
-            if ai_result and ai_result.get('recommendations'):
-                from django.utils import timezone
-                timestamp = timezone.now().strftime('%d/%m/%Y %H:%M:%S')
-                reasoning = ai_result.get('reasoning', '')
-                if reasoning:
-                    reasoning = f"{reasoning} (Tạo lúc {timestamp})"
-                else:
-                    reasoning = f"Đề xuất từ AI (tạo lúc {timestamp})"
-                return {
-                    'recommendations': ai_result['recommendations'],
-                    'reasoning': reasoning,
-                    'total_cost': Decimal(str(ai_result.get('total_cost', 0))),
-                    'method': 'ai'
-                }
-        
-        # Fallback về rule-based
-        total_cost = sum(r['estimated_cost'] for r in rule_based_results)
-        from django.utils import timezone
+        total_cost = sum((r['estimated_cost'] for r in rule_based_results), Decimal('0'))
         timestamp = timezone.now().strftime('%d/%m/%Y %H:%M:%S')
+        reasoning = (
+            f'Fallback scoring noi bo theo muc tieu {optimization_goal} '
+            f'(tao luc {timestamp}).'
+        )
         return {
             'recommendations': rule_based_results,
-            'reasoning': f'Đề xuất dựa trên {optimization_goal} (tạo lúc {timestamp}).',
+            'reasoning': reasoning,
             'total_cost': total_cost,
-            'method': 'rule-based'
+            'method': 'rule-based-fallback',
         }
 
     @staticmethod
@@ -481,3 +625,6 @@ class BudgetMonitoringService:
             'message': '',
             'severity': None
         }
+
+
+

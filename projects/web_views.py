@@ -17,6 +17,7 @@ from resources.models import ResourceAllocation, Employee
 from budgeting.models import Budget, Expense
 from ai.services import AIService
 from core.mixins import ManagerRequiredMixin
+from core.rbac import PermissionRequiredMixin
 from core.notification_service import NotificationService
 from core.models import Notification
 from django.http import JsonResponse
@@ -296,8 +297,9 @@ class ProjectDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-class ProjectAddPersonnelView(ManagerRequiredMixin, CreateView):
+class ProjectAddPersonnelView(PermissionRequiredMixin, CreateView):
     """Them nhan su vao du an tu trang chi tiet."""
+    permission_required = 'RESOURCE_ALLOCATE'
     model = ResourceAllocation
     form_class = ProjectPersonnelAllocationForm
     template_name = 'projects/add_personnel.html'
@@ -592,7 +594,13 @@ class PersonnelRecommendationView(ManagerRequiredMixin, View):
                     from django.shortcuts import render
                     return render(request, 'projects/personnel_recommendation.html', context)
                 else:
-                    messages.error(request, 'Không thể tạo đề xuất. Vui lòng thử lại.')
+                    failure_reason = ''
+                    if result:
+                        failure_reason = str(result.get('reasoning', '')).strip()
+                    if failure_reason:
+                        messages.error(request, failure_reason)
+                    else:
+                        messages.error(request, 'Không thể tạo đề xuất. Vui lòng thử lại.')
             except Exception as e:
                 messages.error(request, f'Lỗi khi tạo đề xuất: {str(e)}')
         else:

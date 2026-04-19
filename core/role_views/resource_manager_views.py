@@ -1,11 +1,16 @@
 from collections import defaultdict
 
 from django.db.models import Q, Sum
+from django.shortcuts import get_object_or_404, render, redirect
 from django.utils import timezone
+from django.views import View
 from django.views.generic import TemplateView
 
 from core.rbac import PermissionRequiredMixin
-from projects.models import Project
+from core.role_views.admin_views import AdminProjectMembersView, AdminAddProjectMemberView
+from projects.models import Project, PersonnelRecommendation
+from projects.personnel_forms import PersonnelRecommendationForm
+from projects.personnel_services import PersonnelRecommendationService, BudgetMonitoringService
 from resources.models import Department, Employee, ResourceAllocation
 
 class ResourceDashboardView(PermissionRequiredMixin, TemplateView):
@@ -94,6 +99,38 @@ class ResourceAllocationListView(PermissionRequiredMixin, TemplateView):
     permission_required = 'RESOURCE_ALLOCATE'
     template_name = 'modules/resource_manager/pages/allocation_list.html'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        projects = Project.objects.filter(status__in=['planning', 'active', 'on_hold']).order_by('name')
+        employees = Employee.objects.filter(is_active=True).select_related('department').order_by('last_name', 'first_name')
+        departments = Department.objects.filter(is_active=True).order_by('name')
+
+        project_id = (self.request.GET.get('project') or '').strip()
+        employee_id = (self.request.GET.get('employee') or '').strip()
+        department_id = (self.request.GET.get('department') or '').strip()
+
+        allocations = ResourceAllocation.objects.select_related(
+            'employee__department',
+            'project',
+        ).order_by('-start_date', '-created_at')
+
+        if project_id:
+            allocations = allocations.filter(project_id=project_id)
+        if employee_id:
+            allocations = allocations.filter(employee_id=employee_id)
+        if department_id:
+            allocations = allocations.filter(employee__department_id=department_id)
+
+        context['rm_projects'] = projects
+        context['rm_employees'] = employees
+        context['rm_departments'] = departments
+        context['allocations'] = allocations
+        context['default_project_id'] = projects.first().id if projects.exists() else None
+        context['selected_project_id'] = project_id
+        context['selected_employee_id'] = employee_id
+        context['selected_department_id'] = department_id
+        return context
+
 
 class ResourceCapacityPlanningView(PermissionRequiredMixin, TemplateView):
     permission_required = 'VIEW_ALL_RESOURCES'
@@ -103,3 +140,109 @@ class ResourceCapacityPlanningView(PermissionRequiredMixin, TemplateView):
 class ResourceProjectResourcesView(PermissionRequiredMixin, TemplateView):
     permission_required = 'VIEW_ALL_RESOURCES'
     template_name = 'modules/resource_manager/pages/project_resources.html'
+
+
+class ResourceManagerProjectMembersView(AdminProjectMembersView):
+    permission_required = 'RESOURCE_ALLOCATE'
+    template_name = 'modules/resource_manager/pages/project_members.html'
+
+
+class ResourceManagerAddProjectMemberView(AdminAddProjectMemberView):
+    permission_required = 'RESOURCE_ALLOCATE'
+    template_name = 'modules/resource_manager/pages/add_project_member.html'
+
+
+class ResourceManagerPersonnelRecommendationView(PermissionRequiredMixin, View):
+    permission_required = 'RESOURCE_ALLOCATE'
+
+    def get(self, request, project_id):
+        project = get_object_or_404(Project, pk=project_id)
+        form = PersonnelRecommendationForm()
+        recommendations = PersonnelRecommendation.objects.filter(project=project).order_by('-created_at')[:10]
+        budget_warning = BudgetMonitoringService.check_budget_warning(project)
+        context = {
+            'project': project,
+            'form': form,
+            'recommendations': recommendations,
+            'budget_warning': budget_warning,
+        }
+        return render(request, 'modules/resource_manager/pages/personnel_recommendation.html', context)
+
+    def post(self, request, project_id):
+        project = get_object_or_404(Project, pk=project_id)
+        form = PersonnelRecommendationForm(request.POST)
+        if form.is_valid():
+            optimization_goal = form.cleaned_data['optimization_goal']
+            use_ai = form.cleaned_data.get('use_ai', True)
+            try:
+                result = PersonnelRecommendationService.recommend_personnel(
+                    project,
+                    optimization_goal,
+                    use_ai
+                )
+                if result and result.get('recommendations'):
+                    recommendation = PersonnelRecommendationService.save_recommendation(
+                        project,
+                        optimization_goal,
+                        result,
+                        request.user
+                    )
+                    from django.contrib import messages
+                    messages.success(request, f'Da tao de xuat nhan su thanh cong ({result["method"]}).')
+                    recommendations = PersonnelRecommendation.objects.filter(project=project).order_by('-created_at')[:10]
+                    budget_warning = BudgetMonitoringService.check_budget_warning(project)
+                    context = {
+                        'project': project,
+                        'form': PersonnelRecommendationForm(),
+                        'recommendations': recommendations,
+                        'budget_warning': budget_warning,
+                        'new_recommendation': recommendation,
+                    }
+                    return render(request, 'modules/resource_manager/pages/personnel_recommendation.html', context)
+                else:
+                    from django.contrib import messages
+                    failure_reason = str((result or {}).get('reasoning', '')).strip()
+                    messages.error(request, failure_reason or 'Khong the tao de xuat. Vui long thu lai.')
+            except Exception as e:
+                from django.contrib import messages
+                messages.error(request, f'Loi khi tao de xuat: {str(e)}')
+        else:
+            from django.contrib import messages
+            messages.error(request, 'Du lieu khong hop le.')
+
+        recommendations = PersonnelRecommendation.objects.filter(project=project).order_by('-created_at')[:10]
+        budget_warning = BudgetMonitoringService.check_budget_warning(project)
+        context = {
+            'project': project,
+            'form': form,
+            'recommendations': recommendations,
+            'budget_warning': budget_warning,
+        }
+        return render(request, 'modules/resource_manager/pages/personnel_recommendation.html', context)
+
+
+class ResourceManagerRecommendationDetailView(PermissionRequiredMixin, TemplateView):
+    permission_required = 'RESOURCE_ALLOCATE'
+    template_name = 'projects/personnel_recommendation_detail.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        recommendation = get_object_or_404(
+            PersonnelRecommendation.objects.select_related('project', 'created_by').prefetch_related(
+                'personnelrecommendationdetail_set__employee'
+            ),
+            pk=self.kwargs.get('pk')
+        )
+        context['recommendation'] = recommendation
+        return context
+
+
+class ResourceManagerApplyRecommendationView(PermissionRequiredMixin, View):
+    permission_required = 'RESOURCE_ALLOCATE'
+
+    def post(self, request, recommendation_id):
+        from projects.web_views import ApplyPersonnelRecommendationView
+        # Reuse existing apply logic and then redirect back RM page.
+        response = ApplyPersonnelRecommendationView().post(request, recommendation_id=recommendation_id)
+        recommendation = get_object_or_404(PersonnelRecommendation, pk=recommendation_id)
+        return redirect('resource_manager_module:recommend_personnel', project_id=recommendation.project_id)

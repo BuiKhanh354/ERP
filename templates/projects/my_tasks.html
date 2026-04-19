@@ -361,39 +361,39 @@
   }
 </script>
 
-<!-- Modal Ghi chÃ©p thá»i gian nhanh -->
+<!-- Modal Ghi chép thời gian nhanh -->
 <div class="modal fade" id="quickLogTimeModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Ghi chÃ©p thá»i gian</h5>
+        <h5 class="modal-title">Ghi chép thời gian</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <form id="quickLogTimeForm">
           <input type="hidden" id="logTaskId" name="task_id">
           <div class="mb-3">
-            <label class="form-label">CÃ´ng viá»‡c</label>
+            <label class="form-label">Công việc</label>
             <input type="text" class="form-control" id="logTaskName" readonly>
           </div>
           <div class="mb-3">
-            <label for="logHours" class="form-label">Sá»‘ giá» lÃ m viá»‡c</label>
+            <label for="logHours" class="form-label">Số giờ làm việc</label>
             <input type="number" class="form-control" id="logHours" name="hours" step="0.25" min="0.1" required>
-            <small class="form-text text-muted">Nháº­p sá»‘ giá» (vÃ­ dá»¥: 7.5, 8, 4.25)</small>
+            <small class="form-text text-muted">Nhập số giờ (ví dụ: 7.5, 8, 4.25)</small>
           </div>
           <div class="mb-3">
-            <label for="logDate" class="form-label">NgÃ y lÃ m viá»‡c</label>
+            <label for="logDate" class="form-label">Ngày làm việc</label>
             <input type="date" class="form-control" id="logDate" name="date" required>
           </div>
           <div class="mb-3">
-            <label for="logDescription" class="form-label">MÃ´ táº£ (tÃ¹y chá»n)</label>
+            <label for="logDescription" class="form-label">Mô tả (tùy chọn)</label>
             <textarea class="form-control" id="logDescription" name="description" rows="2"></textarea>
           </div>
         </form>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Há»§y</button>
-        <button type="button" class="btn btn-primary" onclick="submitQuickLogTime()">LÆ°u</button>
+        <button type="button" class="btn btn-primary" onclick="submitQuickLogTime()">Lưu</button>
       </div>
     </div>
   </div>

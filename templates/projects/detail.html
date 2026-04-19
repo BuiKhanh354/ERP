@@ -26,15 +26,22 @@
       {{ project.get_priority_display }}
     </span>
   </div>
-  <div>
-    {% if user_profile.is_manager %}
-    <a href="{% url 'projects:add_personnel' project.pk %}" class="btn btn-outline-success me-2">
-      <i class="bi bi-person-plus me-1"></i>Thêm nhân sự
-    </a>
-    <a href="{% url 'projects:recommend_personnel' project.pk %}" class="btn btn-outline-info me-2">
-      <i class="bi bi-people me-1"></i>Đề xuất Nhân sự
-    </a>
-    {% endif %}
+		  <div>
+		    {% if user_profile.is_manager %}
+		    <a href="{% url 'projects:recommend_personnel' project.pk %}" class="btn btn-outline-info me-2">
+		      <i class="bi bi-stars me-1"></i>AI goi y nhan su
+		    </a>
+		    {% endif %}
+		    {% if 'RESOURCE_MANAGER' in user_role_names %}
+		    <a href="{% url 'resource_manager_module:add_project_member' project.pk %}" class="btn btn-outline-success me-2">
+		      <i class="bi bi-person-plus me-1"></i>RM them nhan vien
+		    </a>
+	    {% endif %}
+	    {% if 'PROJECT_MANAGER' in user_role_names %}
+	    <a href="{% url 'projects:member_approval' project.pk %}" class="btn btn-outline-warning me-2">
+	      <i class="bi bi-person-dash me-1"></i>PM loai thanh vien
+	    </a>
+	    {% endif %}
     <a href="{% url 'projects:edit' project.pk %}" class="btn btn-outline-primary">
       <i class="bi bi-pencil me-1"></i>Chỉnh sửa
     </a>
@@ -1177,4 +1184,5 @@ function showProjectAIInsightsModal() {
 <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.5.0/dist/frappe-gantt.min.js"></script>
 
 {% endblock %}
+
 

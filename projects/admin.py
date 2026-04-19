@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Project, Task, TimeEntry, DelayRuleConfig, TaskHistory
+from .models import Project, Task, TimeEntry, DelayRuleConfig, TaskHistory, ProjectMembershipRequest
 
 
 @admin.register(Project)
@@ -38,4 +38,11 @@ class TimeEntryAdmin(admin.ModelAdmin):
 class DelayRuleConfigAdmin(admin.ModelAdmin):
     list_display = ['name', 'is_active', 'requires_explanation_after_days', 'updated_at']
     list_filter = ['is_active']
+
+
+@admin.register(ProjectMembershipRequest)
+class ProjectMembershipRequestAdmin(admin.ModelAdmin):
+    list_display = ['project', 'employee', 'requested_by', 'status', 'created_at']
+    list_filter = ['status', 'project']
+    search_fields = ['project__name', 'employee__first_name', 'employee__last_name']
 

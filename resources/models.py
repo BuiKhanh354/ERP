@@ -126,6 +126,46 @@ class ResourceAllocation(BaseModel):
         return f"{self.employee} - {self.project} ({self.allocation_percentage}%)"
 
 
+class Skill(BaseModel):
+    """Master list of technical skills."""
+
+    name = models.CharField(max_length=100, unique=True, help_text='Ten ky nang (VD: JavaScript, Python, React)')
+    category = models.CharField(max_length=50, blank=True, help_text='Nhom ky nang (VD: Programming, Database, Design)')
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class EmployeeSkill(BaseModel):
+    """Employee skills with proficiency level."""
+
+    PROFICIENCY_CHOICES = [
+        ('beginner', 'Beginner'),
+        ('intermediate', 'Intermediate'),
+        ('advanced', 'Advanced'),
+        ('expert', 'Expert'),
+    ]
+
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='employee_skills')
+    skill = models.ForeignKey(Skill, on_delete=models.CASCADE, related_name='employee_skills')
+    proficiency = models.CharField(max_length=20, choices=PROFICIENCY_CHOICES, default='beginner')
+    years_of_experience = models.DecimalField(max_digits=4, decimal_places=1, default=0, help_text='So nam kinh nghiem')
+    notes = models.TextField(blank=True, help_text='Ghi chu them')
+
+    class Meta:
+        unique_together = ['employee', 'skill']
+        ordering = ['-proficiency', 'skill__name']
+        verbose_name = 'Ky nang nhan vien'
+        verbose_name_plural = 'Ky nang nhan vien'
+
+    def __str__(self):
+        return f"{self.employee.full_name} - {self.skill.name} ({self.get_proficiency_display()})"
+
+
 class PayrollSchedule(BaseModel):
     """Lịch phát lương chung cho toàn bộ nhân viên."""
     PAYMENT_DAY_CHOICES = [(i, f'Ngày {i}') for i in range(1, 29)]  # Ngày 1-28

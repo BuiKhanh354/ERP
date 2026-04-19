@@ -25,6 +25,8 @@ BASE_DIR = Path(__file__).resolve().parent
 ATTRITION_MODEL_PATH = BASE_DIR / "models" / "attrition_model.pkl"
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434/api/chat")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:4b")
+OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "20"))
+LAST_OLLAMA_ERROR: str | None = None
 
 
 def _to_float(value: Any, default: float = 0.0) -> float:
@@ -84,8 +86,15 @@ def _load_json_list(raw_value: Any) -> list[float]:
     return []
 
 
-def _ollama_chat(system_prompt: str, user_prompt: str, context: dict[str, Any] | None = None) -> str | None:
-    payload = {
+def _ollama_chat(
+    system_prompt: str,
+    user_prompt: str,
+    context: dict[str, Any] | None = None,
+    force_json: bool = False,
+    num_predict: int = 128,
+) -> str | None:
+    global LAST_OLLAMA_ERROR
+    base_payload = {
         "model": OLLAMA_MODEL,
         "messages": [
             {"role": "system", "content": system_prompt},
@@ -96,19 +105,48 @@ def _ollama_chat(system_prompt: str, user_prompt: str, context: dict[str, Any] |
             },
         ],
         "stream": False,
+        "think": False,
+        "options": {
+            "temperature": 0.1,
+            "num_predict": num_predict,
+        },
     }
 
-    try:
-        response = requests.post(OLLAMA_URL, json=payload, timeout=30)
-        response.raise_for_status()
-        data = response.json()
-        message = data.get("message", {})
-        content = message.get("content")
-        if content:
-            return content.strip()
-    except Exception:
-        return None
+    def _call(payload: dict[str, Any]) -> str | None:
+        global LAST_OLLAMA_ERROR
+        try:
+            response = requests.post(OLLAMA_URL, json=payload, timeout=OLLAMA_TIMEOUT)
+            response.raise_for_status()
+            data = response.json()
+            message = data.get("message", {})
+            content = message.get("content")
+            if content:
+                LAST_OLLAMA_ERROR = None
+                return content.strip()
+            LAST_OLLAMA_ERROR = "Model returned empty content."
+            return None
+        except Exception as exc:
+            LAST_OLLAMA_ERROR = str(exc)
+            return None
+
+    first_payload = dict(base_payload)
+    if force_json:
+        first_payload["format"] = "json"
+    first = _call(first_payload)
+    if first:
+        return first
+
+    # Retry once without strict JSON mode; upper layers already parse/repair outputs.
+    if force_json:
+        retry = _call(dict(base_payload))
+        if retry:
+            return retry
+
     return None
+
+
+def get_last_ollama_error() -> str | None:
+    return LAST_OLLAMA_ERROR
 
 
 @lru_cache(maxsize=1)

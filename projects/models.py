@@ -37,15 +37,15 @@ class Project(BaseModel):
         max_digits=15, 
         decimal_places=2, 
         default=0,
-        help_text='NgÃ¢n sÃ¡ch dÃ nh cho nhÃ¢n sá»± (VNÄ)'
+        help_text='Ngân sách dành cho nhân sự (VNĐ)'
     )
-    estimated_employees = models.PositiveIntegerField(default=0, help_text='Sá»‘ nhÃ¢n sá»± dá»± kiáº¿n cho dá»± Ã¡n')
-    departments = models.ManyToManyField('resources.Department', related_name='projects', blank=True, help_text='PhÃ²ng ban phá»¥ trÃ¡ch dá»± Ã¡n')
+    estimated_employees = models.PositiveIntegerField(default=0, help_text='Số nhân sự dự kiến cho dự án')
+    departments = models.ManyToManyField('resources.Department', related_name='projects', blank=True, help_text='Phòng ban phụ trách dự án')
     required_departments = models.ManyToManyField(
         'resources.Department',
         related_name='required_projects',
         blank=True,
-        help_text='CÃ¡c phÃ²ng ban báº¯t buá»™c cáº§n tham gia dá»± Ã¡n'
+        help_text='Các phòng ban bắt buộc cần tham gia dự án'
     )
     project_manager = models.ForeignKey(
         'resources.Employee',
@@ -53,7 +53,7 @@ class Project(BaseModel):
         null=True,
         blank=True,
         related_name='managed_projects',
-        help_text='Project Manager chÃ­nh cá»§a dá»± Ã¡n'
+        help_text='Project Manager chính của dự án'
     )
     delay_penalty_enabled = models.BooleanField(default=True, help_text='Bat/tat tinh nang phat KPI do tre han cho du an')
 
@@ -65,7 +65,7 @@ class Project(BaseModel):
 
     @property
     def calculated_progress(self):
-        """TÃ­nh tiáº¿n Ä‘á»™ dá»± Ã¡n dá»±a trÃªn táº¥t cáº£ tasks."""
+        """Tính tiến độ dự án dựa trên tất cả tasks."""
         tasks = self.tasks.all()
         if not tasks.exists():
             return 0
@@ -73,25 +73,25 @@ class Project(BaseModel):
 
 
 class ProjectPhase(BaseModel):
-    """Giai Ä‘oáº¡n dá»± Ã¡n (Agile lifecycle phases)."""
+    """Giai đoạn dự án (Agile lifecycle phases)."""
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='phases')
-    phase_name = models.CharField(max_length=200, help_text='TÃªn giai Ä‘oáº¡n')
+    phase_name = models.CharField(max_length=200, help_text='Tên giai đoạn')
     description = models.TextField(blank=True)
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
-    order_index = models.PositiveIntegerField(default=0, help_text='Thá»© tá»± sáº¯p xáº¿p')
+    order_index = models.PositiveIntegerField(default=0, help_text='Thứ tự sắp xếp')
 
     class Meta:
         ordering = ['order_index', 'created_at']
-        verbose_name = 'Giai Ä‘oáº¡n dá»± Ã¡n'
-        verbose_name_plural = 'Giai Ä‘oáº¡n dá»± Ã¡n'
+        verbose_name = 'Giai đoạn dự án'
+        verbose_name_plural = 'Giai đoạn dự án'
 
     def __str__(self):
         return f"{self.project.name} - {self.phase_name}"
 
     @property
     def calculated_progress(self):
-        """TÃ­nh tiáº¿n Ä‘á»™ phase dá»±a trÃªn tasks."""
+        """Tính tiến độ phase dựa trên tasks."""
         tasks = self.tasks.all()
         if not tasks.exists():
             return 0
@@ -114,35 +114,35 @@ class Task(BaseModel):
     ]
 
     ASSIGNMENT_STATUS_CHOICES = [
-        ('assigned', 'ÄÃ£ giao'),
-        ('accepted', 'ÄÃ£ nháº­n'),
-        ('in_progress', 'Äang thá»±c hiá»‡n'),
-        ('completed', 'HoÃ n thÃ nh'),
-        ('rejected', 'Tá»« chá»‘i'),
+        ('assigned', 'Đã giao'),
+        ('accepted', 'Đã nhận'),
+        ('in_progress', 'Đang thực hiện'),
+        ('completed', 'Hoàn thành'),
+        ('rejected', 'Từ chối'),
     ]
 
     PRIORITY_CHOICES = [
-        ('low', 'Tháº¥p'),
-        ('medium', 'Trung bÃ¬nh'),
+        ('low', 'Thấp'),
+        ('medium', 'Trung bình'),
         ('high', 'Cao'),
-        ('critical', 'Kháº©n cáº¥p'),
+        ('critical', 'Khẩn cấp'),
     ]
 
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='tasks')
-    phase = models.ForeignKey('ProjectPhase', on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks', help_text='Giai Ä‘oáº¡n dá»± Ã¡n')
-    progress_percent = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(100)], help_text='Tiáº¿n Ä‘á»™ hoÃ n thÃ nh (0-100%)')
+    phase = models.ForeignKey('ProjectPhase', on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks', help_text='Giai đoạn dự án')
+    progress_percent = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(100)], help_text='Tiến độ hoàn thành (0-100%)')
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     required_skills = models.TextField(blank=True, default='', help_text='Ky nang yeu cau de hoan thanh task')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='todo')
-    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium', help_text='Má»©c Ä‘á»™ Æ°u tiÃªn')
-    department = models.ForeignKey('resources.Department', on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks', help_text='PhÃ²ng ban phá»¥ trÃ¡ch cÃ´ng viá»‡c')
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium', help_text='Mức độ ưu tiên')
+    department = models.ForeignKey('resources.Department', on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks', help_text='Phòng ban phụ trách công việc')
     assigned_to = models.ForeignKey('resources.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_tasks')
-    assignment_status = models.CharField(max_length=20, choices=ASSIGNMENT_STATUS_CHOICES, default='assigned', help_text='Tráº¡ng thÃ¡i giao/nháº­n viá»‡c')
+    assignment_status = models.CharField(max_length=20, choices=ASSIGNMENT_STATUS_CHOICES, default='assigned', help_text='Trạng thái giao/nhận việc')
     due_date = models.DateField(null=True, blank=True)
     estimated_hours = models.DecimalField(max_digits=8, decimal_places=2, default=0)
     actual_hours = models.DecimalField(max_digits=8, decimal_places=2, default=0)
-    started_at = models.DateTimeField(null=True, blank=True, help_text='Thá»i Ä‘iá»ƒm báº¯t Ä‘áº§u tÃ­nh giá» Æ°á»›c tÃ­nh')
+    started_at = models.DateTimeField(null=True, blank=True, help_text='Thời điểm bắt đầu tính giờ ước tính')
     completed_at = models.DateTimeField(null=True, blank=True, help_text='Thoi diem hoan thanh task')
     days_late = models.IntegerField(default=0, help_text='So ngay tre han')
     DELAY_REASON_CHOICES = [
@@ -166,7 +166,7 @@ class Task(BaseModel):
 
     @property
     def estimated_end_at(self):
-        """TÃ­nh thá»i Ä‘iá»ƒm káº¿t thÃºc Æ°á»›c tÃ­nh dá»±a trÃªn started_at hoáº·c created_at."""
+        """Tính thời điểm kết thúc ước tính dựa trên started_at hoặc created_at."""
         from django.utils import timezone
         base_time = self.started_at or self.created_at
         if base_time and self.estimated_hours:
@@ -193,11 +193,11 @@ class TimeEntry(BaseModel):
 
 
 class PersonnelRecommendation(BaseModel):
-    """LÆ°u lá»‹ch sá»­ Ä‘á» xuáº¥t nhÃ¢n sá»± cho dá»± Ã¡n."""
+    """Lưu lịch sử đề xuất nhân sự cho dự án."""
     OPTIMIZATION_GOAL_CHOICES = [
-        ('performance', 'Tá»‘i Æ°u hiá»‡u suáº¥t'),
-        ('cost', 'Tá»‘i Æ°u chi phÃ­'),
-        ('balanced', 'CÃ¢n báº±ng'),
+        ('performance', 'Tối ưu hiệu suất'),
+        ('cost', 'Tối ưu chi phí'),
+        ('balanced', 'Cân bằng'),
     ]
 
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='personnel_recommendations')
@@ -205,65 +205,96 @@ class PersonnelRecommendation(BaseModel):
         max_length=20,
         choices=OPTIMIZATION_GOAL_CHOICES,
         default='balanced',
-        help_text='Má»¥c tiÃªu tá»‘i Æ°u hÃ³a'
+        help_text='Mục tiêu tối ưu hóa'
     )
     recommended_employees = models.ManyToManyField(
         'resources.Employee',
         through='PersonnelRecommendationDetail',
         related_name='recommendations',
-        help_text='Danh sÃ¡ch nhÃ¢n sá»± Ä‘Æ°á»£c Ä‘á» xuáº¥t'
+        help_text='Danh sách nhân sự được đề xuất'
     )
     total_estimated_cost = models.DecimalField(
         max_digits=15,
         decimal_places=2,
         default=0,
-        help_text='Tá»•ng chi phÃ­ Æ°á»›c tÃ­nh (VNÄ)'
+        help_text='Tổng chi phí ước tính (VNĐ)'
     )
-    reasoning = models.TextField(help_text='LÃ½ do vÃ  phÃ¢n tÃ­ch Ä‘á» xuáº¥t')
-    is_applied = models.BooleanField(default=False, help_text='ÄÃ£ Ã¡p dá»¥ng Ä‘á» xuáº¥t nÃ y chÆ°a')
-    applied_at = models.DateTimeField(null=True, blank=True, help_text='Thá»i Ä‘iá»ƒm Ã¡p dá»¥ng')
+    reasoning = models.TextField(help_text='Lý do và phân tích đề xuất')
+    is_applied = models.BooleanField(default=False, help_text='Đã áp dụng đề xuất này chưa')
+    applied_at = models.DateTimeField(null=True, blank=True, help_text='Thời điểm áp dụng')
 
     class Meta:
         ordering = ['-created_at']
-        verbose_name = 'Äá» xuáº¥t nhÃ¢n sá»±'
-        verbose_name_plural = 'Äá» xuáº¥t nhÃ¢n sá»±'
+        verbose_name = 'Đề xuất nhân sự'
+        verbose_name_plural = 'Đề xuất nhân sự'
 
     def __str__(self):
         return f"{self.project.name} - {self.get_optimization_goal_display()} ({self.created_at.strftime('%d/%m/%Y')})"
 
 
 class PersonnelRecommendationDetail(BaseModel):
-    """Chi tiáº¿t Ä‘á» xuáº¥t nhÃ¢n sá»± (through model)."""
+    """Chi tiết đề xuất nhân sự (through model)."""
     recommendation = models.ForeignKey(PersonnelRecommendation, on_delete=models.CASCADE)
     employee = models.ForeignKey('resources.Employee', on_delete=models.CASCADE)
     allocation_percentage = models.DecimalField(
         max_digits=5,
         decimal_places=2,
         validators=[MinValueValidator(0), MaxValueValidator(100)],
-        help_text='Tá»· lá»‡ phÃ¢n bá»• (%)'
+        help_text='Tỷ lệ phân bổ (%)'
     )
     estimated_hours = models.DecimalField(
         max_digits=8,
         decimal_places=2,
         default=0,
-        help_text='Sá»‘ giá» Æ°á»›c tÃ­nh'
+        help_text='Số giờ ước tính'
     )
     estimated_cost = models.DecimalField(
         max_digits=15,
         decimal_places=2,
         default=0,
-        help_text='Chi phÃ­ Æ°á»›c tÃ­nh (VNÄ)'
+        help_text='Chi phí ước tính (VNĐ)'
     )
-    reasoning = models.TextField(blank=True, help_text='LÃ½ do Ä‘á» xuáº¥t nhÃ¢n sá»± nÃ y')
+    reasoning = models.TextField(blank=True, help_text='Lý do đề xuất nhân sự này')
 
     class Meta:
         unique_together = ['recommendation', 'employee']
-        verbose_name = 'Chi tiáº¿t Ä‘á» xuáº¥t nhÃ¢n sá»±'
-        verbose_name_plural = 'Chi tiáº¿t Ä‘á» xuáº¥t nhÃ¢n sá»±'
+        verbose_name = 'Chi tiết đề xuất nhân sự'
+        verbose_name_plural = 'Chi tiết đề xuất nhân sự'
 
     def __str__(self):
         return f"{self.recommendation.project.name} - {self.employee.full_name} ({self.allocation_percentage}%)"
 
+
+
+class ProjectMembershipRequest(BaseModel):
+    """Request to add employee to project from PM, reviewed by Admin."""
+
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='membership_requests')
+    employee = models.ForeignKey('resources.Employee', on_delete=models.CASCADE, related_name='membership_requests')
+    requested_by = models.ForeignKey(
+        'resources.Employee',
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='requests_sent',
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    reason = models.TextField(blank=True, help_text='Ly do request')
+    admin_response = models.TextField(blank=True, help_text='Admin response')
+
+    class Meta:
+        unique_together = ['project', 'employee', 'status']
+        ordering = ['-created_at']
+        verbose_name = 'Project membership request'
+        verbose_name_plural = 'Project membership requests'
+
+    def __str__(self):
+        return f"{self.employee.full_name} -> {self.project.name} ({self.get_status_display()})"
 
 
 class DelayRuleConfig(BaseModel):
@@ -292,9 +323,9 @@ class DelayRuleConfig(BaseModel):
 class Milestone(BaseModel):
     """Milestone cho project."""
     STATUS_CHOICES = [
-        ('pending', 'Chá»'),
-        ('in_progress', 'Äang thá»±c hiá»‡n'),
-        ('completed', 'HoÃ n thÃ nh'),
+        ('pending', 'Chờ'),
+        ('in_progress', 'Đang thực hiện'),
+        ('completed', 'Hoàn thành'),
     ]
 
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='milestones')
@@ -312,16 +343,16 @@ class Milestone(BaseModel):
 
 
 class TaskProgressLog(BaseModel):
-    """Lá»‹ch sá»­ cáº­p nháº­t tiáº¿n Ä‘á»™ cÃ´ng viá»‡c."""
+    """Lịch sử cập nhật tiến độ công việc."""
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='progress_logs')
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='progress_logs')
-    progress_percent = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)], help_text='Tiáº¿n Ä‘á»™ táº¡i thá»i Ä‘iá»ƒm cáº­p nháº­t')
-    note = models.TextField(blank=True, help_text='Ghi chÃº tiáº¿n Ä‘á»™')
+    progress_percent = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)], help_text='Tiến độ tại thời điểm cập nhật')
+    note = models.TextField(blank=True, help_text='Ghi chú tiến độ')
 
     class Meta:
         ordering = ['-created_at']
-        verbose_name = 'Lá»‹ch sá»­ cáº­p nháº­t tiáº¿n Ä‘á»™'
-        verbose_name_plural = 'Lá»‹ch sá»­ cáº­p nháº­t tiáº¿n Ä‘á»™'
+        verbose_name = 'Lịch sử cập nhật tiến độ'
+        verbose_name_plural = 'Lịch sử cập nhật tiến độ'
 
     def __str__(self):
         return f"{self.task.name} - {self.progress_percent}% ({self.created_at.strftime('%d/%m/%Y %H:%M')})"

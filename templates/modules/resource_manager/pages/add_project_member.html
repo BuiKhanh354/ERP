@@ -1,0 +1,124 @@
+{% extends "shared/layouts/base_role.html" %}
+{% block title %}Them thanh vien{% endblock %}
+{% block page_title %}Them thanh vien vao du an{% endblock %}
+
+{% block content %}
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% else %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="mb-0">Them thanh vien vao: {{ project.name }}</h5>
+  <a class="btn btn-outline-secondary" href="{% url 'resource_manager_module:project_members' project.id %}">
+    <i class="bi bi-arrow-left"></i> Xem thanh vien du an
+  </a>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-white">
+    <strong>Request cho duyet</strong>
+    <span class="badge bg-warning text-dark">{{ pending_requests|length }}</span>
+  </div>
+  <div class="card-body">
+    {% if pending_requests %}
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <thead>
+          <tr>
+            <th>Nhan vien</th>
+            <th>PM</th>
+            <th>Ly do</th>
+            <th>Hanh dong</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for req in pending_requests %}
+          <tr>
+            <td>
+              <div class="fw-semibold">{{ req.employee.full_name }}</div>
+              <small class="text-muted">{{ req.employee.department.name|default:"-" }}</small>
+            </td>
+            <td>{{ req.requested_by.full_name|default:"-" }}</td>
+            <td>{{ req.reason|default:"(khong co)" }}</td>
+            <td>
+              <form method="post" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="approve_request" />
+                <input type="hidden" name="request_id" value="{{ req.id }}" />
+                <input type="hidden" name="allocation_percentage" value="100" />
+                <button class="btn btn-sm btn-success" type="submit"><i class="bi bi-check2"></i> Duyet</button>
+              </form>
+              <form method="post" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="reject_request" />
+                <input type="hidden" name="request_id" value="{{ req.id }}" />
+                <button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-x-lg"></i> Tu choi</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-muted">Khong co request nao dang cho.</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white"><strong>Nhan vien san sang them vao du an</strong></div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th class="ps-3">Nhan vien</th>
+            <th>Phong ban</th>
+            <th>Skills</th>
+            <th style="width: 250px;">Them nhanh</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in employees_with_skills %}
+          <tr>
+            <td class="ps-3">{{ row.employee.full_name }}</td>
+            <td>{{ row.employee.department.name|default:"-" }}</td>
+            <td>
+              {% if row.skills %}
+                {% for employee_skill in row.skills %}
+                  {% if employee_skill.proficiency == 'beginner' %}
+                  <span class="badge bg-secondary me-1 mb-1">{{ employee_skill.skill.name }}</span>
+                  {% elif employee_skill.proficiency == 'intermediate' %}
+                  <span class="badge bg-info me-1 mb-1">{{ employee_skill.skill.name }}</span>
+                  {% elif employee_skill.proficiency == 'advanced' %}
+                  <span class="badge bg-success me-1 mb-1">{{ employee_skill.skill.name }}</span>
+                  {% else %}
+                  <span class="badge bg-warning text-dark me-1 mb-1">{{ employee_skill.skill.name }}</span>
+                  {% endif %}
+                {% endfor %}
+              {% else %}
+              <span class="text-muted">Chua co ky nang</span>
+              {% endif %}
+            </td>
+            <td>
+              <form method="post" class="d-flex gap-2">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add_member" />
+                <input type="hidden" name="employee_id" value="{{ row.employee.id }}" />
+                <input type="number" step="0.1" min="0" max="100" name="allocation_percentage" value="100" class="form-control form-control-sm" />
+                <button class="btn btn-sm btn-primary" type="submit"><i class="bi bi-person-plus"></i></button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" class="text-center py-4 text-muted">Khong con nhan vien san sang cho du an nay.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

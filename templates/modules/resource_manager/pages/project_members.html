@@ -1,0 +1,74 @@
+{% extends "shared/layouts/base_role.html" %}
+{% block title %}Project members{% endblock %}
+{% block page_title %}Thanh vien du an{% endblock %}
+
+{% block content %}
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% else %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="mb-0">Thanh vien du an: {{ project.name }}</h5>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-info" href="{% url 'resource_manager_module:recommend_personnel' project.id %}">
+      <i class="bi bi-stars"></i> AI goi y
+    </a>
+    <a class="btn btn-outline-primary" href="{% url 'resource_manager_module:add_project_member' project.id %}">
+      <i class="bi bi-person-plus"></i> Them thanh vien
+    </a>
+    <a class="btn btn-outline-secondary" href="{% url 'projects:detail' project.id %}">
+      <i class="bi bi-arrow-left"></i> Quay lai du an
+    </a>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th class="ps-3">Nhan vien</th>
+            <th>Phong ban</th>
+            <th>Allocation</th>
+            <th>Skills</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for member in members %}
+          <tr>
+            <td class="ps-3">
+              <div class="fw-semibold">{{ member.employee.full_name }}</div>
+              <small class="text-muted">{{ member.employee.employee_id }}</small>
+            </td>
+            <td>{{ member.employee.department.name|default:"-" }}</td>
+            <td>{{ member.allocation.allocation_percentage|floatformat:1 }}%</td>
+            <td>
+              {% if member.skills %}
+                {% for employee_skill in member.skills %}
+                  {% if employee_skill.proficiency == 'beginner' %}
+                  <span class="badge bg-secondary me-1 mb-1">{{ employee_skill.skill.name }} (Beginner)</span>
+                  {% elif employee_skill.proficiency == 'intermediate' %}
+                  <span class="badge bg-info me-1 mb-1">{{ employee_skill.skill.name }} (Intermediate)</span>
+                  {% elif employee_skill.proficiency == 'advanced' %}
+                  <span class="badge bg-success me-1 mb-1">{{ employee_skill.skill.name }} (Advanced)</span>
+                  {% else %}
+                  <span class="badge bg-warning text-dark me-1 mb-1">{{ employee_skill.skill.name }} (Expert)</span>
+                  {% endif %}
+                {% endfor %}
+              {% else %}
+              <span class="text-muted">Chua co ky nang</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" class="text-center py-4 text-muted">Chua co thanh vien nao trong du an.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

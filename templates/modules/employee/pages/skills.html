@@ -1,0 +1,155 @@
+{% extends "shared/layouts/base_role.html" %}
+{% block title %}Quan ly ky nang{% endblock %}
+{% block page_title %}Quan ly ky nang{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="mb-0">Ky nang cua toi</h5>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSkillModal">
+        <i class="bi bi-plus-lg"></i> Them ky nang
+      </button>
+    </div>
+
+    {% if employee_skills %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>Skill</th>
+            <th>Category</th>
+            <th>Proficiency</th>
+            <th>Years</th>
+            <th>Notes</th>
+            <th class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for employee_skill in employee_skills %}
+          <tr>
+            <td>{{ employee_skill.skill.name }}</td>
+            <td>{{ employee_skill.skill.category|default:"-" }}</td>
+            <td>
+              {% if employee_skill.proficiency == 'beginner' %}
+              <span class="badge bg-secondary">Beginner</span>
+              {% elif employee_skill.proficiency == 'intermediate' %}
+              <span class="badge bg-info">Intermediate</span>
+              {% elif employee_skill.proficiency == 'advanced' %}
+              <span class="badge bg-success">Advanced</span>
+              {% else %}
+              <span class="badge bg-warning text-dark">Expert</span>
+              {% endif %}
+            </td>
+            <td>{{ employee_skill.years_of_experience|floatformat:1 }}</td>
+            <td>{{ employee_skill.notes|default:"-"|truncatechars:50 }}</td>
+            <td class="text-end">
+              <button
+                class="btn btn-sm btn-outline-primary"
+                data-bs-toggle="modal"
+                data-bs-target="#editSkillModal{{ employee_skill.id }}"
+              >
+                <i class="bi bi-pencil"></i>
+              </button>
+              <form method="post" class="d-inline" onsubmit="return confirm('Ban chac chan muon xoa ky nang nay?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete" />
+                <input type="hidden" name="employee_skill_id" value="{{ employee_skill.id }}" />
+                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+
+          <div class="modal fade" id="editSkillModal{{ employee_skill.id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <form method="post">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="edit" />
+                  <input type="hidden" name="employee_skill_id" value="{{ employee_skill.id }}" />
+                  <div class="modal-header">
+                    <h5 class="modal-title">Cap nhat ky nang: {{ employee_skill.skill.name }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body">
+                    <div class="mb-3">
+                      <label class="form-label">Proficiency</label>
+                      <select name="proficiency" class="form-select" required>
+                        {% for value, label in proficiency_choices %}
+                        <option value="{{ value }}" {% if employee_skill.proficiency == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Years of experience</label>
+                      <input type="number" step="0.1" min="0" max="50" class="form-control" name="years_of_experience" value="{{ employee_skill.years_of_experience }}" required />
+                    </div>
+                    <div>
+                      <label class="form-label">Notes</label>
+                      <textarea class="form-control" name="notes" rows="3">{{ employee_skill.notes }}</textarea>
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Dong</button>
+                    <button type="submit" class="btn btn-primary">Luu</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="alert alert-light border text-center mb-0">Ban chua co ky nang nao.</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="modal fade" id="addSkillModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add" />
+        <div class="modal-header">
+          <h5 class="modal-title">Them ky nang</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Skill</label>
+            <select name="skill_id" class="form-select" required>
+              <option value="">-- Chon ky nang --</option>
+              {% for skill in all_skills %}
+              <option value="{{ skill.id }}">{{ skill.name }}{% if skill.category %} ({{ skill.category }}){% endif %}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Proficiency</label>
+            <select name="proficiency" class="form-select" required>
+              {% for value, label in proficiency_choices %}
+              <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Years of experience</label>
+            <input type="number" step="0.1" min="0" max="50" class="form-control" name="years_of_experience" value="0" required />
+          </div>
+          <div>
+            <label class="form-label">Notes</label>
+            <textarea class="form-control" name="notes" rows="3" placeholder="Ghi chu them"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Dong</button>
+          <button type="submit" class="btn btn-primary">Them</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

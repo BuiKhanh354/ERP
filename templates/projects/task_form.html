@@ -7,11 +7,11 @@
 <div class="d-flex align-items-center gap-3">
   {% if back_url %}
   <a href="{{ back_url }}" class="btn btn-outline-secondary btn-sm" style="border-radius: 8px; padding: 0.5rem 0.75rem;">
-    <i class="bi bi-arrow-left me-1"></i>Quay láº¡i
+    <i class="bi bi-arrow-left me-1"></i>Quay lại
   </a>
   {% else %}
   <a href="{% url 'projects:tasks' %}?project={{ selected_project }}" class="btn btn-outline-secondary btn-sm" style="border-radius: 8px; padding: 0.5rem 0.75rem;">
-    <i class="bi bi-arrow-left me-1"></i>Quay láº¡i
+    <i class="bi bi-arrow-left me-1"></i>Quay lại
   </a>
   {% endif %}
   <span>{{ page_title }}</span>
@@ -28,7 +28,7 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // Disable táº¥t cáº£ cÃ¡c field náº¿u á»Ÿ cháº¿ Ä‘á»™ read-only
+  // Disable tất cả các field nếu ở chế độ read-only
   {% if is_readonly %}
   const form = document.querySelector('form');
   if (form) {
@@ -46,16 +46,16 @@ document.addEventListener('DOMContentLoaded', function() {
   const assignedToSelect = document.getElementById('id_assigned_to');
   const projectSelect = document.getElementById('id_project');
   
-  // LÆ°u danh sÃ¡ch nhÃ¢n viÃªn ban Ä‘áº§u (táº¥t cáº£)
+  // Lưu danh sách nhân viên ban đầu (tất cả)
   const allEmployees = Array.from(assignedToSelect.options).map(opt => ({
     value: opt.value,
     text: opt.text,
     selected: opt.selected
   }));
   
-  // HÃ m filter nhÃ¢n viÃªn theo phÃ²ng ban
+  // Hàm filter nhân viên theo phòng ban
   function filterEmployeesByDepartment(departmentId) {
-    // XÃ³a táº¥t cáº£ options hiá»‡n táº¡i (trá»« option Ä‘áº§u tiÃªn náº¿u lÃ  "-- Chá»n --")
+    // Xóa tất cả options hiện tại (trừ option đầu tiên nếu là "-- Chọn --")
     const firstOption = assignedToSelect.options[0];
     assignedToSelect.innerHTML = '';
     if (firstOption && firstOption.value === '') {
@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     if (!departmentId || departmentId === '') {
-      // Náº¿u khÃ´ng chá»n phÃ²ng ban, hiá»ƒn thá»‹ táº¥t cáº£ nhÃ¢n viÃªn
+      // Nếu không chọn phòng ban, hiển thị tất cả nhân viên
       allEmployees.forEach(emp => {
         const option = document.createElement('option');
         option.value = emp.value;
@@ -74,21 +74,21 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
     
-    // Gá»i API Ä‘á»ƒ láº¥y nhÃ¢n viÃªn theo phÃ²ng ban
+    // Gọi API để lấy nhân viên theo phòng ban
     const projectId = projectSelect ? projectSelect.value : '';
     const endpoint = `{% url 'projects:get_employees_by_department' %}?department_id=${departmentId}${projectId ? `&project_id=${projectId}` : ''}`;
     fetch(endpoint)
       .then(response => response.json())
       .then(data => {
-        // ThÃªm option "-- Chá»n nhÃ¢n viÃªn --" náº¿u chÆ°a cÃ³
+        // Thêm option "-- Chọn nhân viên --" nếu chưa có
         if (assignedToSelect.options.length === 0 || assignedToSelect.options[0].value !== '') {
           const emptyOption = document.createElement('option');
           emptyOption.value = '';
-          emptyOption.text = '-- Chá»n nhÃ¢n viÃªn --';
+          emptyOption.text = '-- Chọn nhân viên --';
           assignedToSelect.appendChild(emptyOption);
         }
         
-        // ThÃªm cÃ¡c nhÃ¢n viÃªn tá»« API
+        // Thêm các nhân viên từ API
         data.employees.forEach(emp => {
           const option = document.createElement('option');
           option.value = emp.id;
@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', function() {
           assignedToSelect.appendChild(option);
         });
         
-        // Giá»¯ láº¡i giÃ¡ trá»‹ Ä‘Ã£ chá»n náº¿u cÃ³ (náº¿u nhÃ¢n viÃªn Ä‘Ã³ thuá»™c phÃ²ng ban má»›i)
+        // Giữ lại giá trị đã chọn nếu có (nếu nhân viên đó thuộc phòng ban mới)
         const previouslySelected = allEmployees.find(e => e.selected);
         if (previouslySelected) {
           const found = data.employees.find(e => e.id == previouslySelected.value);
@@ -110,19 +110,19 @@ document.addEventListener('DOMContentLoaded', function() {
       });
   }
   
-  // Láº¯ng nghe sá»± kiá»‡n thay Ä‘á»•i phÃ²ng ban
+  // Lắng nghe sự kiện thay đổi phòng ban
   if (departmentSelect) {
     departmentSelect.addEventListener('change', function() {
       filterEmployeesByDepartment(this.value);
     });
     
-    // Load nhÃ¢n viÃªn theo phÃ²ng ban ban Ä‘áº§u (náº¿u Ä‘Ã£ cÃ³ giÃ¡ trá»‹)
+    // Load nhân viên theo phòng ban ban đầu (nếu đã có giá trị)
     if (departmentSelect.value) {
       filterEmployeesByDepartment(departmentSelect.value);
     }
   }
 
-  // Progress range slider â€” update display value
+  // Progress range slider — update display value
   const progressSlider = document.getElementById('id_progress_percent');
   const progressDisplay = document.getElementById('progress-display');
   if (progressSlider && progressDisplay) {
@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         <div class="row mb-3">
           <div class="col-md-12">
-            <label for="{{ form.project.id_for_label }}" class="form-label">Dá»± Ã¡n <span class="text-danger">*</span></label>
+            <label for="{{ form.project.id_for_label }}" class="form-label">Dự án <span class="text-danger">*</span></label>
             {% if is_readonly %}
             {% if form.instance.project %}
             <input type="text" class="form-control" value="{{ form.instance.project.name }}" readonly disabled>
@@ -162,25 +162,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
         <div class="row mb-3">
           <div class="col-md-8">
-            <label for="{{ form.name.id_for_label }}" class="form-label">TÃªn cÃ´ng viá»‡c <span class="text-danger">*</span></label>
+            <label for="{{ form.name.id_for_label }}" class="form-label">Tên công việc <span class="text-danger">*</span></label>
             {{ form.name }}
             {% if form.name.errors %}
             <span class="text-danger small">{{ form.name.errors.0 }}</span>
             {% endif %}
           </div>
           <div class="col-md-4">
-            <label for="{{ form.phase.id_for_label }}" class="form-label">Giai Ä‘oáº¡n dá»± Ã¡n</label>
+            <label for="{{ form.phase.id_for_label }}" class="form-label">Giai đoạn dự án</label>
             {{ form.phase }}
             {% if form.phase.errors %}
             <span class="text-danger small">{{ form.phase.errors.0 }}</span>
             {% endif %}
-            <small class="text-muted">Chá»n giai Ä‘oáº¡n (náº¿u cÃ³)</small>
+            <small class="text-muted">Chọn giai đoạn (nếu có)</small>
           </div>
         </div>
 
         <div class="row mb-3">
           <div class="col-md-12">
-            <label for="{{ form.description.id_for_label }}" class="form-label">MÃ´ táº£</label>
+            <label for="{{ form.description.id_for_label }}" class="form-label">Mô tả</label>
             {{ form.description }}
             {% if form.description.errors %}
             <span class="text-danger small">{{ form.description.errors.0 }}</span>
@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="row mb-3">
           <div class="col-md-12">
             <label for="{{ form.progress_percent.id_for_label }}" class="form-label">
-              Tiáº¿n Ä‘á»™ hoÃ n thÃ nh: <span id="progress-display">{{ form.progress_percent.value|default:0 }}</span>%
+              Tiến độ hoàn thành: <span id="progress-display">{{ form.progress_percent.value|default:0 }}</span>%
             </label>
             {{ form.progress_percent }}
             {% if form.progress_percent.errors %}
@@ -202,21 +202,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
         <div class="row mb-3">
           <div class="col-md-4">
-            <label for="{{ form.status.id_for_label }}" class="form-label">Tráº¡ng thÃ¡i</label>
+            <label for="{{ form.status.id_for_label }}" class="form-label">Trạng thái</label>
             {{ form.status }}
             {% if form.status.errors %}
             <span class="text-danger small">{{ form.status.errors.0 }}</span>
             {% endif %}
           </div>
           <div class="col-md-4">
-            <label for="{{ form.department.id_for_label }}" class="form-label">PhÃ²ng ban phá»¥ trÃ¡ch</label>
+            <label for="{{ form.department.id_for_label }}" class="form-label">Phòng ban phụ trách</label>
             {{ form.department }}
             {% if form.department.errors %}
             <span class="text-danger small">{{ form.department.errors.0 }}</span>
             {% endif %}
           </div>
           <div class="col-md-4">
-            <label for="{{ form.due_date.id_for_label }}" class="form-label">Háº¡n chÃ³t</label>
+            <label for="{{ form.due_date.id_for_label }}" class="form-label">Hạn chót</label>
             {{ form.due_date }}
             {% if form.due_date.errors %}
             <span class="text-danger small">{{ form.due_date.errors.0 }}</span>
@@ -226,15 +226,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
         <div class="row mb-3">
           <div class="col-md-6">
-            <label for="{{ form.assigned_to.id_for_label }}" class="form-label">NhÃ¢n viÃªn thá»±c hiá»‡n</label>
+            <label for="{{ form.assigned_to.id_for_label }}" class="form-label">Nhân viên thực hiện</label>
             {{ form.assigned_to }}
             {% if form.assigned_to.errors %}
             <span class="text-danger small">{{ form.assigned_to.errors.0 }}</span>
             {% endif %}
-            <small class="text-muted">Danh sÃ¡ch nhÃ¢n viÃªn sáº½ Ä‘Æ°á»£c lá»c theo phÃ²ng ban Ä‘Ã£ chá»n</small>
+            <small class="text-muted">Danh sách nhân viên sẽ được lọc theo phòng ban đã chọn</small>
           </div>
           <div class="col-md-6">
-            <label for="{{ form.assignment_status.id_for_label }}" class="form-label">Tráº¡ng thÃ¡i giao/nháº­n</label>
+            <label for="{{ form.assignment_status.id_for_label }}" class="form-label">Trạng thái giao/nhận</label>
             {{ form.assignment_status }}
             {% if form.assignment_status.errors %}
             <span class="text-danger small">{{ form.assignment_status.errors.0 }}</span>
@@ -244,12 +244,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         <div class="row mb-3">
           <div class="col-md-6">
-            <label for="{{ form.estimated_hours.id_for_label }}" class="form-label">Giá» Æ°á»›c tÃ­nh</label>
+            <label for="{{ form.estimated_hours.id_for_label }}" class="form-label">Giờ ước tính</label>
             {{ form.estimated_hours }}
             {% if form.estimated_hours.errors %}
             <span class="text-danger small">{{ form.estimated_hours.errors.0 }}</span>
             {% endif %}
-            <small class="text-muted">Nháº­p linh hoáº¡t: <strong>7:30</strong>, <strong>10:00h</strong>, <strong>30p</strong> (phÃºt), hoáº·c <strong>2.5</strong> (giá»).</small>
+            <small class="text-muted">Nhập linh hoạt: <strong>7:30</strong>, <strong>10:00h</strong>, <strong>30p</strong> (phút), hoặc <strong>2.5</strong> (giờ).</small>
           </div>
         </div>
 

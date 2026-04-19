@@ -1,5 +1,9 @@
 from django.urls import path
-from core.role_views.admin_views import AdminDashboardView
+from core.role_views.admin_views import (
+    AdminDashboardView,
+    AdminProjectMembersView,
+    AdminAddProjectMemberView,
+)
 from core.role_views.admin_department_views import (
     AdminDepartmentListView,
     AdminDepartmentCreateView,
@@ -50,6 +54,10 @@ urlpatterns = [
 
     # Analytics
     path('analytics/', AdminAnalyticsView.as_view(), name='analytics'),
+
+    # Project members and request review
+    path('projects/<int:project_id>/members/', AdminProjectMembersView.as_view(), name='project_members'),
+    path('projects/<int:project_id>/add-member/', AdminAddProjectMemberView.as_view(), name='add_project_member'),
 
     # System
     path('logs/', AdminAuditLogListView.as_view(), name='audit_logs'),

@@ -25,7 +25,7 @@ from .task_history_service import TaskHistoryService
 # ============================================================
 
 class PhaseCreateView(LoginRequiredMixin, ManagerRequiredMixin, CreateView):
-    """Táº¡o giai Ä‘oáº¡n má»›i cho dá»± Ã¡n."""
+    """Tạo giai đoạn mới cho dự án."""
     model = ProjectPhase
     form_class = PhaseForm
     template_name = 'projects/phase_form.html'
@@ -49,18 +49,18 @@ class PhaseCreateView(LoginRequiredMixin, ManagerRequiredMixin, CreateView):
         phase.order_index = max_order + 1
         phase.created_by = self.request.user
         phase.save()
-        messages.success(self.request, f'ÄÃ£ táº¡o giai Ä‘oáº¡n "{phase.phase_name}" thÃ nh cÃ´ng.')
+        messages.success(self.request, f'Đã tạo giai đoạn "{phase.phase_name}" thành công.')
         return redirect(reverse('projects:detail', kwargs={'pk': self.project.pk}))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['project'] = self.project
-        context['title'] = 'ThÃªm giai Ä‘oáº¡n'
+        context['title'] = 'Thêm giai đoạn'
         return context
 
 
 class PhaseUpdateView(LoginRequiredMixin, ManagerRequiredMixin, UpdateView):
-    """Cáº­p nháº­t giai Ä‘oáº¡n dá»± Ã¡n."""
+    """Cập nhật giai đoạn dự án."""
     model = ProjectPhase
     form_class = PhaseForm
     template_name = 'projects/phase_form.html'
@@ -74,18 +74,18 @@ class PhaseUpdateView(LoginRequiredMixin, ManagerRequiredMixin, UpdateView):
         phase = form.save(commit=False)
         phase.updated_by = self.request.user
         phase.save()
-        messages.success(self.request, f'ÄÃ£ cáº­p nháº­t giai Ä‘oáº¡n "{phase.phase_name}" thÃ nh cÃ´ng.')
+        messages.success(self.request, f'Đã cập nhật giai đoạn "{phase.phase_name}" thành công.')
         return redirect(reverse('projects:detail', kwargs={'pk': phase.project.pk}))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['project'] = self.object.project
-        context['title'] = 'Sá»­a giai Ä‘oáº¡n'
+        context['title'] = 'Sửa giai đoạn'
         return context
 
 
 class PhaseDeleteView(LoginRequiredMixin, ManagerRequiredMixin, View):
-    """XÃ³a giai Ä‘oáº¡n dá»± Ã¡n (AJAX)."""
+    """Xóa giai đoạn dự án (AJAX)."""
 
     def post(self, request, pk):
         phase = get_object_or_404(ProjectPhase, pk=pk)
@@ -97,9 +97,9 @@ class PhaseDeleteView(LoginRequiredMixin, ManagerRequiredMixin, View):
         phase.delete()
 
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({'success': True, 'message': f'ÄÃ£ xÃ³a giai Ä‘oáº¡n "{phase_name}".'})
+            return JsonResponse({'success': True, 'message': f'Đã xóa giai đoạn "{phase_name}".'})
 
-        messages.success(request, f'ÄÃ£ xÃ³a giai Ä‘oáº¡n "{phase_name}" thÃ nh cÃ´ng.')
+        messages.success(request, f'Đã xóa giai đoạn "{phase_name}" thành công.')
         return redirect(reverse('projects:detail', kwargs={'pk': project_pk}))
 
 
@@ -108,7 +108,7 @@ class PhaseDeleteView(LoginRequiredMixin, ManagerRequiredMixin, View):
 # ============================================================
 
 class PhaseReorderAPIView(LoginRequiredMixin, View):
-    """API endpoint Ä‘á»ƒ sáº¯p xáº¿p láº¡i thá»© tá»± giai Ä‘oáº¡n (drag & drop)."""
+    """API endpoint để sắp xếp lại thứ tự giai đoạn (drag & drop)."""
 
     def post(self, request):
         try:
@@ -116,12 +116,12 @@ class PhaseReorderAPIView(LoginRequiredMixin, View):
             phase_ids = data.get('phase_ids', [])
 
             if not phase_ids:
-                return JsonResponse({'success': False, 'error': 'Danh sÃ¡ch phase trá»‘ng.'}, status=400)
+                return JsonResponse({'success': False, 'error': 'Danh sách phase trống.'}, status=400)
 
             for index, phase_id in enumerate(phase_ids):
                 ProjectPhase.objects.filter(pk=phase_id).update(order_index=index)
 
-            return JsonResponse({'success': True, 'message': 'ÄÃ£ cáº­p nháº­t thá»© tá»± giai Ä‘oáº¡n.'})
+            return JsonResponse({'success': True, 'message': 'Đã cập nhật thứ tự giai đoạn.'})
         except (json.JSONDecodeError, Exception) as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
@@ -131,7 +131,7 @@ class PhaseReorderAPIView(LoginRequiredMixin, View):
 # ============================================================
 
 class GanttDataAPIView(LoginRequiredMixin, View):
-    """API tráº£ vá» dá»¯ liá»‡u Gantt Chart cho dá»± Ã¡n (JSON)."""
+    """API trả về dữ liệu Gantt Chart cho dự án (JSON)."""
 
     def get(self, request, project_id):
         project = get_object_or_404(Project, pk=project_id)
@@ -198,7 +198,7 @@ class GanttDataAPIView(LoginRequiredMixin, View):
 # ============================================================
 
 class TaskProgressUpdateView(LoginRequiredMixin, View):
-    """API cáº­p nháº­t tiáº¿n Ä‘á»™ task (progress %, status, ghi chÃº)."""
+    """API cập nhật tiến độ task (progress %, status, ghi chú)."""
 
     def post(self, request, pk):
         task = get_object_or_404(Task, pk=pk)
@@ -235,7 +235,7 @@ class TaskProgressUpdateView(LoginRequiredMixin, View):
                         task.status = 'in_progress'
                         updated_fields.append('status')
             except (ValueError, TypeError):
-                return JsonResponse({'success': False, 'error': 'GiÃ¡ trá»‹ tiáº¿n Ä‘á»™ khÃ´ng há»£p lá»‡.'}, status=400)
+                return JsonResponse({'success': False, 'error': 'Giá trị tiến độ không hợp lệ.'}, status=400)
 
         if status and status in dict(Task.STATUS_CHOICES):
             task.status = status
@@ -280,7 +280,7 @@ class TaskProgressUpdateView(LoginRequiredMixin, View):
 
         return JsonResponse({
             'success': True,
-            'message': 'ÄÃ£ cáº­p nháº­t tiáº¿n Ä‘á»™ thÃ nh cÃ´ng.',
+            'message': 'Đã cập nhật tiến độ thành công.',
             'progress_percent': task.progress_percent,
             'status': task.status,
             'status_display': task.get_status_display(),
