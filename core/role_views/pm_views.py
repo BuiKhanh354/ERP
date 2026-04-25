@@ -6,10 +6,10 @@ from django.shortcuts import redirect
 from core.models import UserRole
 from core.rbac import PermissionRequiredMixin
 from projects.models import Project, Task
-from resources.models import Employee, ResourceAllocation, EmployeeSkill
+from resources.models import Employee, ResourceAllocation
 
 class PMDashboardView(PermissionRequiredMixin, TemplateView):
-    permission_required = 'VIEW_PROJECT'
+    permission_required = ['project.view.all', 'VIEW_PROJECT', 'VIEW_ALL_PROJECTS']
     template_name = 'modules/pm/pages/dashboard.html'
 
     def get_context_data(self, **kwargs):
@@ -166,7 +166,7 @@ class PMRequestMemberView(PermissionRequiredMixin, TemplateView):
     """PM is not allowed to add/request members."""
 
     template_name = 'modules/projects/pages/project_request_member.html'
-    permission_required = 'VIEW_ALL_PROJECTS'
+    permission_required = ['project.view.all', 'VIEW_ALL_PROJECTS']
 
     def get(self, request, *args, **kwargs):
         messages.error(request, 'PM khong co quyen them nhan vien vao du an.')
@@ -184,7 +184,7 @@ class PMMemberApprovalView(PermissionRequiredMixin, TemplateView):
     """PM can remove project members, but cannot add members."""
 
     template_name = 'modules/projects/pages/project_member_approval.html'
-    permission_required = 'VIEW_ALL_PROJECTS'
+    permission_required = ['project.view.all', 'VIEW_ALL_PROJECTS']
 
     def post(self, request, *args, **kwargs):
         project_id = kwargs.get('project_id')
@@ -226,12 +226,11 @@ class PMMemberApprovalView(PermissionRequiredMixin, TemplateView):
         members = []
         for allocation in allocations:
             employee = allocation.employee
-            skills = EmployeeSkill.objects.filter(employee=employee).select_related('skill').order_by('-proficiency')
             members.append(
                 {
                     'employee': employee,
                     'allocation': allocation,
-                    'skills': skills,
+                    'skills': [],
                 }
             )
 

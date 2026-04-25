@@ -18,6 +18,14 @@ from .forms import PhaseForm
 from core.mixins import ManagerRequiredMixin
 from .delay_kpi_service import DelayKPIService
 from .task_history_service import TaskHistoryService
+from core.rbac import get_user_role_names
+
+
+def user_can_approve_tasks(user):
+    role_names = get_user_role_names(user)
+    if role_names.intersection({'ADMIN', 'MANAGER'}):
+        return True
+    return False
 
 
 # ============================================================
@@ -203,6 +211,8 @@ class TaskProgressUpdateView(LoginRequiredMixin, View):
     def post(self, request, pk):
         task = get_object_or_404(Task, pk=pk)
         employee = getattr(request.user, "employee", None)
+        is_assignee = bool(employee and task.assigned_to_id and task.assigned_to_id == employee.id)
+        can_approve = user_can_approve_tasks(request.user)
         if employee and task.assigned_to_id and task.assigned_to_id != employee.id:
             if not DelayKPIService.can_approve_others(request.user):
                 return JsonResponse({'success': False, 'error': 'KPI duoi nguong. Ban khong duoc phe duyet task cua nguoi khac.'}, status=403)
@@ -229,7 +239,8 @@ class TaskProgressUpdateView(LoginRequiredMixin, View):
 
                     # Auto-update status based on progress
                     if progress == 100 and task.status != 'done':
-                        task.status = 'done'
+                        # Employee submit completion for review, manager does final approval.
+                        task.status = 'review' if is_assignee and not can_approve else 'done'
                         updated_fields.append('status')
                     elif progress > 0 and task.status == 'todo':
                         task.status = 'in_progress'
@@ -238,6 +249,10 @@ class TaskProgressUpdateView(LoginRequiredMixin, View):
                 return JsonResponse({'success': False, 'error': 'Giá trị tiến độ không hợp lệ.'}, status=400)
 
         if status and status in dict(Task.STATUS_CHOICES):
+            if status == 'done' and not can_approve:
+                return JsonResponse({'success': False, 'error': 'Bạn không có quyền duyệt hoàn thành task.'}, status=403)
+            if status == 'done' and task.status != 'review':
+                return JsonResponse({'success': False, 'error': 'Task chỉ được chuyển Done sau bước Review.'}, status=400)
             task.status = status
             if 'status' not in updated_fields:
                 updated_fields.append('status')

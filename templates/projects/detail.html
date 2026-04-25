@@ -27,21 +27,14 @@
     </span>
   </div>
 		  <div>
-		    {% if user_profile.is_manager %}
-		    <a href="{% url 'projects:recommend_personnel' project.pk %}" class="btn btn-outline-info me-2">
-		      <i class="bi bi-stars me-1"></i>AI goi y nhan su
+		    {% if 'MANAGER' in user_role_names %}
+		    <a href="{% url 'projects:add_personnel' project.pk %}" class="btn btn-outline-success me-2">
+		      <i class="bi bi-person-plus me-1"></i>Them nhan vien
+		    </a>
+		    <a href="{% url 'projects:member_approval' project.pk %}" class="btn btn-outline-warning me-2">
+		      <i class="bi bi-person-dash me-1"></i>Loai thanh vien
 		    </a>
 		    {% endif %}
-		    {% if 'RESOURCE_MANAGER' in user_role_names %}
-		    <a href="{% url 'resource_manager_module:add_project_member' project.pk %}" class="btn btn-outline-success me-2">
-		      <i class="bi bi-person-plus me-1"></i>RM them nhan vien
-		    </a>
-	    {% endif %}
-	    {% if 'PROJECT_MANAGER' in user_role_names %}
-	    <a href="{% url 'projects:member_approval' project.pk %}" class="btn btn-outline-warning me-2">
-	      <i class="bi bi-person-dash me-1"></i>PM loai thanh vien
-	    </a>
-	    {% endif %}
     <a href="{% url 'projects:edit' project.pk %}" class="btn btn-outline-primary">
       <i class="bi bi-pencil me-1"></i>Chỉnh sửa
     </a>
@@ -127,7 +120,7 @@
               <span class="badge bg-primary ms-1">{{ project_progress }}%</span>
             </div>
             <div class="d-flex gap-2">
-              {% if user.profile.is_manager %}
+              {% if 'MANAGER' in user_role_names or 'ADMIN' in user_role_names %}
               <a href="{% url 'projects:phase_create' project.pk %}" class="btn btn-sm btn-outline-primary">
                 <i class="bi bi-plus-circle me-1"></i>Thêm giai đoạn
               </a>
@@ -168,7 +161,7 @@
             <div class="phase-card" data-phase-id="{{ pd.phase.pk }}">
               <div class="phase-header" data-bs-toggle="collapse" data-bs-target="#phase-body-{{ pd.phase.pk }}">
                 <div class="d-flex align-items-center gap-2">
-                  {% if user.profile.is_manager %}
+                  {% if 'MANAGER' in user_role_names or 'ADMIN' in user_role_names %}
                   <span class="phase-drag-handle"><i class="bi bi-grip-vertical"></i></span>
                   {% endif %}
                   <div class="phase-title">
@@ -182,9 +175,9 @@
                   {% if pd.phase.start_date %}
                   <span>{{ pd.phase.start_date|date:"d/m" }} - {{ pd.phase.end_date|date:"d/m" }}</span>
                   {% endif %}
-                  {% if user.profile.is_manager %}
+                  {% if 'MANAGER' in user_role_names or 'ADMIN' in user_role_names %}
                   <div class="d-flex gap-1" onclick="event.stopPropagation();">
-                    <a href="{% url 'projects:phase_edit' pd.phase.pk %}" class="btn btn-sm btn-outline-secondary py-0 px-1" title="Sửa">
+                    <a href="{% url 'projects:phase_edit' pd.phase.pk %}" class="btn btn-sm btn-outline-secondary py-0 px-1" title="Sá»­a">
                       <i class="bi bi-pencil"></i>
                     </a>
                     <button class="btn btn-sm btn-outline-danger py-0 px-1" title="Xóa" onclick="deletePhase({{ pd.phase.pk }}, '{{ pd.phase.phase_name|escapejs }}')">
@@ -238,7 +231,7 @@
           {% if not phases_data and not unphased_tasks %}
           <p class="text-muted text-center py-4">
             Chưa có giai đoạn hoặc công việc nào.
-            {% if user.profile.is_manager %}
+            {% if 'MANAGER' in user_role_names or 'ADMIN' in user_role_names %}
             <br><a href="{% url 'projects:phase_create' project.pk %}" class="mt-2 btn btn-sm btn-outline-primary">
               <i class="bi bi-plus-circle me-1"></i>Tạo giai đoạn đầu tiên
             </a>
@@ -422,7 +415,7 @@
       {% if ai_insight_error %}
       <div class="alert alert-danger mb-0" style="font-size: 0.85rem;">
         <i class="bi bi-exclamation-triangle me-1"></i>
-        <strong>Lỗi:</strong> {{ ai_insight_error }}
+        <strong>L?i:</strong> {{ ai_insight_error }}
         <br><small class="text-muted">Vui lòng kiểm tra dịch vụ AI local (Ollama) hoặc dữ liệu đầu vào.</small>
       </div>
       {% elif ai_insight and ai_insight.no_data %}
@@ -507,7 +500,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Há»§y</button>
         <button type="button" class="btn btn-primary" onclick="submitProgressUpdate()">
           <i class="bi bi-check-lg me-1"></i>Cập nhật
         </button>
@@ -1160,7 +1153,7 @@ function showProjectAIInsightsModal() {
             ${summaryText ? `<div class="mb-4"><h6 class="text-primary mb-3"><i class="bi bi-file-text me-2"></i>Tóm tắt</h6><div class="p-3 bg-light rounded"><p>${summaryText}</p></div></div>` : ''}
             ${insightsList.length > 0 ? `<div class="mb-4"><h6 class="text-info mb-3"><i class="bi bi-lightbulb me-2"></i>Những điểm nổi bật</h6><ul class="list-group">${insightsList.map(i => `<li class="list-group-item"><i class="bi bi-check-circle-fill text-info me-2"></i>${typeof i === 'string' ? i : (i.text || JSON.stringify(i))}</li>`).join('')}</ul></div>` : ''}
             ${recommendationsList.length > 0 ? `<div class="mb-4"><h6 class="text-success mb-3"><i class="bi bi-star me-2"></i>Khuyến nghị</h6><ul class="list-group">${recommendationsList.map(r => `<li class="list-group-item"><i class="bi bi-arrow-right-circle-fill text-success me-2"></i>${typeof r === 'string' ? r : (r.text || JSON.stringify(r))}</li>`).join('')}</ul></div>` : ''}
-            <div class="text-center mt-4"><a href="{% url 'core:ai-chat' %}" class="btn btn-primary"><i class="bi bi-chat-dots me-2"></i>Chat với AI</a></div>
+            <div class="text-center mt-4"><a href="{% url 'core:ai-chat' %}" class="btn btn-primary"><i class="bi bi-chat-dots me-2"></i>Chat v?i AI</a></div>
           </div>
           <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button></div>
         </div>
@@ -1184,5 +1177,6 @@ function showProjectAIInsightsModal() {
 <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.5.0/dist/frappe-gantt.min.js"></script>
 
 {% endblock %}
+
 
 

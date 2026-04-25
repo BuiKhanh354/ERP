@@ -2,7 +2,7 @@
 {% load static %}
 {% load humanize %}
 
-{% block title %}Phê duyệt - CFO{% endblock %}
+{% block title %}Phê duyệt - Tài chính{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'assets/css/cfo-approval-center.css' %}" />
@@ -13,7 +13,7 @@
 <div class="page-header">
   <h1 class="page-title">Trung tâm Phê duyệt</h1>
   <ul class="breadcrumb">
-    <li class="breadcrumb-item"><a href="{% url 'cfo:dashboard' %}">CFO Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'cfo:dashboard' %}">Bảng điều khiển Tài chính</a></li>
     <li class="breadcrumb-separator"><i class="bi bi-chevron-right"></i></li>
     <li class="breadcrumb-item active">Phê duyệt</li>
   </ul>
@@ -164,3 +164,4 @@
   </div>
 </div>
 {% endblock %}
+

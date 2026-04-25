@@ -2,7 +2,7 @@
 {% load static %}
 {% load humanize %}
 
-{% block title %}Báo cáo Tài chính - CFO{% endblock %}
+{% block title %}Báo cáo Tài chính - Tài chính{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'assets/css/cfo-reports.css' %}" />
@@ -13,7 +13,7 @@
 <div class="page-header">
   <h1 class="page-title">Báo cáo Tài chính</h1>
   <ul class="breadcrumb">
-    <li class="breadcrumb-item"><a href="{% url 'cfo:dashboard' %}">CFO Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'cfo:dashboard' %}">Bảng điều khiển Tài chính</a></li>
     <li class="breadcrumb-separator"><i class="bi bi-chevron-right"></i></li>
     <li class="breadcrumb-item active">Báo cáo Tài chính</li>
   </ul>
@@ -218,3 +218,4 @@
   </div>
 </div>
 {% endblock %}
+

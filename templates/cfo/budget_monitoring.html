@@ -2,7 +2,7 @@
 {% load static %}
 {% load humanize %}
 
-{% block title %}Giám sát Ngân sách - CFO{% endblock %}
+{% block title %}Giám sát Ngân sách - Tài chính{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'assets/css/cfo-budget-monitoring.css' %}" />
@@ -13,7 +13,7 @@
 <div class="page-header">
   <h1 class="page-title">Giám sát Ngân sách</h1>
   <ul class="breadcrumb">
-    <li class="breadcrumb-item"><a href="{% url 'cfo:dashboard' %}">CFO Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'cfo:dashboard' %}">Bảng điều khiển Tài chính</a></li>
     <li class="breadcrumb-separator"><i class="bi bi-chevron-right"></i></li>
     <li class="breadcrumb-item active">Giám sát Ngân sách</li>
   </ul>
@@ -151,3 +151,4 @@ const bd = {{ budget_chart_json|safe }};
 </script>
 
 {% endblock %}
+

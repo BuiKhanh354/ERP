@@ -10,24 +10,10 @@ class DashboardRouterView(LoginRequiredMixin, View):
     """
     def get(self, request, *args, **kwargs):
         role_names = get_user_role_names(request.user)
-
-        if 'Admin' in role_names or request.user.is_superuser:
+        if request.user.is_superuser or 'ADMIN' in role_names:
             return redirect('admin_custom:dashboard')
-        elif 'CFO' in role_names:
-            return redirect('cfo:dashboard')
-        elif 'HR_ADMIN' in role_names:
-            return redirect('hr_module:dashboard')
-        elif 'PROJECT_MANAGER' in role_names:
+        if 'MANAGER' in role_names:
             return redirect('pm_module:dashboard')
-        elif 'EXECUTIVE' in role_names:
-            return redirect('executive_module:dashboard')
-        elif 'RESOURCE_MANAGER' in role_names:
-            return redirect('resource_manager_module:dashboard')
-        elif 'FINANCE_ADMIN' in role_names:
-            return redirect('finance_admin_module:dashboard')
-        elif 'ACCOUNTANT' in role_names:
-            return redirect('accountant_module:dashboard')
-        elif 'EMPLOYEE' in role_names:
-            return redirect('employee_module:dashboard')
-        else:
-            return redirect('employee_module:dashboard')
+        if 'FINANCE' in role_names:
+            return redirect('budgeting:manage')
+        return redirect('employee_module:dashboard')

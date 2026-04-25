@@ -5,13 +5,12 @@ from .web_views import (
     ProjectListView, ProjectDetailView, ProjectCreateView,
     ProjectUpdateView, ProjectDeleteView,
     ProjectAddPersonnelView,
-    PersonnelRecommendationView, PersonnelRecommendationDetailView,
-    ApplyPersonnelRecommendationView, BudgetMonitoringView
+    BudgetMonitoringView
 )
 from .task_views import (
     TaskListView, TaskCreateView, TaskUpdateView, TaskDeleteView, 
     TaskUpdateStatusView, GetEmployeesByDepartmentView, MyTasksView,
-    UpdateAssignmentStatusView
+    UpdateAssignmentStatusView, PhaseDateSuggestionView
 )
 from .time_entry_views import (
     TimeEntryCreateView, MyTimeEntriesView, QuickLogTimeEntryView,
@@ -22,7 +21,8 @@ from .phase_views import (
     PhaseReorderAPIView, GanttDataAPIView, TaskProgressUpdateView
 )
 from .delay_views import (
-    DelayKPIDashboardView, DelayKPIDataAPIView, DelayKPIExportCSVView
+    DelayKPIDashboardView, DelayKPIDataAPIView, DelayKPIExportCSVView,
+    MyDelayHistoryAPIView, KPIAdjustmentRequestCreateView, KPIAdjustmentRequestReviewView
 )
 from core.role_views.pm_views import PMRequestMemberView, PMMemberApprovalView
 
@@ -64,6 +64,7 @@ urlpatterns = [
     path('tasks/<int:pk>/update-status/', TaskUpdateStatusView.as_view(), name='task_update_status'),
     path('tasks/<int:pk>/update-assignment-status/', UpdateAssignmentStatusView.as_view(), name='update_assignment_status'),
     path('api/get-employees-by-department/', GetEmployeesByDepartmentView.as_view(), name='get_employees_by_department'),
+    path('api/phase-date-suggestion/', PhaseDateSuggestionView.as_view(), name='phase_date_suggestion'),
     
     # Time Entries
     path('time-entries/create/', TimeEntryCreateView.as_view(), name='time_entry_create'),
@@ -71,16 +72,16 @@ urlpatterns = [
     path('tasks/<int:task_id>/quick-log-time/', QuickLogTimeEntryView.as_view(), name='quick_log_time'),
     path('tasks/<int:task_id>/auto-log-time/', AutoLogTimeOnCompleteView.as_view(), name='auto_log_time'),
     
-    # Personnel Recommendation
-    path('<int:project_id>/recommend-personnel/', PersonnelRecommendationView.as_view(), name='recommend_personnel'),
-    path('recommendations/<int:pk>/', PersonnelRecommendationDetailView.as_view(), name='recommendation_detail'),
-    path('recommendations/<int:recommendation_id>/apply/', ApplyPersonnelRecommendationView.as_view(), name='apply_recommendation'),
+    # Personnel recommendation module removed in compact mode
     path('<int:project_id>/budget-monitoring/', BudgetMonitoringView.as_view(), name='budget_monitoring'),
     path('<int:project_id>/request-member/', PMRequestMemberView.as_view(), name='request_member'),
     path('<int:project_id>/member-approval/', PMMemberApprovalView.as_view(), name='member_approval'),
     path('delay-kpi/dashboard/', DelayKPIDashboardView.as_view(), name='delay_kpi_dashboard'),
     path('api/delay-kpi/', DelayKPIDataAPIView.as_view(), name='delay_kpi_data'),
     path('api/delay-kpi/export-csv/', DelayKPIExportCSVView.as_view(), name='delay_kpi_export_csv'),
+    path('api/delay-kpi/my-history/', MyDelayHistoryAPIView.as_view(), name='delay_kpi_my_history'),
+    path('delay-kpi/adjustments/create/', KPIAdjustmentRequestCreateView.as_view(), name='delay_kpi_adjustment_create'),
+    path('delay-kpi/adjustments/<int:pk>/review/', KPIAdjustmentRequestReviewView.as_view(), name='delay_kpi_adjustment_review'),
 ]
 
 

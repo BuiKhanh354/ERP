@@ -1,8 +1,8 @@
 {% extends 'base_sidebar.html' %}
 {% load static %}
 
-{% block title %}Delay KPI Dashboard{% endblock %}
-{% block page_title %}Delay KPI Dashboard{% endblock %}
+{% block title %}Dashboard KPI Trễ Hạn{% endblock %}
+{% block page_title %}Dashboard KPI Trễ Hạn{% endblock %}
 
 {% block content %}
 <div class="card border-0 shadow-sm mb-3">
@@ -10,9 +10,9 @@
     <form method="get" class="row g-2 align-items-end">
       {% if is_manager_view %}
       <div class="col-md-4">
-        <label class="form-label">Nhan su</label>
+        <label class="form-label">Nhân sự</label>
         <select name="user" class="form-select">
-          <option value="">Tat ca</option>
+          <option value="">Tất cả</option>
           {% for emp in employees %}
           <option value="{{ emp.id }}" {% if selected_user == emp.id|stringformat:'s' %}selected{% endif %}>{{ emp.full_name }}</option>
           {% endfor %}
@@ -22,9 +22,9 @@
       {% else %}
       <div class="col-md-4">
       {% endif %}
-        <label class="form-label">Du an</label>
+        <label class="form-label">Dự án</label>
         <select name="project" class="form-select">
-          <option value="">Tat ca</option>
+          <option value="">Tất cả</option>
           {% for p in projects %}
           {% if p.project_id %}
           <option value="{{ p.project_id }}" {% if selected_project == p.project_id|stringformat:'s' %}selected{% endif %}>{{ p.project__name }}</option>
@@ -35,7 +35,7 @@
         </select>
       </div>
       <div class="col-md-4 d-flex gap-2">
-        <button class="btn btn-primary bi bi-search" type="submit">Loc</button>
+        <button class="btn btn-primary bi bi-search" type="submit">Lọc</button>
         <a class="btn btn-outline-secondary" href="{% url 'projects:delay_kpi_dashboard' %}">Reset</a>
         <a class="btn btn-outline-success" href="{% url 'projects:delay_kpi_export_csv' %}?user={{ selected_user }}&project={{ selected_project }}">Export CSV</a>
       </div>
@@ -43,21 +43,21 @@
   </div>
 </div>
 
-<div class="card border-0 shadow-sm">
+<div class="card border-0 shadow-sm mb-3">
   <div class="card-body p-0">
     <div class="table-responsive">
       <table class="table table-striped mb-0" id="delay-kpi-table">
         <thead>
           <tr>
-            <th>Nhan su</th>
-            <th>Phong ban</th>
-            <th>KPI</th>
-            <th>Delay score</th>
-            <th>Task tre</th>
-            <th>Penalty level</th>
-            <th>Bonus giam (%)</th>
-            <th>Warning</th>
-            <th>At risk</th>
+            <th>Nhân sự</th>
+            <th>Phòng ban</th>
+            <th>KPI hiện tại</th>
+            <th>Tổng điểm trừ</th>
+            <th>Task trễ</th>
+            <th>Mức phạt</th>
+            <th>Giảm thưởng (%)</th>
+            <th>Cảnh báo</th>
+            <th>Rủi ro</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -65,6 +65,108 @@
     </div>
   </div>
 </div>
+
+{% if is_employee_view %}
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body">
+    <h6 class="mb-3">Điểm KPI của tôi và lịch sử bị trừ</h6>
+    <div id="my-kpi-summary" class="alert alert-light border">Đang tải dữ liệu...</div>
+    <div class="table-responsive">
+      <table class="table table-sm" id="my-delay-history-table">
+        <thead>
+          <tr>
+            <th>Thời gian</th>
+            <th>Dự án</th>
+            <th>Task</th>
+            <th>Điểm trừ thay đổi</th>
+            <th>Điểm task sau cập nhật</th>
+            <th>Lý do</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if is_manager_view %}
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body">
+    <h6 class="mb-3">Đề xuất điều chỉnh KPI (Manager/Admin)</h6>
+    <form method="post" action="{% url 'projects:delay_kpi_adjustment_create' %}" class="row g-2">
+      {% csrf_token %}
+      <div class="col-md-4">
+        <label class="form-label">Nhân sự</label>
+        <select name="employee_id" class="form-select" required>
+          <option value="">Chọn nhân sự</option>
+          {% for emp in employees %}
+          <option value="{{ emp.id }}">{{ emp.full_name }} - {{ emp.department.name|default:"-" }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Điểm điều chỉnh</label>
+        <input type="number" step="0.01" min="-20" max="20" name="points" class="form-control" placeholder="-5 hoặc +3" required>
+      </div>
+      <div class="col-md-5">
+        <label class="form-label">Lý do</label>
+        <input type="text" name="reason" class="form-control" placeholder="Ví dụ: Có lý do khách quan đã xác minh" required>
+      </div>
+      <div class="col-12">
+        <button type="submit" class="btn btn-warning">Gửi đề xuất</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+{% if is_admin_view %}
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body">
+    <h6 class="mb-3">Đề xuất chờ Admin duyệt</h6>
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>Nhân sự</th>
+            <th>Điểm</th>
+            <th>Lý do</th>
+            <th>Người đề xuất</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in pending_adjustments %}
+          <tr>
+            <td>{{ row.employee.full_name }}</td>
+            <td>{{ row.points }}</td>
+            <td>{{ row.reason }}</td>
+            <td>{{ row.requested_by.username|default:"-" }}</td>
+            <td class="d-flex gap-1">
+              <form method="post" action="{% url 'projects:delay_kpi_adjustment_review' row.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="approve">
+                <button type="submit" class="btn btn-sm btn-success">Duyệt</button>
+              </form>
+              <form method="post" action="{% url 'projects:delay_kpi_adjustment_review' row.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="reject">
+                <button type="submit" class="btn btn-sm btn-outline-danger">Từ chối</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="text-muted">Không có đề xuất chờ duyệt.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
@@ -73,6 +175,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   const params = new URLSearchParams(window.location.search);
   const endpoint = "{% url 'projects:delay_kpi_data' %}?" + params.toString();
   const tableBody = document.querySelector('#delay-kpi-table tbody');
+
   try {
     const res = await fetch(endpoint);
     const data = await res.json();
@@ -88,15 +191,52 @@ document.addEventListener('DOMContentLoaded', async function () {
         <td>${row.penalty_level}</td>
         <td>${row.bonus_reduction_percent}</td>
         <td>${row.warning_count}</td>
-        <td>${row.at_risk ? '<span class="badge bg-danger">Yes</span>' : '<span class="badge bg-success">No</span>'}</td>
+        <td>${row.at_risk ? '<span class="badge bg-danger">Có</span>' : '<span class="badge bg-success">Không</span>'}</td>
       `;
       tableBody.appendChild(tr);
     });
     if ((data.rows || []).length === 0) {
-      tableBody.innerHTML = '<tr><td colspan="9" class="text-muted">Khong co du lieu.</td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="9" class="text-muted">Không có dữ liệu.</td></tr>';
     }
   } catch (err) {
-    tableBody.innerHTML = '<tr><td colspan="9" class="text-danger">Khong the tai du lieu delay KPI.</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="9" class="text-danger">Không thể tải dữ liệu KPI trễ hạn.</td></tr>';
+  }
+
+  const myHistoryTable = document.querySelector('#my-delay-history-table tbody');
+  const myKpiSummary = document.querySelector('#my-kpi-summary');
+  if (myHistoryTable && myKpiSummary) {
+    try {
+      const res = await fetch("{% url 'projects:delay_kpi_my_history' %}");
+      const data = await res.json();
+      if (data.employee) {
+        myKpiSummary.innerHTML = `
+          <strong>${data.employee.name}</strong>
+          <div>KPI hiện tại: <strong>${data.employee.kpi_current}</strong></div>
+          <div>Tổng điểm trừ do trễ hạn: <strong>${data.employee.total_delay_score}</strong></div>
+        `;
+      } else {
+        myKpiSummary.innerHTML = 'Không có hồ sơ nhân sự liên kết với tài khoản hiện tại.';
+      }
+      myHistoryTable.innerHTML = '';
+      (data.rows || []).forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${item.created_at}</td>
+          <td>${item.project_name}</td>
+          <td>${item.task_name}</td>
+          <td>${item.delta_delay_score}</td>
+          <td>${item.new_delay_score}</td>
+          <td>${item.reason || ''}</td>
+        `;
+        myHistoryTable.appendChild(tr);
+      });
+      if ((data.rows || []).length === 0) {
+        myHistoryTable.innerHTML = '<tr><td colspan="6" class="text-muted">Chưa có lịch sử trừ điểm.</td></tr>';
+      }
+    } catch (err) {
+      myKpiSummary.innerHTML = '<span class="text-danger">Không thể tải KPI cá nhân.</span>';
+      myHistoryTable.innerHTML = '<tr><td colspan="6" class="text-danger">Không thể tải lịch sử trừ điểm.</td></tr>';
+    }
   }
 });
 </script>

@@ -1,7 +1,7 @@
-"""
-CFO (Giám đốc Tài chính) web views.
+﻿"""
+CFO (GiÃ¡m Ä‘á»‘c TÃ i chÃ­nh) web views.
 
-Tất cả views chỉ sử dụng model & permission đã có trong hệ thống.
+Táº¥t cáº£ views chá»‰ sá»­ dá»¥ng model & permission Ä‘Ã£ cÃ³ trong há»‡ thá»‘ng.
 """
 import csv
 import json
@@ -31,7 +31,7 @@ from resources.models import Department
 class CFODashboardView(PermissionRequiredMixin, TemplateView):
     """CFO strategic financial dashboard."""
     template_name = 'cfo/dashboard.html'
-    permission_required = 'VIEW_PROJECT_FINANCE'
+    permission_required = ['finance.report.view', 'budget.view', 'VIEW_PROJECT_FINANCE']
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -272,7 +272,7 @@ class ProjectFinanceView(PermissionRequiredMixin, ListView):
     """Financial performance by project."""
     template_name = 'cfo/project_finance.html'
     context_object_name = 'project_financials'
-    permission_required = 'VIEW_PROJECT_FINANCE'
+    permission_required = ['finance.report.view', 'budget.view', 'VIEW_PROJECT_FINANCE']
 
     def get_queryset(self):
         projects = Project.objects.all().order_by('name')
@@ -322,7 +322,7 @@ class ProjectFinanceDetailView(PermissionRequiredMixin, DetailView):
     model = Project
     template_name = 'cfo/project_finance_detail.html'
     context_object_name = 'project'
-    permission_required = 'VIEW_PROJECT_FINANCE'
+    permission_required = ['finance.report.view', 'budget.view', 'VIEW_PROJECT_FINANCE']
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -396,7 +396,7 @@ class ProjectFinanceDetailView(PermissionRequiredMixin, DetailView):
 class BudgetMonitoringView(PermissionRequiredMixin, TemplateView):
     """Budget vs Actual monitoring with approve/reject."""
     template_name = 'cfo/budget_monitoring.html'
-    permission_required = 'APPROVE_BUDGET'
+    permission_required = ['budget.approve', 'APPROVE_BUDGET']
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -464,7 +464,7 @@ class BudgetMonitoringView(PermissionRequiredMixin, TemplateView):
 class ApprovalCenterView(PermissionRequiredMixin, TemplateView):
     """Central approval hub for expenses and budgets."""
     template_name = 'cfo/approval_center.html'
-    permission_required = 'approve_expense'
+    permission_required = ['expense.approve', 'approve_expense']
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -481,7 +481,7 @@ class ApprovalCenterView(PermissionRequiredMixin, TemplateView):
 
 class ApproveExpenseView(PermissionRequiredMixin, View):
     """Approve a pending expense."""
-    permission_required = 'approve_expense'
+    permission_required = ['expense.approve', 'approve_expense']
 
     def post(self, request, pk):
         expense = get_object_or_404(Expense, pk=pk, approval_status='pending')
@@ -489,13 +489,13 @@ class ApproveExpenseView(PermissionRequiredMixin, View):
         expense.approved_by = request.user
         expense.approved_at = timezone.now()
         expense.save(update_fields=['approval_status', 'approved_by', 'approved_at', 'updated_at'])
-        messages.success(request, f'Đã phê duyệt chi phí #{pk}.')
+        messages.success(request, f'ÄÃ£ phÃª duyá»‡t chi phÃ­ #{pk}.')
         return redirect('cfo:approval_center')
 
 
 class RejectExpenseView(PermissionRequiredMixin, View):
     """Reject a pending expense."""
-    permission_required = 'approve_expense'
+    permission_required = ['expense.approve', 'approve_expense']
 
     def post(self, request, pk):
         expense = get_object_or_404(Expense, pk=pk, approval_status='pending')
@@ -503,13 +503,13 @@ class RejectExpenseView(PermissionRequiredMixin, View):
         expense.approved_by = request.user
         expense.approved_at = timezone.now()
         expense.save(update_fields=['approval_status', 'approved_by', 'approved_at', 'updated_at'])
-        messages.success(request, f'Đã từ chối chi phí #{pk}.')
+        messages.success(request, f'ÄÃ£ tá»« chá»‘i chi phÃ­ #{pk}.')
         return redirect('cfo:approval_center')
 
 
 class ApproveBudgetActionView(PermissionRequiredMixin, View):
     """Approve a pending budget."""
-    permission_required = 'APPROVE_BUDGET'
+    permission_required = ['budget.approve', 'APPROVE_BUDGET']
 
     def post(self, request, pk):
         budget = get_object_or_404(Budget, pk=pk, approval_status='pending')
@@ -517,13 +517,13 @@ class ApproveBudgetActionView(PermissionRequiredMixin, View):
         budget.approved_by = request.user
         budget.approved_at = timezone.now()
         budget.save(update_fields=['approval_status', 'approved_by', 'approved_at', 'updated_at'])
-        messages.success(request, f'Đã phê duyệt ngân sách #{pk}.')
+        messages.success(request, f'ÄÃ£ phÃª duyá»‡t ngÃ¢n sÃ¡ch #{pk}.')
         return redirect('cfo:approval_center')
 
 
 class RejectBudgetView(PermissionRequiredMixin, View):
     """Reject a pending budget."""
-    permission_required = 'APPROVE_BUDGET'
+    permission_required = ['budget.approve', 'APPROVE_BUDGET']
 
     def post(self, request, pk):
         budget = get_object_or_404(Budget, pk=pk, approval_status='pending')
@@ -531,7 +531,7 @@ class RejectBudgetView(PermissionRequiredMixin, View):
         budget.approved_by = request.user
         budget.approved_at = timezone.now()
         budget.save(update_fields=['approval_status', 'approved_by', 'approved_at', 'updated_at'])
-        messages.success(request, f'Đã từ chối ngân sách #{pk}.')
+        messages.success(request, f'ÄÃ£ tá»« chá»‘i ngÃ¢n sÃ¡ch #{pk}.')
         return redirect('cfo:approval_center')
 
 
@@ -542,7 +542,7 @@ class RejectBudgetView(PermissionRequiredMixin, View):
 class FinancialReportsView(PermissionRequiredMixin, TemplateView):
     """Financial reports with filters and CSV export."""
     template_name = 'cfo/reports.html'
-    permission_required = 'view_financial_report'
+    permission_required = ['finance.report.view', 'view_financial_report']
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -665,7 +665,7 @@ class FinancialReportsView(PermissionRequiredMixin, TemplateView):
 
 class CFOReportExportView(PermissionRequiredMixin, View):
     """Export CFO reports as CSV."""
-    permission_required = 'view_financial_report'
+    permission_required = ['finance.report.view', 'view_financial_report']
 
     def get(self, request):
         report_type = request.GET.get('type', 'profit_loss')
@@ -692,7 +692,7 @@ class CFOReportExportView(PermissionRequiredMixin, View):
             exp_filter &= Q(project_id=project_id)
 
         if report_type == 'profit_loss':
-            writer.writerow(['Dự án', 'Doanh thu', 'Chi phí', 'Lợi nhuận'])
+            writer.writerow(['Dá»± Ã¡n', 'Doanh thu', 'Chi phÃ­', 'Lá»£i nhuáº­n'])
             projects_qs = Project.objects.all().order_by('name')
             if project_id:
                 projects_qs = projects_qs.filter(id=project_id)
@@ -706,7 +706,7 @@ class CFOReportExportView(PermissionRequiredMixin, View):
                 writer.writerow([p.name, float(rev), float(cost), float(rev - cost)])
 
         elif report_type == 'cash_flow':
-            writer.writerow(['Tháng', 'Doanh thu', 'Chi phí', 'Dòng tiền ròng'])
+            writer.writerow(['ThÃ¡ng', 'Doanh thu', 'Chi phÃ­', 'DÃ²ng tiá»n rÃ²ng'])
             rev_months = (
                 Invoice.objects.filter(inv_filter)
                 .annotate(month=TruncMonth('issue_date'))
@@ -726,7 +726,7 @@ class CFOReportExportView(PermissionRequiredMixin, View):
                 writer.writerow([m.strftime('%m/%Y'), float(r), float(e), float(r - e)])
 
         elif report_type == 'budget_vs_actual':
-            writer.writerow(['Dự án', 'Ngân sách', 'Chi tiêu', 'Chênh lệch'])
+            writer.writerow(['Dá»± Ã¡n', 'NgÃ¢n sÃ¡ch', 'Chi tiÃªu', 'ChÃªnh lá»‡ch'])
             bva = (
                 Budget.objects.filter(approval_status='approved')
                 .values('project__name')
@@ -737,7 +737,7 @@ class CFOReportExportView(PermissionRequiredMixin, View):
                 writer.writerow([b['project__name'], float(b['tb']), float(b['ts']), float(b['tb'] - b['ts'])])
 
         elif report_type == 'revenue_by_project':
-            writer.writerow(['Dự án', 'Doanh thu'])
+            writer.writerow(['Dá»± Ã¡n', 'Doanh thu'])
             data = (
                 Invoice.objects.filter(inv_filter)
                 .values('project__name')
@@ -748,7 +748,7 @@ class CFOReportExportView(PermissionRequiredMixin, View):
                 writer.writerow([d['project__name'], float(d['total'])])
 
         elif report_type == 'expense_by_department':
-            writer.writerow(['Phòng ban', 'Chi phí'])
+            writer.writerow(['PhÃ²ng ban', 'Chi phÃ­'])
             dept_expenses = defaultdict(Decimal)
             for exp in Expense.objects.filter(exp_filter).select_related('project'):
                 for dept in exp.project.departments.all():
@@ -757,3 +757,4 @@ class CFOReportExportView(PermissionRequiredMixin, View):
                 writer.writerow([name, float(total)])
 
         return response
+

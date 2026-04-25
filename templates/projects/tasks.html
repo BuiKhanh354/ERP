@@ -28,7 +28,7 @@
         </select>
       </div>
       <div class="col-md-2">
-        {% if user.profile.is_manager %}
+        {% if 'MANAGER' in user_role_names or 'ADMIN' in user_role_names %}
         <a href="{% url 'projects:task_create' %}?project={{ selected_project }}" class="btn btn-primary w-100">
           <i class="bi bi-plus-circle me-1"></i>Tạo mới
         </a>
@@ -140,7 +140,7 @@
       </div>
 
       <div class="task-actions">
-        {% if user.profile.is_manager %}
+        {% if 'MANAGER' in user_role_names or 'ADMIN' in user_role_names %}
         <select class="form-select form-select-sm task-status-select" id="status-select-{{ task.pk }}" data-task-id="{{ task.pk }}" data-original-status="{{ task.status }}">
           <option value="todo" {% if task.status == 'todo' %}selected{% endif %}>Cần làm</option>
           <option value="in_progress" {% if task.status == 'in_progress' %}selected{% endif %}>Đang thực hiện</option>
@@ -317,7 +317,7 @@ function saveTaskStatus(taskId) {
         if (label) label.textContent = title || 'Xác nhận';
         if (body) body.innerHTML = `<div>${String(message || '').replace(/\n/g, '<br>')}</div>`;
         if (okBtn) okBtn.textContent = confirmText || 'Xác nhận';
-        if (cancelBtn) cancelBtn.textContent = cancelText || 'Hủy';
+        if (cancelBtn) cancelBtn.textContent = cancelText || 'Há»§y';
         const bsModal = new bootstrap.Modal(modal);
         bsModal.show();
         return new Promise((resolve) => {
@@ -345,7 +345,7 @@ async function handleDeleteTask(url, taskName) {
     `Bạn có chắc muốn xóa công việc "${taskName}"? Hành động này không thể hoàn tác.`,
     'Xác nhận xóa',
     'Xóa',
-    'Hủy'
+    'Há»§y'
   );
   
   if (confirmed) {
@@ -402,3 +402,4 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 {% endblock %}
+

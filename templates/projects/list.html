@@ -85,7 +85,7 @@
 <!-- Projects Grid -->
 <div class="section-header">
   <h5>Danh sách dự án</h5>
-  {% if user.profile.is_manager %}
+  {% if 'MANAGER' in user_role_names or 'ADMIN' in user_role_names %}
   <a href="{% url 'projects:create' %}" class="btn btn-primary">
     <i class="bi bi-plus-circle me-1"></i>Tạo dự án mới
   </a>
@@ -163,7 +163,7 @@
             <a href="{% url 'projects:detail' project.pk %}" class="btn btn-sm btn-outline-primary">
               <i class="bi bi-eye me-1"></i>Xem
             </a>
-            {% if user.profile.is_manager %}
+            {% if 'MANAGER' in user_role_names or 'ADMIN' in user_role_names %}
             <a href="{% url 'projects:edit' project.pk %}" class="btn btn-sm btn-outline-secondary">
               <i class="bi bi-pencil"></i>
             </a>
@@ -215,7 +215,7 @@
   <div class="card-body empty-state">
     <i class="bi bi-folder-x"></i>
     <p>Không tìm thấy dự án nào.</p>
-    {% if user.profile.is_manager %}
+    {% if 'MANAGER' in user_role_names or 'ADMIN' in user_role_names %}
     <a href="{% url 'projects:create' %}" class="btn btn-primary mt-3">
       <i class="bi bi-plus-circle me-1"></i>Tạo dự án đầu tiên
     </a>
@@ -231,3 +231,4 @@
 <script src="{% static 'assets/js/projects-list.js' %}"></script>
 
 {% endblock %}
+

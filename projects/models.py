@@ -138,7 +138,8 @@ class Task(BaseModel):
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium', help_text='Mức độ ưu tiên')
     department = models.ForeignKey('resources.Department', on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks', help_text='Phòng ban phụ trách công việc')
     assigned_to = models.ForeignKey('resources.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_tasks')
-    assignment_status = models.CharField(max_length=20, choices=ASSIGNMENT_STATUS_CHOICES, default='assigned', help_text='Trạng thái giao/nhận việc')
+    assignment_status = models.CharField(max_length=20, choices=ASSIGNMENT_STATUS_CHOICES, default='assigned', help_text='Trang thai giao/nhan viec')
+    planned_start_date = models.DateField(null=True, blank=True, help_text='Ngay bat dau du kien')
     due_date = models.DateField(null=True, blank=True)
     estimated_hours = models.DecimalField(max_digits=8, decimal_places=2, default=0)
     actual_hours = models.DecimalField(max_digits=8, decimal_places=2, default=0)
@@ -401,4 +402,60 @@ class TaskHistory(BaseModel):
 
     def __str__(self):
         return f"{self.task_id} - {self.event_type} - {self.created_at:%d/%m/%Y %H:%M}"
+
+
+class TaskDelayScoreLog(BaseModel):
+    """Audit log cho thay doi diem tru do tre han cua task."""
+
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='delay_score_logs')
+    employee = models.ForeignKey('resources.Employee', on_delete=models.CASCADE, related_name='delay_score_logs')
+    old_delay_score = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    new_delay_score = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    delta_delay_score = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    reason = models.CharField(max_length=255, blank=True, default='')
+    changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='task_delay_score_logs')
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Task delay score log'
+        verbose_name_plural = 'Task delay score logs'
+
+    def __str__(self):
+        return f"{self.task_id} - delta {self.delta_delay_score}"
+
+
+class KPIAdjustmentRequest(BaseModel):
+    """Yeu cau dieu chinh KPI: Manager de xuat, Admin phe duyet."""
+
+    STATUS_PENDING = 'pending'
+    STATUS_APPROVED = 'approved'
+    STATUS_REJECTED = 'rejected'
+    STATUS_CHOICES = [
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_APPROVED, 'Approved'),
+        (STATUS_REJECTED, 'Rejected'),
+    ]
+
+    employee = models.ForeignKey('resources.Employee', on_delete=models.CASCADE, related_name='kpi_adjustment_requests')
+    points = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('-20')), MaxValueValidator(Decimal('20'))],
+        help_text='So diem dieu chinh, am la tru them, duong la cong bu'
+    )
+    reason = models.TextField(help_text='Ly do de xuat dieu chinh KPI')
+    requested_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='kpi_adjustments_requested')
+    reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='kpi_adjustments_reviewed')
+    review_note = models.TextField(blank=True, default='')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'KPI adjustment request'
+        verbose_name_plural = 'KPI adjustment requests'
+
+    def __str__(self):
+        return f"{self.employee.full_name} {self.points} ({self.status})"
+
 

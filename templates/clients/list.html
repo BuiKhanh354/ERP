@@ -82,7 +82,7 @@
 <!-- Clients List -->
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h5 class="mb-0">Danh sách khách hàng</h5>
-  {% if user.profile.is_manager %}
+  {% if 'MANAGER' in user_role_names or 'ADMIN' in user_role_names %}
   <a href="{% url 'clients:create' %}" class="btn btn-primary">
     <i class="bi bi-plus-circle me-1"></i>Tạo khách hàng mới
   </a>
@@ -135,8 +135,7 @@
               <i class="bi bi-folder me-1"></i>{{ client.project_count }} dự án
             </small>
             <small class="text-muted ms-3">
-              <i class="bi bi-people me-1"></i>{{ client.contact_count }} liên hệ
-            </small>
+              <i class="bi bi-people me-1"></i>Tinh gọn</small>
           </div>
           <div>
             <a href="{% url 'clients:detail' client.pk %}" class="btn btn-sm btn-outline-primary">
@@ -145,7 +144,7 @@
             <a href="{% url 'clients:edit' client.pk %}" class="btn btn-sm btn-outline-secondary ms-1">
               <i class="bi bi-pencil"></i>
             </a>
-            {% if user.profile.is_manager %}
+            {% if 'MANAGER' in user_role_names or 'ADMIN' in user_role_names %}
             <a href="#" class="btn btn-sm btn-outline-danger ms-1" onclick="handleDeleteClient('{{ client.pk }}', '{{ client.name|escapejs }}', event); return false;">
               <i class="bi bi-trash"></i>
             </a>
@@ -194,7 +193,7 @@
   <div class="card-body text-center py-5">
     <i class="bi bi-people" style="font-size: 3rem; color: #cbd5e1;"></i>
     <p class="text-muted mt-3">Không tìm thấy khách hàng nào.</p>
-    {% if user.profile.is_manager %}
+    {% if 'MANAGER' in user_role_names or 'ADMIN' in user_role_names %}
     <a href="{% url 'clients:create' %}" class="btn btn-primary">
       <i class="bi bi-plus-circle me-1"></i>Tạo khách hàng đầu tiên
     </a>
@@ -205,3 +204,5 @@
 </div>
 {% endif %}
 {% endblock %}
+
+

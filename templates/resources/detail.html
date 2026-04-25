@@ -21,7 +21,7 @@
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Thông tin Nhân sự</h5>
                 <div>
-                    {% if user.profile.is_manager %}
+                    {% if 'MANAGER' in user_role_names or 'ADMIN' in user_role_names %}
                     <a href="{% url 'core:ai-salary-recommendation' %}?employee_id={{ employee.id }}" class="btn btn-sm btn-outline-info me-2">
                         <i class="bi bi-lightbulb me-1"></i>AI Đề xuất Lương
                     </a>
@@ -114,7 +114,7 @@
                                 <th>Lương/giờ (VNĐ)</th>
                                 <th>Số giờ làm việc</th>
                                 <th>Lương tháng (VNĐ)</th>
-                                {% if user.profile.is_manager %}
+                                {% if 'MANAGER' in user_role_names or 'ADMIN' in user_role_names %}
                                 <th>Ghi chú</th>
                                 {% endif %}
                             </tr>
@@ -126,7 +126,7 @@
                                 <td><span class="badge bg-info">{{ rate.hourly_rate|add_thousand_sep }}</span></td>
                                 <td>{{ rate.working_hours_per_month|hours_format }}h</td>
                                 <td>{{ rate.monthly_salary|add_thousand_sep }}</td>
-                                {% if user.profile.is_manager %}
+                                {% if 'MANAGER' in user_role_names or 'ADMIN' in user_role_names %}
                                 <td><small class="text-muted">{{ rate.notes|default:"-" }}</small></td>
                                 {% endif %}
                             </tr>
@@ -179,8 +179,8 @@
         <div class="card">
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Lịch sử Đánh giá Hiệu suất</h5>
-                {% if user.profile.is_manager %}
-                <a href="{% url 'performance:score_create' %}?employee={{ employee.pk }}" class="btn btn-sm btn-primary">
+                {% if 'MANAGER' in user_role_names or 'ADMIN' in user_role_names %}
+                <a href="#" class="btn btn-sm btn-primary">
                     <i class="bi bi-plus-circle me-1"></i>Thêm đánh giá
                 </a>
                 {% endif %}
@@ -224,8 +224,8 @@
                                 <span class="badge bg-{% if score.overall_score >= 90 %}success{% elif score.overall_score >= 75 %}info{% elif score.overall_score >= 60 %}warning{% else %}danger{% endif %}">
                                     {{ score.overall_score|floatformat:1 }}
                                 </span>
-                                {% if user.profile.is_manager %}
-                                <a href="{% url 'performance:score_edit' score.pk %}" class="btn btn-sm btn-outline-secondary" title="Chỉnh sửa">
+                                {% if 'MANAGER' in user_role_names or 'ADMIN' in user_role_names %}
+                                <a href="#" class="btn btn-sm btn-outline-secondary" title="Chỉnh sửa">
                                     <i class="bi bi-pencil"></i>
                                 </a>
                                 <a href="#" class="btn btn-sm btn-outline-danger" onclick="handleDeleteScore({{ score.pk }}, event); return false;" title="Xóa">
@@ -239,8 +239,8 @@
                 </div>
                 {% else %}
                 <p class="text-muted">Chưa có đánh giá hiệu suất nào.</p>
-                {% if user.profile.is_manager %}
-                <a href="{% url 'performance:score_create' %}?employee={{ employee.pk }}" class="btn btn-primary mt-3">
+                {% if 'MANAGER' in user_role_names or 'ADMIN' in user_role_names %}
+                <a href="#" class="btn btn-primary mt-3">
                     <i class="bi bi-plus-circle me-1"></i>Tạo đánh giá đầu tiên
                 </a>
                 {% endif %}
@@ -255,3 +255,5 @@
 <script src="{% static 'assets/js/resources-detail.js' %}"></script>
 
 {% endblock %}
+
+

@@ -32,10 +32,7 @@ class BudgetListView(LoginRequiredMixin, ListView):
             return True
         profile_manager = hasattr(user, 'profile') and user.profile.is_manager()
         role_names = get_user_role_names(user)
-        elevated_roles = {
-            'ADMIN', 'CFO', 'HR_ADMIN', 'PROJECT_MANAGER',
-            'FINANCE_ADMIN', 'EXECUTIVE', 'RESOURCE_MANAGER', 'ACCOUNTANT',
-        }
+        elevated_roles = {'ADMIN', 'MANAGER', 'FINANCE'}
         return profile_manager or bool(role_names & elevated_roles)
 
     def get_queryset(self):

@@ -7,8 +7,8 @@ from core.rbac import PermissionRequiredMixin
 from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
-from resources.models import Employee, ResourceAllocation, EmployeeSkill
-from projects.models import Project, ProjectMembershipRequest
+from resources.models import Employee, ResourceAllocation
+from projects.models import Project
 
 
 class AdminDashboardView(PermissionRequiredMixin, TemplateView):
@@ -84,12 +84,11 @@ class AdminProjectMembersView(PermissionRequiredMixin, TemplateView):
         members = []
         for allocation in allocations:
             employee = allocation.employee
-            skills = EmployeeSkill.objects.filter(employee=employee).select_related('skill').order_by('-proficiency')
             members.append(
                 {
                     'employee': employee,
                     'allocation': allocation,
-                    'skills': skills,
+                    'skills': [],
                 }
             )
 
@@ -123,10 +122,9 @@ class AdminAddProjectMemberView(PermissionRequiredMixin, TemplateView):
 
         if action == 'add_member':
             return self._add_member(request, project)
-        if action == 'approve_request':
-            return self._approve_request(request, project)
-        if action == 'reject_request':
-            return self._reject_request(request, project)
+        if action in {'approve_request', 'reject_request'}:
+            messages.warning(request, 'Yeu cau phe duyet thanh vien da duoc tinh gon khoi he thong.')
+            return self._redirect_add_member(project.id)
 
         messages.warning(request, 'Hanh dong khong hop le.')
         return self._redirect_add_member(project.id)
@@ -159,66 +157,6 @@ class AdminAddProjectMemberView(PermissionRequiredMixin, TemplateView):
         messages.success(request, f'Da them {employee.full_name} vao du an.')
         return self._redirect_project_members(project.id)
 
-    def _approve_request(self, request, project):
-        request_id = request.POST.get('request_id')
-        allocation_percentage = request.POST.get('allocation_percentage') or 100
-        admin_response = request.POST.get('admin_response', '').strip()
-
-        membership_request = ProjectMembershipRequest.objects.filter(
-            pk=request_id,
-            project=project,
-            status='pending',
-        ).select_related('employee').first()
-
-        if not membership_request:
-            messages.error(request, 'Khong tim thay request cho phe duyet.')
-            return self._redirect_add_member(project.id)
-
-        try:
-            ResourceAllocation.objects.create(
-                employee=membership_request.employee,
-                project=project,
-                allocation_percentage=allocation_percentage,
-                start_date=project.start_date or timezone.localdate(),
-                end_date=project.end_date,
-                notes=f'Approved from PM request. {admin_response}'.strip(),
-                created_by=request.user,
-                updated_by=request.user,
-            )
-        except IntegrityError:
-            messages.warning(request, 'Nhan vien da co phan bo trong du an nay.')
-            return self._redirect_add_member(project.id)
-
-        membership_request.status = 'approved'
-        membership_request.admin_response = admin_response
-        membership_request.updated_by = request.user
-        membership_request.save(update_fields=['status', 'admin_response', 'updated_by', 'updated_at'])
-
-        messages.success(request, f'Da phe duyet request va them {membership_request.employee.full_name} vao du an.')
-        return self._redirect_add_member(project.id)
-
-    def _reject_request(self, request, project):
-        request_id = request.POST.get('request_id')
-        admin_response = request.POST.get('admin_response', '').strip()
-
-        membership_request = ProjectMembershipRequest.objects.filter(
-            pk=request_id,
-            project=project,
-            status='pending',
-        ).first()
-
-        if not membership_request:
-            messages.error(request, 'Khong tim thay request cho tu choi.')
-            return self._redirect_add_member(project.id)
-
-        membership_request.status = 'rejected'
-        membership_request.admin_response = admin_response
-        membership_request.updated_by = request.user
-        membership_request.save(update_fields=['status', 'admin_response', 'updated_by', 'updated_at'])
-
-        messages.success(request, 'Da tu choi request thanh vien.')
-        return self._redirect_add_member(project.id)
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         project_id = kwargs.get('project_id')
@@ -228,10 +166,7 @@ class AdminAddProjectMemberView(PermissionRequiredMixin, TemplateView):
             context['error'] = 'Project not found'
             return context
 
-        pending_requests = ProjectMembershipRequest.objects.filter(
-            project=project,
-            status='pending',
-        ).select_related('employee', 'requested_by')
+        pending_requests = []
 
         today = timezone.localdate()
         existing_employee_ids = ResourceAllocation.objects.filter(
@@ -243,8 +178,7 @@ class AdminAddProjectMemberView(PermissionRequiredMixin, TemplateView):
 
         employees_with_skills = []
         for employee in available_employees:
-            skills = EmployeeSkill.objects.filter(employee=employee).select_related('skill').order_by('-proficiency')
-            employees_with_skills.append({'employee': employee, 'skills': skills})
+            employees_with_skills.append({'employee': employee, 'skills': []})
 
         context.update(
             {

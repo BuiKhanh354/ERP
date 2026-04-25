@@ -252,9 +252,9 @@ class PhaseForm(forms.ModelForm):
                 self.add_error('start_date', 'Can khai bao ngay bat dau/ket thuc day du de dam bao cac giai doan lien tiep.')
                 break
             expected_start = prev_end + timedelta(days=1)
-            if curr_start != expected_start:
-                self.add_error('start_date', 'Cac giai doan phai lien tiep, khong duoc chong cheo hoac cach quang.')
-                break
+            # if curr_start != expected_start:
+            #     self.add_error('start_date', 'Cac giai doan phai lien tiep, khong duoc chong cheo hoac cach quang.')
+            #     break
         return cleaned_data
 
 
@@ -339,7 +339,7 @@ class TaskForm(forms.ModelForm):
     class Meta:
         model = Task
         fields = ['project', 'phase', 'name', 'description', 'status', 'progress_percent', 'department', 
-                  'assigned_to', 'assignment_status', 'due_date', 'estimated_hours', 'required_skills', 'delay_reason_type', 'approved_delay', 'delay_explanation']
+                  'assigned_to', 'assignment_status', 'planned_start_date', 'due_date', 'estimated_hours', 'required_skills', 'delay_reason_type', 'approved_delay', 'delay_explanation']
         widgets = {
             'project': forms.Select(attrs={
                 'class': 'form-select'
@@ -362,6 +362,10 @@ class TaskForm(forms.ModelForm):
                 'class': 'form-select',
                 'id': 'id_assigned_to'
             }),
+            'planned_start_date': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'form-control'
+            }),
             'due_date': forms.DateInput(attrs={
                 'type': 'date',
                 'class': 'form-control'
@@ -373,6 +377,7 @@ class TaskForm(forms.ModelForm):
             'description': 'Mo ta',
             'required_skills': 'Ky nang yeu cau',
             'assigned_to': 'Nhân viên thực hiện',
+            'planned_start_date': 'Ngay bat dau du kien',
             'due_date': 'Hạn chót',
         }
 
@@ -490,8 +495,23 @@ class TaskForm(forms.ModelForm):
 
 
         due_date = cleaned_data.get('due_date')
+        planned_start_date = cleaned_data.get('planned_start_date')
+        phase = cleaned_data.get('phase')
         status = cleaned_data.get('status')
         delay_explanation = (cleaned_data.get('delay_explanation') or '').strip()
+
+        if planned_start_date and due_date and planned_start_date > due_date:
+            self.add_error('planned_start_date', 'Ngay bat dau du kien phai nho hon hoac bang han chot.')
+
+        if phase:
+            if phase.start_date and planned_start_date and planned_start_date < phase.start_date:
+                self.add_error('planned_start_date', 'Ngay bat dau task phai nam trong khoang ngay cua giai doan.')
+            if phase.end_date and due_date and due_date > phase.end_date:
+                self.add_error('due_date', 'Han chot task phai nam trong khoang ngay cua giai doan.')
+            if phase.start_date and due_date and due_date < phase.start_date:
+                self.add_error('due_date', 'Han chot task khong duoc truoc ngay bat dau giai doan.')
+            if phase.end_date and planned_start_date and planned_start_date > phase.end_date:
+                self.add_error('planned_start_date', 'Ngay bat dau task khong duoc sau ngay ket thuc giai doan.')
         if due_date and status == 'done':
             days_late = max((timezone.now().date() - due_date).days, 0)
             cfg = DelayKPIService.get_active_config()

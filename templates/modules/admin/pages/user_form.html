@@ -67,13 +67,16 @@
       <div class="row">
         <div class="col-md-6">
           <div class="form-group">
-            <label>Vai trò</label>
-            <select name="role_id" class="form-select">
-              <option value="">— Chọn vai trò —</option>
+            <label>Vai trò (có thể chọn nhiều)</label>
+            <div class="border rounded p-2" style="max-height: 220px; overflow:auto;">
               {% for r in roles %}
-              <option value="{{ r.pk }}" {% if current_role_id == r.pk %}selected{% endif %}>{{ r.name }}</option>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="role_ids" value="{{ r.pk }}" id="role_{{ r.pk }}" {% if r.pk in current_role_ids %}checked{% endif %} />
+                <label class="form-check-label" for="role_{{ r.pk }}">{{ r.name }}</label>
+              </div>
               {% endfor %}
-            </select>
+            </div>
+            <small class="text-muted">Bạn có thể gán 1 hoặc nhiều role cho người dùng.</small>
           </div>
         </div>
         <div class="col-md-6">
@@ -97,9 +100,10 @@
 
       <div class="form-footer">
         <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>{{ submit_label }}</button>
-        <a href="{% url 'admin_module:user_list' %}" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i>Hủy</a>
+        <a href="{% url 'admin_module:user_list' %}" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i>Há»§y</a>
       </div>
     </form>
   </div>
 </div>
 {% endblock %}
+

@@ -1,4 +1,4 @@
-{% extends 'base_sidebar.html' %} {% load static %} {% block title %} Tạo dự án
+{% extends 'base_sidebar.html' %} {% load static %} {% block title %} Tạo dá»± án
 - ERP System{% endblock %} {% block page_title %}
 <div class="d-flex align-items-center gap-3">
   <a
@@ -443,13 +443,8 @@
 
         <div class="form-actions">
           <a href="{% url 'projects:list' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-x-circle me-1"></i>Hủy
+            <i class="bi bi-x-circle me-1"></i>Há»§y
           </a>
-          {% if object and user_profile.is_manager %}
-          <a href="{% url 'projects:recommend_personnel' object.pk %}" class="btn btn-outline-info me-2">
-            <i class="bi bi-people me-1"></i>Đề xuất Nhân sự
-          </a>
-          {% endif %}
           <button type="submit" class="btn btn-primary">
             <i class="bi bi-check-circle me-1"></i>{{ submit_text }}
           </button>
@@ -462,5 +457,6 @@
 <script src="{% static 'assets/js/projects-form.js' %}"></script>
 
 {% endblock %}
+
 
 

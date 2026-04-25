@@ -17,7 +17,7 @@
         {% elif task.status == 'overdue' %}Quá hạn
         {% endif %}
       </span>
-      {% if user_profile.is_manager %}
+      {% if 'MANAGER' in user_role_names or 'ADMIN' in user_role_names %}
       <a href="{% url 'projects:task_edit' task.pk %}" class="btn btn-sm btn-outline-secondary py-0 px-1" title="Sua">
         <i class="bi bi-pencil"></i>
       </a>
@@ -73,3 +73,4 @@
     {% endif %}
   </div>
 </div>
+

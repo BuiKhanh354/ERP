@@ -1,6 +1,7 @@
 """Web views for Projects Management."""
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db import ProgrammingError
 from django.db.models import Count, Sum, Q
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
@@ -198,8 +199,28 @@ class ProjectDetailView(LoginRequiredMixin, DetailView):
         context['total_spent'] = sum(b.spent_amount for b in budgets)
         context['remaining_budget'] = context['total_allocated'] - context['total_spent']
         context['budget_utilization'] = (context['total_spent'] / context['total_allocated'] * 100) if context['total_allocated'] > 0 else 0
-        context['personnel_budget_info'] = BudgetMonitoringService.calculate_personnel_budget_usage(project)
-        context['personnel_budget_limits_report'] = BudgetMonitoringService.calculate_budget_limits_report(project)
+        try:
+            context['personnel_budget_info'] = BudgetMonitoringService.calculate_personnel_budget_usage(project)
+            context['personnel_budget_limits_report'] = BudgetMonitoringService.calculate_budget_limits_report(project)
+        except ProgrammingError:
+            # Compact schema mode: salary-related tables may be removed.
+            context['personnel_budget_info'] = {
+                'total_personnel_cost': 0,
+                'project_personnel_budget': project.budget_for_personnel or 0,
+                'utilization_percentage': 0,
+                'remaining_budget': project.budget_for_personnel or 0,
+                'is_over_budget': False,
+                'employee_costs': [],
+            }
+            context['personnel_budget_limits_report'] = {
+                'total_personnel_cost': 0,
+                'project_personnel_budget': project.budget_for_personnel or 0,
+                'utilization_percentage': 0,
+                'remaining_budget': project.budget_for_personnel or 0,
+                'is_over_budget': False,
+                'employee_salary_allocations': [],
+                'recommendations': [],
+            }
 
         # Resource allocations: hien thi ca nhan su da phan bo va nhan su dang duoc gan task.
         task_count_map = {
@@ -282,6 +303,8 @@ class ProjectDetailView(LoginRequiredMixin, DetailView):
                 else:
                     ai_insight['title'] = f'AI Insights - {project.name}'
                     context['ai_insight'] = ai_insight
+        except ProgrammingError:
+            context['ai_insight_error'] = 'AI staffing insight tam thoi tat trong che do tinh gon du lieu.'
         except Exception as e:
             error_msg = str(e)
             # Xử lý lỗi AI tạm thời - kiểm tra nhiều pattern

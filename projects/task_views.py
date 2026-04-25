@@ -2,13 +2,14 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
+from datetime import timedelta
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.views import View
 from django.http import JsonResponse
 
-from .models import Task, Project
+from .models import Task, Project, ProjectPhase
 from .forms import TaskForm
 from resources.models import Employee, Department
 from core.mixins import ManagerRequiredMixin
@@ -17,6 +18,23 @@ from core.notification_service import NotificationService
 from core.models import Notification
 from .delay_kpi_service import DelayKPIService
 from .task_history_service import TaskHistoryService
+from core.rbac import get_user_role_names
+
+
+def user_has_manager_capability(user):
+    """RBAC-first manager check with legacy fallback."""
+    role_names = get_user_role_names(user)
+    if role_names.intersection({'ADMIN', 'MANAGER'}):
+        return True
+    return False
+
+
+def user_can_approve_tasks(user):
+    """Who can do final approval for submitted tasks."""
+    role_names = get_user_role_names(user)
+    if role_names.intersection({'ADMIN', 'MANAGER'}):
+        return True
+    return False
 
 
 class TaskListView(LoginRequiredMixin, ListView):
@@ -28,7 +46,7 @@ class TaskListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         project_id = self.request.GET.get('project')
         user = self.request.user
-        is_manager = hasattr(user, 'profile') and user.profile.is_manager()
+        is_manager = user_has_manager_capability(user)
         
         # Lấy employee của user hiện tại (nếu có)
         employee = None
@@ -63,7 +81,7 @@ class TaskListView(LoginRequiredMixin, ListView):
         project_id = self.request.GET.get('project')
         
         user = self.request.user
-        is_manager = hasattr(user, 'profile') and user.profile.is_manager()
+        is_manager = user_has_manager_capability(user)
         
         # Lấy employee của user hiện tại (nếu có)
         employee = None
@@ -190,7 +208,7 @@ class TaskCreateView(ManagerRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
-        is_manager = hasattr(user, 'profile') and user.profile.is_manager()
+        is_manager = user_has_manager_capability(user)
         
         context['page_title'] = 'Tạo công việc mới'
         context['submit_text'] = 'Tạo công việc'
@@ -252,7 +270,7 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
     def get_queryset(self):
         """Quản lý xem tất cả, nhân viên chỉ xem tasks được gán cho mình."""
         user = self.request.user
-        is_manager = hasattr(user, 'profile') and user.profile.is_manager()
+        is_manager = user_has_manager_capability(user)
         
         if is_manager:
             return Task.objects.all()
@@ -267,7 +285,7 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
         """Kiểm tra quyền trước khi xử lý request."""
         response = super().dispatch(request, *args, **kwargs)
         user = request.user
-        is_manager = hasattr(user, 'profile') and user.profile.is_manager()
+        is_manager = user_has_manager_capability(user)
         
         # Nếu không phải quản lý, chỉ cho phép GET (xem), không cho POST (sửa)
         if not is_manager and request.method == 'POST':
@@ -282,7 +300,7 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
     
     def form_valid(self, form):
         user = self.request.user
-        is_manager = hasattr(user, 'profile') and user.profile.is_manager()
+        is_manager = user_has_manager_capability(user)
 
         # Lưu lại assigned_to cũ để detect thay đổi
         old_task = self.get_object()
@@ -329,7 +347,7 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
-        is_manager = hasattr(user, 'profile') and user.profile.is_manager()
+        is_manager = user_has_manager_capability(user)
         
         task = self.get_object()
         
@@ -390,7 +408,7 @@ class TaskUpdateStatusView(LoginRequiredMixin, View):
         import json
         
         user = request.user
-        is_manager = hasattr(user, 'profile') and user.profile.is_manager()
+        is_manager = user_has_manager_capability(user)
         
         # Lấy employee của user hiện tại (nếu có)
         employee = None
@@ -411,10 +429,44 @@ class TaskUpdateStatusView(LoginRequiredMixin, View):
                 return JsonResponse({'success': False, 'error': 'Không tìm thấy công việc.'})
         
         data = json.loads(request.body)
+        action = data.get('action')
         new_status = data.get('status')
+
+        # Two-step approval:
+        # employee submits to review, manager approves/rejects from review
+        if action == 'approve':
+            if not user_can_approve_tasks(user):
+                return JsonResponse({'success': False, 'error': 'Bạn không có quyền duyệt công việc.'}, status=403)
+            if task.status != 'review':
+                return JsonResponse({'success': False, 'error': 'Chỉ duyệt được task đang ở trạng thái Review.'}, status=400)
+            new_status = 'done'
+        elif action == 'reject':
+            if not user_can_approve_tasks(user):
+                return JsonResponse({'success': False, 'error': 'Bạn không có quyền từ chối công việc.'}, status=403)
+            if task.status != 'review':
+                return JsonResponse({'success': False, 'error': 'Chỉ từ chối được task đang ở trạng thái Review.'}, status=400)
+            new_status = 'in_progress'
+            task.assignment_status = 'rejected'
         
         if new_status not in dict(Task.STATUS_CHOICES):
             return JsonResponse({'success': False, 'error': 'Trạng thái không hợp lệ.'})
+
+        if not is_manager and new_status == 'done':
+            return JsonResponse(
+                {
+                    'success': False,
+                    'error': 'Nhân viên không thể tự chuyển trực tiếp sang Done. Hãy gửi Review để quản lý duyệt.',
+                },
+                status=403,
+            )
+        if is_manager and new_status == 'done' and task.status != 'review':
+            return JsonResponse(
+                {
+                    'success': False,
+                    'error': 'Task chỉ được chuyển Done sau bước Review.',
+                },
+                status=400,
+            )
         
         task.status = new_status
         if new_status == 'done' and not task.completed_at:
@@ -492,9 +544,9 @@ class UpdateAssignmentStatusView(LoginRequiredMixin, View):
         elif new_status == 'accepted' and task.status == 'done':
             task.status = 'todo'
         elif new_status == 'completed':
-            task.status = 'done'
-            if not task.completed_at:
-                task.completed_at = timezone.now()
+            # Employee submits completion for manager review.
+            task.status = 'review'
+            task.completed_at = None
         elif new_status == 'rejected' and task.status == 'in_progress':
             task.status = 'todo'
         TaskHistoryService.update_task_snapshots(task)
@@ -587,3 +639,61 @@ class MyTasksView(LoginRequiredMixin, ListView):
 
 
 
+
+class PhaseDateSuggestionView(LoginRequiredMixin, View):
+    """Suggest task start/end dates constrained by selected phase timeline."""
+
+    def get(self, request, *args, **kwargs):
+        phase_id = request.GET.get('phase_id')
+        if not phase_id:
+            return JsonResponse({'ok': False, 'error': 'phase_id is required'}, status=400)
+
+        try:
+            phase = ProjectPhase.objects.select_related('project').get(pk=int(phase_id))
+        except (ValueError, ProjectPhase.DoesNotExist):
+            return JsonResponse({'ok': False, 'error': 'Phase not found'}, status=404)
+
+        phase_start = phase.start_date
+        phase_end = phase.end_date
+        if not phase_start or not phase_end:
+            return JsonResponse({
+                'ok': True,
+                'suggested_start_date': None,
+                'suggested_due_date': None,
+                'message': 'Phase chua co day du ngay bat dau/ket thuc.',
+            })
+
+        estimated_hours_raw = (request.GET.get('estimated_hours') or '').strip()
+        try:
+            estimated_hours = float(estimated_hours_raw) if estimated_hours_raw else 0.0
+        except ValueError:
+            estimated_hours = 0.0
+
+        estimated_days = max(1, int(round(estimated_hours / 8.0))) if estimated_hours > 0 else 2
+
+        latest_due = (
+            Task.objects.filter(phase=phase, due_date__isnull=False)
+            .order_by('-due_date')
+            .values_list('due_date', flat=True)
+            .first()
+        )
+        suggested_start = (latest_due + timedelta(days=1)) if latest_due else phase_start
+        if suggested_start < phase_start:
+            suggested_start = phase_start
+        if suggested_start > phase_end:
+            suggested_start = phase_end
+
+        suggested_due = suggested_start + timedelta(days=estimated_days - 1)
+        if suggested_due > phase_end:
+            suggested_due = phase_end
+        if suggested_due < suggested_start:
+            suggested_due = suggested_start
+
+        return JsonResponse({
+            'ok': True,
+            'phase_start': phase_start.isoformat(),
+            'phase_end': phase_end.isoformat(),
+            'suggested_start_date': suggested_start.isoformat(),
+            'suggested_due_date': suggested_due.isoformat(),
+            'estimated_days': estimated_days,
+        })

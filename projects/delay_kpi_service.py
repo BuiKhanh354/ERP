@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from core.models import Notification
 from core.notification_service import NotificationService
-from projects.models import DelayRuleConfig, Task
+from projects.models import DelayRuleConfig, Task, TaskDelayScoreLog, KPIAdjustmentRequest
 from projects.models import Project
 from resources.models import Employee
 
@@ -95,6 +95,7 @@ class DelayKPIService:
             return
 
         config = cls.get_active_config()
+        old_delay_score = Decimal(task.delay_score or 0)
         days_late = cls._compute_days_late(task)
         task.days_late = days_late
 
@@ -104,6 +105,7 @@ class DelayKPIService:
         if days_late <= 0:
             task.delay_score = Decimal("0")
             task.save(update_fields=["days_late", "delay_score", "completed_at", "updated_at"])
+            cls._log_delay_score_change(task, old_delay_score, Decimal(task.delay_score or 0), actor=actor)
             cls.recompute_employee_profile(task.assigned_to, actor=actor)
             return
 
@@ -117,9 +119,33 @@ class DelayKPIService:
         if task.completed_at:
             update_fields.append("completed_at")
         task.save(update_fields=update_fields)
+        cls._log_delay_score_change(task, old_delay_score, Decimal(task.delay_score or 0), actor=actor)
 
         cls._send_delay_notifications(task, config, actor=actor)
         cls.recompute_employee_profile(task.assigned_to, actor=actor)
+
+    @classmethod
+    def _log_delay_score_change(cls, task: Task, old_score: Decimal, new_score: Decimal, actor=None) -> None:
+        if not task.assigned_to:
+            return
+        delta = (new_score - old_score).quantize(Decimal("0.01"))
+        if delta == Decimal("0.00"):
+            return
+        if delta > 0:
+            reason = f"Task qua han: +{delta} diem tru"
+        else:
+            reason = f"Task cap nhat/giam tre han: {delta} diem"
+        TaskDelayScoreLog.objects.create(
+            task=task,
+            employee=task.assigned_to,
+            old_delay_score=old_score,
+            new_delay_score=new_score,
+            delta_delay_score=delta,
+            reason=reason,
+            changed_by=actor,
+            created_by=actor,
+            updated_by=actor,
+        )
 
     @classmethod
     def _send_delay_notifications(cls, task: Task, config: DelayRuleConfig, actor=None) -> None:
@@ -180,7 +206,13 @@ class DelayKPIService:
         delayed_tasks = tasks_qs.filter(days_late__gt=0).count()
 
         reward = cls._calculate_rewards(employee, config)
-        kpi_current = (Decimal("100") - Decimal(total_delay_score) + reward).quantize(Decimal("0.01"))
+        approved_adjustments = (
+            KPIAdjustmentRequest.objects.filter(
+                employee=employee,
+                status=KPIAdjustmentRequest.STATUS_APPROVED,
+            ).aggregate(total=Sum("points"))["total"] or Decimal("0")
+        )
+        kpi_current = (Decimal("100") - Decimal(total_delay_score) + reward + Decimal(approved_adjustments)).quantize(Decimal("0.01"))
         if kpi_current < 0:
             kpi_current = Decimal("0")
         if kpi_current > 100:

@@ -34,23 +34,12 @@
       </div>
 
       <nav class="sidebar-menu">
-      <nav class="sidebar-menu">
         {% if 'ADMIN' in user_role_names or '__superuser__' in user_permissions %}
           {% include "shared/sidebars/sidebar_admin.html" %}
-        {% elif 'CFO' in user_role_names %}
-          {% include "shared/sidebars/sidebar_cfo.html" %}
-        {% elif 'HR_ADMIN' in user_role_names %}
-          {% include "shared/sidebars/sidebar_hr.html" %}
-        {% elif 'PROJECT_MANAGER' in user_role_names %}
+        {% elif 'MANAGER' in user_role_names %}
           {% include "shared/sidebars/sidebar_pm.html" %}
-        {% elif 'EXECUTIVE' in user_role_names %}
-          {% include "shared/sidebars/sidebar_executive.html" %}
-        {% elif 'RESOURCE_MANAGER' in user_role_names %}
-          {% include "shared/sidebars/sidebar_resource_manager.html" %}
-        {% elif 'FINANCE_ADMIN' in user_role_names %}
-          {% include "shared/sidebars/sidebar_finance_admin.html" %}
-        {% elif 'ACCOUNTANT' in user_role_names %}
-          {% include "shared/sidebars/sidebar_accountant.html" %}
+        {% elif 'FINANCE' in user_role_names %}
+          {% include "shared/sidebars/sidebar_cfo.html" %}
         {% else %}
           {% include "shared/sidebars/sidebar_employee.html" %}
         {% endif %}
@@ -83,16 +72,7 @@
           </div>
         </div>
         <div class="header-right">
-          {% if user_profile and user_profile.is_manager %}
-          <a
-            href="{% url 'resources:payroll-schedule' %}"
-            class="header-icon-btn"
-            title="Cài đặt lịch phát lương"
-            style="text-decoration: none; display: flex; align-items: center; justify-content: center;"
-          >
-            <i class="bi bi-calendar-check"></i>
-          </a>
-          {% elif user.is_authenticated and user.profile.is_manager %}
+          {% if 'MANAGER' in user_role_names %}
           <a
             href="{% url 'resources:payroll-schedule' %}"
             class="header-icon-btn"
@@ -126,7 +106,7 @@
                 {{ user.username }} {% endif %}
               </div>
               <div class="user-role">
-                {% if user.profile.is_manager %} Quản lý {% else %} Nhân viên {% endif %}
+                {% if 'ADMIN' in user_role_names %}ADMIN{% elif 'MANAGER' in user_role_names %}MANAGER{% elif 'FINANCE' in user_role_names %}FINANCE{% else %}EMPLOYEE{% endif %}
               </div>
             </div>
             <i class="bi bi-chevron-down"></i>
@@ -292,7 +272,7 @@
               data-bs-dismiss="modal"
               id="globalConfirmCancelBtn"
             >
-              Hủy
+              Há»§y
             </button>
             <button
               type="button"
@@ -399,7 +379,7 @@ document.addEventListener("DOMContentLoaded", function () {
             url: "/clients/",
           },
           {
-            label: "Chat với PRM AI",
+            label: "Chat v?i PRM AI",
             group: "Trí tuệ nhân tạo",
             icon: "bi-chat-dots",
             url: "/ai/",
@@ -747,7 +727,7 @@ document.addEventListener("DOMContentLoaded", function () {
               break;
             case 'error':
             case 'danger':
-              title = 'Lỗi';
+              title = 'L?i';
               break;
             case 'warning':
               title = 'Cảnh báo';
@@ -914,3 +894,5 @@ document.addEventListener("DOMContentLoaded", function () {
 {% endblock %}
   </body>
 </html>
+
+

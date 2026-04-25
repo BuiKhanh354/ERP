@@ -14,7 +14,7 @@
 {% block content %}
 <h5 class="mb-0">Danh sách ngân sách</h5>
   <div>
-    {% if user.profile.is_manager %}
+    {% if 'MANAGER' in user_role_names or 'ADMIN' in user_role_names %}
     <a href="{% url 'core:ai-expense-optimization' %}" class="btn btn-outline-info me-2">
       <i class="bi bi-lightbulb me-1"></i>AI Gợi ý Tối ưu Chi tiêu
     </a>
@@ -132,7 +132,7 @@
   <div class="card-body text-center py-5">
     <i class="bi bi-cash-stack" style="font-size: 3rem; color: #cbd5e1;"></i>
     <p class="text-muted mt-3">Không tìm thấy ngân sách nào.</p>
-    {% if user.profile.is_manager %}
+    {% if 'MANAGER' in user_role_names or 'ADMIN' in user_role_names %}
     <a href="{% url 'budgeting:create' %}" class="btn btn-primary">
       <i class="bi bi-plus-circle me-1"></i>Tạo ngân sách đầu tiên
     </a>
@@ -208,7 +208,7 @@
           if (label) label.textContent = title || 'Xác nhận';
           if (body) body.innerHTML = `<div>${String(message || '').replace(/\n/g, '<br>')}</div>`;
           if (okBtn) okBtn.textContent = confirmText || 'Xác nhận';
-          if (cancelBtn) cancelBtn.textContent = cancelText || 'Hủy';
+          if (cancelBtn) cancelBtn.textContent = cancelText || 'Há»§y';
 
           const bsModal = new bootstrap.Modal(modal);
           bsModal.show();
@@ -266,7 +266,7 @@
         Chart.register(ChartDataLabels);
       }
 
-      // Budget by Project Chart (Doughnut) với label inside
+      // Budget by Project Chart (Doughnut) v?i label inside
       const budgetByProjectCtx = document.getElementById('budgetByProjectChart');
       if (budgetByProjectCtx) {
         const budgetLabels = safeJsonParse('budget_by_project_labels');
@@ -795,7 +795,7 @@
         'Bạn có chắc muốn xóa ngân sách "' + budgetName + '"? Hành động này không thể hoàn tác.',
         'Xác nhận xóa',
         'Xóa',
-        'Hủy'
+        'Há»§y'
       );
       if (!confirmed) {
         return;
@@ -878,3 +878,4 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2/dist/chartjs-plugin-datalabels.min.js"></script>
 
 {% endblock %}
+

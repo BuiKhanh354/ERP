@@ -19,15 +19,13 @@ class AnalyticsView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
-        profile = getattr(user, 'profile', None)
         role_names = set(user.user_roles.values_list('role__name', flat=True))
         
         # Project statistics - filter theo user
         is_manager = (
             user.is_superuser
             or user.is_staff
-            or bool(profile and profile.is_manager())
-            or bool(role_names & {'PROJECT_MANAGER', 'HR_ADMIN', 'CFO', 'EXECUTIVE', 'RESOURCE_MANAGER'})
+            or bool(role_names & {'ADMIN', 'MANAGER', 'FINANCE'})
         )
         employee = Employee.objects.filter(user=user, is_active=True).first()
         if is_manager:

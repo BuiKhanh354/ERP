@@ -40,8 +40,6 @@ def get_asset_name(template_rel_path):
         name = 'cfo-' + path.replace('modules/cfo/', '')
     elif path.startswith('modules/employee/'):
         name = 'employee-' + path.replace('modules/employee/', '')
-    elif path.startswith('modules/hr/'):
-        name = 'hr-' + path.replace('modules/hr/', '')
     elif path.startswith('modules/pm/'):
         name = 'pm-' + path.replace('modules/pm/', '')
     elif path.startswith('shared/layouts/'):

@@ -76,6 +76,7 @@ class AdminUserCreateView(PermissionRequiredMixin, CreateView):
         ctx['form_title'] = 'Thêm người dùng mới'
         ctx['submit_label'] = 'Tạo người dùng'
         ctx['roles'] = Role.objects.filter(is_active=True)
+        ctx['current_role_ids'] = []
         ctx['departments'] = Department.objects.filter(is_active=True)
         return ctx
 
@@ -101,14 +102,12 @@ class AdminUserCreateView(PermissionRequiredMixin, CreateView):
         from core.models import UserProfile
         UserProfile.objects.get_or_create(user=user)
 
-        # Assign role
-        role_id = self.request.POST.get('role_id')
-        if role_id:
-            try:
-                role = Role.objects.get(pk=role_id)
+        # Assign roles (multi-select)
+        role_ids = self.request.POST.getlist('role_ids')
+        if role_ids:
+            roles = Role.objects.filter(pk__in=role_ids, is_active=True)
+            for role in roles:
                 UserRole.objects.get_or_create(user=user, role=role)
-            except Role.DoesNotExist:
-                pass
 
         # Assign department via Employee
         dept_id = self.request.POST.get('department_id')
@@ -152,11 +151,13 @@ class AdminUserEditView(PermissionRequiredMixin, UpdateView):
         ctx['form_title'] = f'Chỉnh sửa: {self.object.username}'
         ctx['submit_label'] = 'Lưu thay đổi'
         ctx['roles'] = Role.objects.filter(is_active=True)
+        ctx['current_role_ids'] = []
         ctx['departments'] = Department.objects.filter(is_active=True)
         ctx['user_obj'] = self.object
-        # Current role
-        ur = UserRole.objects.filter(user=self.object).select_related('role').first()
-        ctx['current_role_id'] = ur.role.pk if ur else ''
+        # Current roles
+        ctx['current_role_ids'] = list(
+            UserRole.objects.filter(user=self.object).values_list('role_id', flat=True)
+        )
         # Current department
         emp = Employee.objects.filter(user=self.object).first()
         ctx['current_department_id'] = emp.department_id if emp and emp.department_id else ''
@@ -171,15 +172,13 @@ class AdminUserEditView(PermissionRequiredMixin, UpdateView):
     def form_valid(self, form):
         user = form.save()
 
-        # Update role
-        role_id = self.request.POST.get('role_id')
-        if role_id:
-            UserRole.objects.filter(user=user).delete()
-            try:
-                role = Role.objects.get(pk=role_id)
+        # Update roles (multi-select)
+        role_ids = self.request.POST.getlist('role_ids')
+        UserRole.objects.filter(user=user).delete()
+        if role_ids:
+            roles = Role.objects.filter(pk__in=role_ids, is_active=True)
+            for role in roles:
                 UserRole.objects.get_or_create(user=user, role=role)
-            except Role.DoesNotExist:
-                pass
 
         # Update department
         dept_id = self.request.POST.get('department_id')
@@ -328,3 +327,4 @@ class AdminAuditLogListView(PermissionRequiredMixin, ListView):
         ctx['current_action'] = self.request.GET.get('action', '')
         ctx['total_logs'] = AuditLog.objects.count()
         return ctx
+

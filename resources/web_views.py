@@ -2,7 +2,7 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import models
-from django.db.models import Q, Count, Avg
+from django.db.models import Q, Count
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
@@ -14,7 +14,6 @@ from core.models import Notification
 from .forms import EmployeeForm, DepartmentForm
 from .payroll_forms import PayrollScheduleForm
 from projects.models import Project
-from performance.models import PerformanceScore
 from core.mixins import ManagerRequiredMixin
 from .performance_services import EmployeePerformanceService
 
@@ -31,13 +30,11 @@ class EmployeeListView(LoginRequiredMixin, ListView):
         user = self.request.user
         if hasattr(user, 'profile') and user.profile.is_manager():
             queryset = Employee.objects.all().select_related('department').annotate(
-                project_count=Count('allocations__project', distinct=True),
-                avg_score=Avg('scores__overall_score')
+                project_count=Count('allocations__project', distinct=True)
             )
         else:
             queryset = Employee.objects.filter(created_by=user).select_related('department').annotate(
-                project_count=Count('allocations__project', distinct=True, filter=Q(allocations__project__created_by=user)),
-                avg_score=Avg('scores__overall_score')
+                project_count=Count('allocations__project', distinct=True, filter=Q(allocations__project__created_by=user))
             )
         queryset = queryset.order_by('-created_at')
 
@@ -105,19 +102,10 @@ class EmployeeDetailView(LoginRequiredMixin, DetailView):
             project__created_by=self.request.user
         ).select_related('project').order_by('-start_date')
         # Manager xem tất cả đánh giá, nhân viên chỉ xem của mình
-        if hasattr(self.request.user, 'profile') and self.request.user.profile.is_manager():
-            scores_qs = PerformanceScore.objects.filter(employee=employee)
-        else:
-            scores_qs = PerformanceScore.objects.filter(
-                employee=employee,
-                created_by=self.request.user
-            )
-        context['scores'] = scores_qs.order_by('-period_end', '-created_at')[:10]
+        context['scores'] = []
         
-        # Lịch sử lương/giờ
-        context['hourly_rate_history'] = EmployeeHourlyRate.objects.filter(
-            employee=employee
-        ).order_by('-year', '-month')[:12]  # 12 tháng gần nhất
+        # L???ch s??? l????ng/gi???
+        context['hourly_rate_history'] = []
         # Điểm hiệu suất trung bình theo yêu cầu mới:
         # dựa trên mức chi tiêu dự án + mức độ hoàn thành công việc
         perf = EmployeePerformanceService.calculate(employee)
@@ -541,3 +529,4 @@ class CreatePositionView(LoginRequiredMixin, View):
             })
         except Exception as e:
             return JsonResponse({'success': False, 'error': f'Lỗi khi tạo chức vụ: {str(e)}'})
+
