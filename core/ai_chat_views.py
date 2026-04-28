@@ -1,4 +1,4 @@
-"""AI Chat views for PRM AI."""
+﻿"""AI Chat views for PRM AI."""
 from __future__ import annotations
 
 import json
@@ -11,7 +11,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.views.generic import ListView, TemplateView
 
+from ai.audit import log_ai_usage, start_timer
 from ai.mini_ai_service import answer_chat, build_chat_context
+from core.rbac import get_client_ip
 from core.models import AIChatHistory
 
 
@@ -49,14 +51,35 @@ class AIChatAPIView(LoginRequiredMixin, View):
     """Compatibility AI chat API used by web chat UI."""
 
     def post(self, request):
+        started = start_timer()
         try:
             payload = json.loads(request.body.decode("utf-8") or "{}")
         except (json.JSONDecodeError, UnicodeDecodeError):
+            log_ai_usage(
+                user=request.user,
+                endpoint="/api/ai-chat/",
+                request_payload={},
+                response_payload={"error": "invalid_payload"},
+                status_code=400,
+                source="validation",
+                ip_address=get_client_ip(request),
+                started_at=started,
+            )
             return JsonResponse({"success": False, "error": "Payload không hợp lệ."}, status=400)
 
         message = str(payload.get("message", "")).strip()
         session_id = str(payload.get("session_id", "")).strip() or str(uuid.uuid4())
         if not message:
+            log_ai_usage(
+                user=request.user,
+                endpoint="/api/ai-chat/",
+                request_payload={"session_id": session_id},
+                response_payload={"error": "message_required"},
+                status_code=400,
+                source="validation",
+                ip_address=get_client_ip(request),
+                started_at=started,
+            )
             return JsonResponse({"success": False, "error": "message is required."}, status=400)
 
         try:
@@ -81,15 +104,39 @@ class AIChatAPIView(LoginRequiredMixin, View):
                 session_id=session_id,
             )
 
+            source = result.get("source", "fallback")
+            log_ai_usage(
+                user=request.user,
+                endpoint="/api/ai-chat/",
+                request_payload={"session_id": session_id, "message": message[:250]},
+                response_payload={"source": source, "success": True},
+                status_code=200,
+                source=source,
+                fallback_used=source == "fallback",
+                ip_address=get_client_ip(request),
+                started_at=started,
+            )
+
             return JsonResponse(
                 {
                     "success": True,
                     "response": response_text,
                     "session_id": session_id,
-                    "source": result.get("source", "fallback"),
+                    "source": source,
                 }
             )
         except Exception as exc:
+            log_ai_usage(
+                user=request.user,
+                endpoint="/api/ai-chat/",
+                request_payload={"message": message[:250], "session_id": session_id},
+                response_payload={"error": str(exc)},
+                status_code=500,
+                source="ollama",
+                error=str(exc),
+                ip_address=get_client_ip(request),
+                started_at=started,
+            )
             return JsonResponse({"success": False, "error": str(exc)}, status=500)
 
 

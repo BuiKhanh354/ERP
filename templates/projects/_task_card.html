@@ -47,8 +47,15 @@
     {% if task.department %}
     <span class="task-pill"><i class="bi bi-building"></i>{{ task.department.name }}</span>
     {% endif %}
-    {% if task.assigned_to %}
-    <span class="task-pill"><i class="bi bi-person"></i>{{ task.assigned_to.full_name }}</span>
+    {% if task.assignees.all %}
+      {% for assignee in task.assignees.all|slice:":2" %}
+      <span class="task-pill"><i class="bi bi-person"></i>{{ assignee.full_name }}</span>
+      {% endfor %}
+      {% if task.assignees.count > 2 %}
+      <span class="task-pill"><i class="bi bi-people"></i>+{{ task.assignees.count|add:"-2" }} người</span>
+      {% endif %}
+    {% elif task.assigned_to %}
+      <span class="task-pill"><i class="bi bi-person"></i>{{ task.assigned_to.full_name }}</span>
     {% endif %}
     {% if task.due_date %}
     <span class="task-pill {% if task.status == 'overdue' %}danger{% endif %}">
@@ -73,4 +80,3 @@
     {% endif %}
   </div>
 </div>
-

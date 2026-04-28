@@ -3,6 +3,7 @@ from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils import timezone
 from django.db.models import Sum
+from django.db.models import Q
 from core.rbac import PermissionRequiredMixin
 from resources.models import Employee
 from projects.models import TimeEntry, Task
@@ -30,7 +31,7 @@ class EmployeeDashboardView(PermissionRequiredMixin, TemplateView):
             )
             return context
 
-        assigned_tasks = Task.objects.filter(assigned_to=employee)
+        assigned_tasks = Task.objects.filter(Q(assigned_to=employee) | Q(assignees=employee)).distinct()
         assigned_tasks_count = assigned_tasks.count()
         completed_tasks_count = assigned_tasks.filter(status='done').count()
         overdue_tasks_count = assigned_tasks.filter(
@@ -75,7 +76,7 @@ class EmployeeTimeEntryView(PermissionRequiredMixin, CreateView):
         try:
             employee = Employee.objects.get(user=self.request.user)
             kwargs['employee'] = employee
-            kwargs['tasks'] = Task.objects.filter(assigned_to=employee)
+            kwargs['tasks'] = Task.objects.filter(Q(assigned_to=employee) | Q(assignees=employee)).distinct()
         except Employee.DoesNotExist:
             kwargs['employee'] = None
             kwargs['tasks'] = Task.objects.none()

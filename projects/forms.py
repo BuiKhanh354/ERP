@@ -326,6 +326,17 @@ class TaskForm(forms.ModelForm):
         required=False
     )
 
+    assignees = forms.ModelMultipleChoiceField(
+        queryset=Employee.objects.none(),
+        required=False,
+        widget=forms.SelectMultiple(attrs={
+            'class': 'form-select',
+            'id': 'id_assignees',
+            'size': '6',
+        }),
+        label='Nhân viên thực hiện (nhiều người)'
+    )
+
     estimated_hours = forms.CharField(
         required=False,
         label='Giờ ước tính',
@@ -338,8 +349,8 @@ class TaskForm(forms.ModelForm):
 
     class Meta:
         model = Task
-        fields = ['project', 'phase', 'name', 'description', 'status', 'progress_percent', 'department', 
-                  'assigned_to', 'assignment_status', 'planned_start_date', 'due_date', 'estimated_hours', 'required_skills', 'delay_reason_type', 'approved_delay', 'delay_explanation']
+        fields = ['project', 'phase', 'name', 'description', 'status', 'progress_percent', 'department',
+                  'assignees', 'assigned_to', 'assignment_status', 'planned_start_date', 'due_date', 'estimated_hours', 'required_skills', 'delay_reason_type', 'approved_delay', 'delay_explanation']
         widgets = {
             'project': forms.Select(attrs={
                 'class': 'form-select'
@@ -376,6 +387,7 @@ class TaskForm(forms.ModelForm):
             'name': 'Tên công việc',
             'description': 'Mo ta',
             'required_skills': 'Ky nang yeu cau',
+            'assignees': 'Nhân viên thực hiện (nhiều người)',
             'assigned_to': 'Nhân viên thực hiện',
             'planned_start_date': 'Ngay bat dau du kien',
             'due_date': 'Hạn chót',
@@ -407,7 +419,16 @@ class TaskForm(forms.ModelForm):
                     Q(id__in=allocated_ids) | Q(id=current_assignee_id),
                     is_active=True
                 ).distinct()
-        self.fields['assigned_to'].queryset = assigned_to_qs.order_by('last_name', 'first_name')
+        assignee_qs = assigned_to_qs.order_by('last_name', 'first_name')
+        self.fields['assigned_to'].queryset = assignee_qs
+        self.fields['assignees'].queryset = assignee_qs
+
+        # Initial multiple assignees when editing existing task.
+        if self.instance and self.instance.pk:
+            existing_ids = list(self.instance.assignees.values_list('id', flat=True))
+            if not existing_ids and self.instance.assigned_to_id:
+                existing_ids = [self.instance.assigned_to_id]
+            self.initial['assignees'] = existing_ids
 
         # Hiển thị dạng hh:mm cho instance nếu có
         try:
@@ -517,7 +538,34 @@ class TaskForm(forms.ModelForm):
             cfg = DelayKPIService.get_active_config()
             if days_late > int(cfg.requires_explanation_after_days) and not delay_explanation:
                 self.add_error('delay_explanation', 'Task tre han qua nguong, vui long nhap giai trinh.')
+
+        assignees = list(cleaned_data.get('assignees') or [])
+        assigned_to = cleaned_data.get('assigned_to')
+        if assigned_to and assigned_to not in assignees:
+            assignees.insert(0, assigned_to)
+        if assignees:
+            cleaned_data['assignees'] = assignees
+            cleaned_data['assigned_to'] = assignees[0]
         return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        assignees = list(self.cleaned_data.get('assignees') or [])
+        if assignees:
+            instance.assigned_to = assignees[0]
+        elif self.cleaned_data.get('assigned_to'):
+            instance.assigned_to = self.cleaned_data.get('assigned_to')
+            assignees = [instance.assigned_to]
+        else:
+            instance.assigned_to = None
+
+        if commit:
+            instance.save()
+            instance.assignees.set(assignees)
+            self.save_m2m()
+        else:
+            self._pending_assignee_ids = [a.id for a in assignees]
+        return instance
 
 
 class ProjectPersonnelAllocationForm(forms.ModelForm):

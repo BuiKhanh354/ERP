@@ -208,7 +208,7 @@
           if (label) label.textContent = title || 'Xác nhận';
           if (body) body.innerHTML = `<div>${String(message || '').replace(/\n/g, '<br>')}</div>`;
           if (okBtn) okBtn.textContent = confirmText || 'Xác nhận';
-          if (cancelBtn) cancelBtn.textContent = cancelText || 'Há»§y';
+          if (cancelBtn) cancelBtn.textContent = cancelText || 'Huỷ';
 
           const bsModal = new bootstrap.Modal(modal);
           bsModal.show();
@@ -795,7 +795,7 @@
         'Bạn có chắc muốn xóa ngân sách "' + budgetName + '"? Hành động này không thể hoàn tác.',
         'Xác nhận xóa',
         'Xóa',
-        'Há»§y'
+        'Huỷ'
       );
       if (!confirmed) {
         return;

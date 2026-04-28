@@ -53,11 +53,12 @@
             <th>Phòng ban</th>
             <th>KPI hiện tại</th>
             <th>Tổng điểm trừ</th>
+            <th>Điều chỉnh duyệt</th>
             <th>Task trễ</th>
             <th>Mức phạt</th>
             <th>Giảm thưởng (%)</th>
             <th>Cảnh báo</th>
-            <th>Rủi ro</th>
+            <th>Rủi ro AI</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -187,19 +188,28 @@ document.addEventListener('DOMContentLoaded', async function () {
         <td>${row.department || ''}</td>
         <td>${row.kpi_current}</td>
         <td>${row.total_delay_score}</td>
+        <td>${row.approved_adjustment_total}</td>
         <td>${row.delayed_tasks}</td>
         <td>${row.penalty_level}</td>
         <td>${row.bonus_reduction_percent}</td>
         <td>${row.warning_count}</td>
-        <td>${row.at_risk ? '<span class="badge bg-danger">Có</span>' : '<span class="badge bg-success">Không</span>'}</td>
+        <td>
+          ${
+            row.delay_risk_level === 'HIGH'
+              ? `<span class="badge bg-danger">HIGH (${row.delay_risk_score})</span>`
+              : row.delay_risk_level === 'MEDIUM'
+                ? `<span class="badge bg-warning text-dark">MEDIUM (${row.delay_risk_score})</span>`
+                : `<span class="badge bg-success">LOW (${row.delay_risk_score})</span>`
+          }
+        </td>
       `;
       tableBody.appendChild(tr);
     });
     if ((data.rows || []).length === 0) {
-      tableBody.innerHTML = '<tr><td colspan="9" class="text-muted">Không có dữ liệu.</td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="10" class="text-muted">Không có dữ liệu.</td></tr>';
     }
   } catch (err) {
-    tableBody.innerHTML = '<tr><td colspan="9" class="text-danger">Không thể tải dữ liệu KPI trễ hạn.</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="10" class="text-danger">Không thể tải dữ liệu KPI trễ hạn.</td></tr>';
   }
 
   const myHistoryTable = document.querySelector('#my-delay-history-table tbody');

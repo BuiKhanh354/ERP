@@ -31,6 +31,9 @@
 		    <a href="{% url 'projects:add_personnel' project.pk %}" class="btn btn-outline-success me-2">
 		      <i class="bi bi-person-plus me-1"></i>Them nhan vien
 		    </a>
+        <a href="{% url 'projects:recommend_personnel' project.pk %}" class="btn btn-outline-primary me-2">
+          <i class="bi bi-stars me-1"></i>Goi y nhan su AI
+        </a>
 		    <a href="{% url 'projects:member_approval' project.pk %}" class="btn btn-outline-warning me-2">
 		      <i class="bi bi-person-dash me-1"></i>Loai thanh vien
 		    </a>
@@ -500,7 +503,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Há»§y</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Huỷ</button>
         <button type="button" class="btn btn-primary" onclick="submitProgressUpdate()">
           <i class="bi bi-check-lg me-1"></i>Cập nhật
         </button>
@@ -1177,6 +1180,5 @@ function showProjectAIInsightsModal() {
 <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.5.0/dist/frappe-gantt.min.js"></script>
 
 {% endblock %}
-
 
 

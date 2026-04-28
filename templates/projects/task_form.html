@@ -43,24 +43,22 @@ document.addEventListener('DOMContentLoaded', function() {
   {% endif %}
   
   const departmentSelect = document.getElementById('id_department');
-  const assignedToSelect = document.getElementById('id_assigned_to');
+  const assignedToSelect = document.getElementById('id_assignees');
   const projectSelect = document.getElementById('id_project');
   
   // Lưu danh sách nhân viên ban đầu (tất cả)
-  const allEmployees = Array.from(assignedToSelect.options).map(opt => ({
+  const allEmployees = assignedToSelect ? Array.from(assignedToSelect.options).map(opt => ({
     value: opt.value,
     text: opt.text,
     selected: opt.selected
-  }));
+  })) : [];
   
   // Hàm filter nhân viên theo phòng ban
   function filterEmployeesByDepartment(departmentId) {
     // Xóa tất cả options hiện tại (trừ option đầu tiên nếu là "-- Chọn --")
-    const firstOption = assignedToSelect.options[0];
+    if (!assignedToSelect) return;
+    const selectedValues = new Set(Array.from(assignedToSelect.selectedOptions).map(o => o.value));
     assignedToSelect.innerHTML = '';
-    if (firstOption && firstOption.value === '') {
-      assignedToSelect.appendChild(firstOption);
-    }
     
     if (!departmentId || departmentId === '') {
       // Nếu không chọn phòng ban, hiển thị tất cả nhân viên
@@ -81,29 +79,22 @@ document.addEventListener('DOMContentLoaded', function() {
       .then(response => response.json())
       .then(data => {
         // Thêm option "-- Chọn nhân viên --" nếu chưa có
-        if (assignedToSelect.options.length === 0 || assignedToSelect.options[0].value !== '') {
-          const emptyOption = document.createElement('option');
-          emptyOption.value = '';
-          emptyOption.text = '-- Chọn nhân viên --';
-          assignedToSelect.appendChild(emptyOption);
-        }
-        
         // Thêm các nhân viên từ API
         data.employees.forEach(emp => {
           const option = document.createElement('option');
           option.value = emp.id;
           option.text = emp.name;
+          option.selected = selectedValues.has(String(emp.id));
           assignedToSelect.appendChild(option);
         });
         
         // Giữ lại giá trị đã chọn nếu có (nếu nhân viên đó thuộc phòng ban mới)
-        const previouslySelected = allEmployees.find(e => e.selected);
-        if (previouslySelected) {
-          const found = data.employees.find(e => e.id == previouslySelected.value);
-          if (found) {
-            assignedToSelect.value = previouslySelected.value;
+        const previousSelectedList = allEmployees.filter(e => e.selected).map(e => String(e.value));
+        Array.from(assignedToSelect.options).forEach(option => {
+          if (previousSelectedList.includes(String(option.value))) {
+            option.selected = true;
           }
-        }
+        });
       })
       .catch(error => {
         console.error('Error loading employees:', error);
@@ -179,6 +170,43 @@ document.addEventListener('DOMContentLoaded', function() {
   if (estimatedHoursInput) estimatedHoursInput.addEventListener('blur', suggestTaskDatesByPhase);
   suggestTaskDatesByPhase();
 
+  // AI risk assessment: ML (XGBoost) first, fallback to rule-based
+  const aiRiskBtn = document.getElementById('btn-ai-risk');
+  const aiRiskOutput = document.getElementById('ai-risk-output');
+  if (aiRiskBtn && aiRiskOutput) {
+    aiRiskBtn.addEventListener('click', async function () {
+      const endpoint = aiRiskBtn.getAttribute('data-risk-url');
+      if (!endpoint) return;
+      aiRiskOutput.innerHTML = 'Dang danh gia...';
+      try {
+        const res = await fetch(endpoint);
+        const data = await res.json();
+        if (!data.ok) {
+          aiRiskOutput.innerHTML = `<span class="text-danger">${data.error || 'Khong the danh gia rui ro.'}</span>`;
+          return;
+        }
+        const riskColor = data.risk_level === 'high' ? 'danger' : (data.risk_level === 'medium' ? 'warning' : 'success');
+        const engineRaw = String(data.engine || '').toLowerCase();
+        const engineLabel = engineRaw === 'ml' ? 'XGBoost (ML)' : 'Rule-based';
+        const reasons = (data.reasons || []).map(r => `<li>${r}</li>`).join('');
+        const suggestions = (data.suggestions || []).map(s => `<li>${s}</li>`).join('');
+        aiRiskOutput.innerHTML = `
+          <div class="mb-2">
+            <span class="badge bg-${riskColor} me-2">${String(data.risk_level || '').toUpperCase()}</span>
+            Score: <strong>${data.risk_score}</strong>
+            | Engine: <strong>${engineLabel}</strong>
+            ${data.days_to_due !== null && data.days_to_due !== undefined ? `| Days to due: <strong>${data.days_to_due}</strong>` : ''}
+          </div>
+          ${data.fallback_used ? `<div class="text-warning mb-2">ML lỗi, đã fallback về rule-based.${data.fallback_reason ? ` Lý do: ${data.fallback_reason}` : ''}</div>` : ''}
+          <div><strong>Ly do:</strong><ul class="mb-1">${reasons || '<li>Khong co.</li>'}</ul></div>
+          <div><strong>Goi y:</strong><ul class="mb-0">${suggestions || '<li>Khong co.</li>'}</ul></div>
+        `;
+      } catch (err) {
+        aiRiskOutput.innerHTML = '<span class="text-danger">Loi ket noi khi danh gia rui ro.</span>';
+      }
+    });
+  }
+
 </script>
 
 {% endblock %}
@@ -250,28 +278,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
         <div class="row mb-3">
           <div class="col-md-3">
-            <label for="{{ form.status.id_for_label }}" class="form-label">Tr?ng th?i</label>
+            <label for="{{ form.status.id_for_label }}" class="form-label">Trạng thái</label>
             {{ form.status }}
             {% if form.status.errors %}
             <span class="text-danger small">{{ form.status.errors.0 }}</span>
             {% endif %}
           </div>
           <div class="col-md-3">
-            <label for="{{ form.department.id_for_label }}" class="form-label">Ph?ng ban ph? tr?ch</label>
+            <label for="{{ form.department.id_for_label }}" class="form-label">Phòng ban phụ trách</label>
             {{ form.department }}
             {% if form.department.errors %}
             <span class="text-danger small">{{ form.department.errors.0 }}</span>
             {% endif %}
           </div>
           <div class="col-md-3">
-            <label for="{{ form.planned_start_date.id_for_label }}" class="form-label">Ng?y b?t ??u d? ki?n</label>
+            <label for="{{ form.planned_start_date.id_for_label }}" class="form-label">Ngày bắt đầu dự kiến</label>
             {{ form.planned_start_date }}
             {% if form.planned_start_date.errors %}
             <span class="text-danger small">{{ form.planned_start_date.errors.0 }}</span>
             {% endif %}
           </div>
           <div class="col-md-3">
-            <label for="{{ form.due_date.id_for_label }}" class="form-label">H?n ch?t</label>
+            <label for="{{ form.due_date.id_for_label }}" class="form-label">Hạn chót</label>
             {{ form.due_date }}
             {% if form.due_date.errors %}
             <span class="text-danger small">{{ form.due_date.errors.0 }}</span>
@@ -284,12 +312,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         <div class="row mb-3">
           <div class="col-md-6">
-            <label for="{{ form.assigned_to.id_for_label }}" class="form-label">Nhân viên thực hiện</label>
-            {{ form.assigned_to }}
-            {% if form.assigned_to.errors %}
-            <span class="text-danger small">{{ form.assigned_to.errors.0 }}</span>
+            <label for="{{ form.assignees.id_for_label }}" class="form-label">Nhân viên thực hiện (nhiều người)</label>
+            {{ form.assignees }}
+            {% if form.assignees.errors %}
+            <span class="text-danger small">{{ form.assignees.errors.0 }}</span>
             {% endif %}
-            <small class="text-muted">Danh sách nhân viên sẽ được lọc theo phòng ban đã chọn</small>
+            <small class="text-muted">Giữ Ctrl (hoặc Cmd trên Mac) để chọn nhiều nhân viên. Danh sách được lọc theo phòng ban.</small>
           </div>
           <div class="col-md-6">
             <label for="{{ form.assignment_status.id_for_label }}" class="form-label">Trạng thái giao/nhận</label>
@@ -351,14 +379,37 @@ document.addEventListener('DOMContentLoaded', function() {
             {% endif %}
           </div>
         </div>
+
+        {% if form.instance.pk %}
+        <div class="row mb-3">
+          <div class="col-md-12">
+            <div class="card border-0 shadow-sm">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="mb-0">Đánh giá rủi ro AI (XGBoost + fallback)</h6>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-primary"
+                    id="btn-ai-risk"
+                    data-risk-url="{% url 'projects:task_risk_assessment' form.instance.pk %}"
+                  >
+                    Đánh giá ngay
+                  </button>
+                </div>
+                <div id="ai-risk-output" class="small text-muted">Bam "Đánh giá ngay" de xem muc rui ro hien tai.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
         <div class="d-flex justify-content-end gap-2 mt-4">
           {% if back_url %}
           <a href="{{ back_url }}" class="btn btn-outline-secondary">
-            <i class="bi bi-x-circle me-1"></i>Há»§y
+            <i class="bi bi-x-circle me-1"></i>Huỷ
           </a>
           {% else %}
           <a href="{% url 'projects:tasks' %}?project={{ selected_project }}" class="btn btn-outline-secondary">
-            <i class="bi bi-x-circle me-1"></i>Há»§y
+            <i class="bi bi-x-circle me-1"></i>Huỷ
           </a>
           {% endif %}
           {% if not is_readonly %}

@@ -138,6 +138,12 @@ class Task(BaseModel):
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium', help_text='Mức độ ưu tiên')
     department = models.ForeignKey('resources.Department', on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks', help_text='Phòng ban phụ trách công việc')
     assigned_to = models.ForeignKey('resources.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_tasks')
+    assignees = models.ManyToManyField(
+        'resources.Employee',
+        blank=True,
+        related_name='multi_assigned_tasks',
+        help_text='Danh sach nhan su duoc giao task'
+    )
     assignment_status = models.CharField(max_length=20, choices=ASSIGNMENT_STATUS_CHOICES, default='assigned', help_text='Trang thai giao/nhan viec')
     planned_start_date = models.DateField(null=True, blank=True, help_text='Ngay bat dau du kien')
     due_date = models.DateField(null=True, blank=True)
@@ -457,5 +463,4 @@ class KPIAdjustmentRequest(BaseModel):
 
     def __str__(self):
         return f"{self.employee.full_name} {self.points} ({self.status})"
-
 

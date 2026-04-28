@@ -110,8 +110,15 @@
           {% if task.department %}
           <span class="task-pill"><i class="bi bi-building"></i>{{ task.department.name }}</span>
           {% endif %}
-          {% if task.assigned_to %}
-          <span class="task-pill"><i class="bi bi-person"></i>{{ task.assigned_to.full_name }}</span>
+          {% if task.assignees.all %}
+            {% for assignee in task.assignees.all|slice:":2" %}
+            <span class="task-pill"><i class="bi bi-person"></i>{{ assignee.full_name }}</span>
+            {% endfor %}
+            {% if task.assignees.count > 2 %}
+            <span class="task-pill"><i class="bi bi-people"></i>+{{ task.assignees.count|add:"-2" }} người</span>
+            {% endif %}
+          {% elif task.assigned_to %}
+            <span class="task-pill"><i class="bi bi-person"></i>{{ task.assigned_to.full_name }}</span>
           {% endif %}
           {% if task.assignment_status %}
           <span class="task-pill"><i class="bi bi-send"></i>
@@ -317,7 +324,7 @@ function saveTaskStatus(taskId) {
         if (label) label.textContent = title || 'Xác nhận';
         if (body) body.innerHTML = `<div>${String(message || '').replace(/\n/g, '<br>')}</div>`;
         if (okBtn) okBtn.textContent = confirmText || 'Xác nhận';
-        if (cancelBtn) cancelBtn.textContent = cancelText || 'Há»§y';
+        if (cancelBtn) cancelBtn.textContent = cancelText || 'Huỷ';
         const bsModal = new bootstrap.Modal(modal);
         bsModal.show();
         return new Promise((resolve) => {
@@ -345,7 +352,7 @@ async function handleDeleteTask(url, taskName) {
     `Bạn có chắc muốn xóa công việc "${taskName}"? Hành động này không thể hoàn tác.`,
     'Xác nhận xóa',
     'Xóa',
-    'Há»§y'
+    'Huỷ'
   );
   
   if (confirmed) {
@@ -402,4 +409,3 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 {% endblock %}
-

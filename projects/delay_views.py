@@ -4,7 +4,7 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -138,6 +138,13 @@ class DelayKPIDataAPIView(DelayKPIAccessMixin, View):
             delayed_qs = Task.objects.filter(assigned_to=emp, days_late__gt=0)
             if project_id:
                 delayed_qs = delayed_qs.filter(project_id=project_id)
+            delay_risk = DelayKPIService.estimate_employee_delay_risk(emp)
+            approved_adjustment_total = (
+                KPIAdjustmentRequest.objects.filter(
+                    employee=emp,
+                    status=KPIAdjustmentRequest.STATUS_APPROVED,
+                ).aggregate(total=Sum("points"))["total"] or Decimal("0")
+            )
             rows.append(
                 {
                     "employee_id": emp.id,
@@ -145,11 +152,14 @@ class DelayKPIDataAPIView(DelayKPIAccessMixin, View):
                     "department": emp.department.name if emp.department else "",
                     "kpi_current": float(emp.kpi_current or 0),
                     "total_delay_score": float(emp.total_delay_score or 0),
+                    "approved_adjustment_total": float(approved_adjustment_total or 0),
                     "delayed_tasks": delayed_qs.count(),
                     "penalty_level": emp.penalty_level,
                     "bonus_reduction_percent": float(emp.bonus_reduction_percent or 0),
                     "warning_count": emp.warning_count,
                     "at_risk": bool(emp.at_risk),
+                    "delay_risk_score": delay_risk["score"],
+                    "delay_risk_level": delay_risk["level"],
                 }
             )
 
@@ -182,6 +192,7 @@ class DelayKPIExportCSVView(DelayKPIAccessMixin, View):
                 "department",
                 "kpi_current",
                 "total_delay_score",
+                "approved_adjustment_total",
                 "delayed_tasks",
                 "penalty_level",
                 "bonus_reduction_percent",
@@ -194,6 +205,12 @@ class DelayKPIExportCSVView(DelayKPIAccessMixin, View):
             delayed_qs = Task.objects.filter(assigned_to=emp, days_late__gt=0)
             if project_id:
                 delayed_qs = delayed_qs.filter(project_id=project_id)
+            approved_adjustment_total = (
+                KPIAdjustmentRequest.objects.filter(
+                    employee=emp,
+                    status=KPIAdjustmentRequest.STATUS_APPROVED,
+                ).aggregate(total=Sum("points"))["total"] or Decimal("0")
+            )
             writer.writerow(
                 [
                     emp.employee_id,
@@ -201,6 +218,7 @@ class DelayKPIExportCSVView(DelayKPIAccessMixin, View):
                     emp.department.name if emp.department else "",
                     Decimal(emp.kpi_current or 0),
                     Decimal(emp.total_delay_score or 0),
+                    Decimal(approved_adjustment_total or 0),
                     delayed_qs.count(),
                     emp.penalty_level,
                     Decimal(emp.bonus_reduction_percent or 0),
@@ -303,6 +321,7 @@ class KPIAdjustmentRequestReviewView(DelayKPIAccessMixin, View):
         review_note = (request.POST.get("review_note") or "").strip()
 
         if action == "approve":
+            kpi_before = Decimal(adjustment.employee.kpi_current or 0)
             adjustment.status = KPIAdjustmentRequest.STATUS_APPROVED
             adjustment.reviewed_by = request.user
             adjustment.review_note = review_note
@@ -310,7 +329,12 @@ class KPIAdjustmentRequestReviewView(DelayKPIAccessMixin, View):
             adjustment.updated_by = request.user
             adjustment.save(update_fields=["status", "reviewed_by", "review_note", "reviewed_at", "updated_by", "updated_at"])
             DelayKPIService.recompute_employee_profile(adjustment.employee, actor=request.user)
-            messages.success(request, "Da phe duyet dieu chinh KPI.")
+            adjustment.employee.refresh_from_db(fields=["kpi_current"])
+            kpi_after = Decimal(adjustment.employee.kpi_current or 0)
+            messages.success(
+                request,
+                f"Da phe duyet dieu chinh KPI. KPI: {kpi_before:.2f} -> {kpi_after:.2f}",
+            )
             return redirect(reverse("projects:delay_kpi_dashboard"))
 
         adjustment.status = KPIAdjustmentRequest.STATUS_REJECTED

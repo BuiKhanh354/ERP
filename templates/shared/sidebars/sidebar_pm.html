@@ -68,6 +68,13 @@
         <div class="menu-section">
           <div class="menu-section-title">Chat với PRM AI</div>
           <a
+            href="{% url 'core:ai-center' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'ai-center' %}active{% endif %}"
+          >
+            <i class="bi bi-stars"></i>
+            <span>AI Center</span>
+          </a>
+          <a
             href="{% url 'core:ai-chat' %}"
             class="menu-item {% if request.resolver_match.url_name == 'ai-chat' or request.resolver_match.url_name == 'ai-chat-history' %}active{% endif %}"
           >

@@ -4,6 +4,7 @@ from .role_views.dashboard_router import DashboardRouterView
 from .analytics_views import AnalyticsView
 from . import ai_chat_views
 from . import ai_insights_views
+from .ai_center_views import AIControlCenterView
 
 app_name = "core"
 
@@ -37,6 +38,7 @@ urlpatterns = [
     path("change-password-required/", views.ChangePasswordRequiredView.as_view(), name="change-password-required"),
     
     # AI Chat
+    path("ai-center/", AIControlCenterView.as_view(), name="ai-center"),
     path("ai-chat/", ai_chat_views.AIChatView.as_view(), name="ai-chat"),
     path("api/ai-chat/", ai_chat_views.AIChatAPIView.as_view(), name="ai-chat-api"),
     path("ai-chat/history/", ai_chat_views.AIChatHistoryView.as_view(), name="ai-chat-history"),

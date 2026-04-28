@@ -1,0 +1,308 @@
+﻿{% extends "base_sidebar.html" %}
+{% load static %}
+
+{% block title %}AI Center{% endblock %}
+
+{% block page_title %}AI Center{% endblock %}
+
+{% block content %}
+<div class="alert alert-info">
+  Vai trò hiện tại:
+  {% for r in role_names %}
+  <span class="badge bg-primary me-1">{{ r }}</span>
+  {% empty %}
+  <span class="badge bg-secondary">No role</span>
+  {% endfor %}
+</div>
+<div class="alert {% if is_admin_role %}alert-danger{% elif is_manager_role %}alert-warning{% else %}alert-secondary{% endif %}">
+  <strong>Phạm vi dữ liệu:</strong> {{ data_scope }}
+  {% if is_admin_role %}
+  <span class="ms-2">(Admin xem toàn hệ thống)</span>
+  {% elif is_manager_role %}
+  <span class="ms-2">(Manager chỉ xem dự án mình quản lý)</span>
+  {% else %}
+  <span class="ms-2">(Nhân viên chỉ xem task/dự án được giao)</span>
+  {% endif %}
+</div>
+
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">1) AI Chat</div>
+      <div class="card-body">
+        <textarea id="chat_message" class="form-control mb-2" rows="3" placeholder="Nhập câu hỏi..."></textarea>
+        <button class="btn btn-primary" onclick="runAIChat()">Gửi</button>
+        <pre id="chat_result" class="mt-3 p-2 bg-light border small"></pre>
+      </div>
+    </div>
+  </div>
+
+  {% if can_task_risk %}
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">2) Task Risk (ML + fallback)</div>
+      <div class="card-body">
+        <select id="task_id" class="form-select mb-2">
+          <option value="">Chọn task</option>
+          {% for t in tasks %}
+          <option value="{{ t.id }}">#{{ t.id }} - {{ t.name }} ({{ t.project.name }})</option>
+          {% endfor %}
+        </select>
+        <button class="btn btn-primary" onclick="runTaskRisk()">Đánh giá Task</button>
+        <pre id="task_risk_result" class="mt-3 p-2 bg-light border small"></pre>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if can_project_risk %}
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">3) Project Risk</div>
+      <div class="card-body">
+        <select id="risk_project_id" class="form-select mb-2">
+          <option value="">Chọn dự án</option>
+          {% for p in projects %}
+          <option value="{{ p.id }}">#{{ p.id }} - {{ p.name }}</option>
+          {% endfor %}
+        </select>
+        <button class="btn btn-primary" onclick="runProjectRisk()">Phân tích rủi ro</button>
+        <pre id="project_risk_result" class="mt-3 p-2 bg-light border small"></pre>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if can_project_report %}
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">4) Project Summary (Ollama + fallback)</div>
+      <div class="card-body">
+        <select id="report_project_id" class="form-select mb-2">
+          <option value="">Chọn dự án</option>
+          {% for p in projects %}
+          <option value="{{ p.id }}">#{{ p.id }} - {{ p.name }}</option>
+          {% endfor %}
+        </select>
+        <button class="btn btn-primary" onclick="runProjectReport()">Tạo tóm tắt</button>
+        <pre id="project_report_result" class="mt-3 p-2 bg-light border small"></pre>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if can_resource_recommend %}
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">5) Gợi ý nhân sự (Rule-based)</div>
+      <div class="card-body">
+        <select id="rec_project_id" class="form-select mb-2">
+          <option value="">Chọn dự án</option>
+          {% for p in projects %}
+          <option value="{{ p.id }}">#{{ p.id }} - {{ p.name }}</option>
+          {% endfor %}
+        </select>
+        <small class="text-muted d-block mb-2">Ưu tiên nhân sự có năng suất cao và lịch sử đúng hạn.</small>
+        <button class="btn btn-primary" onclick="runResourceRecommend()">Gợi ý</button>
+        <pre id="resource_rec_result" class="mt-3 p-2 bg-light border small"></pre>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if can_forecast %}
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">6) Dự báo</div>
+      <div class="card-body">
+        <input id="forecast_history" class="form-control mb-2" placeholder="Lịch sử doanh thu, vd: 1000,1200,1300,1500" />
+        <button class="btn btn-primary" onclick="runForecast()">Dự báo</button>
+        <pre id="forecast_result" class="mt-3 p-2 bg-light border small"></pre>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if can_anomaly %}
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">7) Phát hiện bất thường</div>
+      <div class="card-body">
+        <input id="anomaly_values" class="form-control mb-2" placeholder="Giá trị chi phí, vd: 100,120,90,110,500" />
+        <button class="btn btn-primary" onclick="runAnomaly()">Phát hiện bất thường</button>
+        <pre id="anomaly_result" class="mt-3 p-2 bg-light border small"></pre>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if can_attrition %}
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">8) Dự đoán tỷ lệ nghỉ việc</div>
+      <div class="card-body">
+        <select id="attrition_employee_id" class="form-select mb-2">
+          <option value="">Chọn nhân viên</option>
+          {% for e in employees %}
+          <option value="{{ e.id }}">#{{ e.id }} - {{ e.full_name }}</option>
+          {% endfor %}
+        </select>
+        <small class="text-muted d-block mb-2">Demo dùng bộ feature mặc định để chạy model nhanh.</small>
+        <button class="btn btn-primary" onclick="runAttrition()">Dự đoán nghỉ việc</button>
+        <pre id="attrition_result" class="mt-3 p-2 bg-light border small"></pre>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+const csrfToken = getCookie('csrftoken');
+
+async function apiCall(url, method='GET', data=null) {
+  const opts = {
+    method,
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken}
+  };
+  if (data) opts.body = JSON.stringify(data);
+  const res = await fetch(url, opts);
+  const json = await res.json();
+  return {status: res.status, data: json};
+}
+function print(id, payload) {
+  document.getElementById(id).textContent = JSON.stringify(payload, null, 2);
+}
+function renderNatural(id, title, lines, meta=null) {
+  const cleanLines = (lines || []).filter(Boolean);
+  const block = [
+    title || '',
+    ...cleanLines.map(x => `- ${x}`),
+    meta ? `\nNguồn: ${meta}` : ''
+  ].filter(Boolean).join('\n');
+  document.getElementById(id).textContent = block || 'Không có dữ liệu để hiển thị.';
+}
+function toReadableText(value) {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) {
+    return value.map(v => toReadableText(v)).filter(Boolean).join('; ');
+  }
+  if (typeof value === 'object') {
+    const parts = [];
+    Object.entries(value).forEach(([k, v]) => {
+      const text = toReadableText(v);
+      if (text) parts.push(`${k}: ${text}`);
+    });
+    return parts.join(' | ');
+  }
+  return String(value);
+}
+function parseCsvNumbers(text) {
+  return String(text || '')
+    .split(',')
+    .map(v => parseFloat(v.trim()))
+    .filter(v => !Number.isNaN(v));
+}
+
+async function runAIChat() {
+  const message = document.getElementById('chat_message').value.trim();
+  const r = await apiCall('/api/ai/chat/', 'POST', {message});
+  if (r.status >= 400) return print('chat_result', r);
+  renderNatural('chat_result', 'Kết quả AI Chat', [r.data.answer || 'Không có câu trả lời'], r.data.source || 'unknown');
+}
+async function runTaskRisk() {
+  const taskId = document.getElementById('task_id').value;
+  if (!taskId) return print('task_risk_result', {error: 'Chọn task'});
+  const r = await apiCall(`/projects/api/tasks/${taskId}/risk-assessment/`, 'GET');
+  if (r.status >= 400) return print('task_risk_result', r);
+  const d = r.data || {};
+  const reco = d.recommendation || (Array.isArray(d.suggestions) && d.suggestions.length ? d.suggestions[0] : 'Chưa có');
+  renderNatural('task_risk_result', 'Đánh giá rủi ro task', [
+    `Mức rủi ro: ${d.risk_level || 'N/A'}`,
+    `Phần trăm rủi ro: ${d.risk_score ?? 'N/A'}%`,
+    `Khuyến nghị AI: ${reco}`
+  ], d.engine || d.source || 'unknown');
+}
+async function runProjectRisk() {
+  const projectId = document.getElementById('risk_project_id').value;
+  if (!projectId) return print('project_risk_result', {error: 'Chọn dự án'});
+  const r = await apiCall(`/api/ai/risk-detect/?project_id=${projectId}`, 'GET');
+  if (r.status >= 400) return print('project_risk_result', r);
+  const d = r.data || {};
+  const riskText = toReadableText(d.risk || d.summary || d.message) || 'Đã phân tích xong.';
+  renderNatural('project_risk_result', 'Báo cáo rủi ro dự án', [
+    riskText,
+    d.recommendation ? `Khuyến nghị: ${d.recommendation}` : ''
+  ], d.source || 'rule-based');
+}
+async function runProjectReport() {
+  const projectId = document.getElementById('report_project_id').value;
+  if (!projectId) return print('project_report_result', {error: 'Chọn dự án'});
+  const r = await apiCall(`/api/ai/report/?project_id=${projectId}`, 'GET');
+  if (r.status >= 400) return print('project_report_result', r);
+  const d = r.data || {};
+  renderNatural('project_report_result', 'Tóm tắt dự án', [d.summary || d.report || 'Không có nội dung tóm tắt.'], d.source || 'unknown');
+}
+async function runResourceRecommend() {
+  const projectId = document.getElementById('rec_project_id').value;
+  const r = await apiCall('/api/ai/recommend-resource/', 'POST', {
+    project_id: projectId || null,
+    hours_needed: 40
+  });
+  if (r.status >= 400) return print('resource_rec_result', r);
+  const d = r.data || {};
+  const suggestions = Array.isArray(d.suggestions) ? d.suggestions : [];
+  const lines = suggestions.length
+    ? suggestions.slice(0, 8).map((s, i) => `${i + 1}. ${s.employee_name || s.name || 'Nhân sự'} | KPI: ${s.kpi_current ?? 'N/A'} | Warning: ${s.warning_count ?? 0} | ${s.reason || 'phù hợp'}`)
+    : ['Chưa có nhân sự phù hợp theo điều kiện hiện tại.'];
+  renderNatural('resource_rec_result', 'Gợi ý nhân sự', lines, d.source || 'rule-based');
+}
+async function runForecast() {
+  const history = parseCsvNumbers(document.getElementById('forecast_history').value);
+  const r = await apiCall('/api/ai/forecast/', 'POST', {periods: 4, history});
+  if (r.status >= 400) return print('forecast_result', r);
+  const d = r.data || {};
+  const forecast = Array.isArray(d.forecast) ? d.forecast : [];
+  const lines = forecast.length ? [`Chuỗi dự báo: ${forecast.join(', ')}`] : ['Không đủ dữ liệu để dự báo.'];
+  renderNatural('forecast_result', 'Dự báo doanh thu', lines, d.method || d.source || 'unknown');
+}
+async function runAnomaly() {
+  const values = parseCsvNumbers(document.getElementById('anomaly_values').value);
+  const r = await apiCall('/api/ai/detect-anomaly/', 'POST', {values});
+  if (r.status >= 400) return print('anomaly_result', r);
+  const d = r.data || {};
+  const idx = Array.isArray(d.anomaly_indices) ? d.anomaly_indices : [];
+  const lines = idx.length ? [`Phát hiện bất thường tại vị trí: ${idx.join(', ')}`] : ['Không phát hiện điểm bất thường rõ rệt.'];
+  renderNatural('anomaly_result', 'Phân tích bất thường', lines, d.method || d.source || 'unknown');
+}
+async function runAttrition() {
+  const employeeId = document.getElementById('attrition_employee_id').value;
+  if (!employeeId) return print('attrition_result', {error: 'Vui lòng chọn nhân viên'});
+  const payload = { employee_id: parseInt(employeeId, 10) };
+  const r = await apiCall('/api/ai/predict-attrition/', 'POST', payload);
+  if (r.status >= 400) return print('attrition_result', r);
+  const d = r.data || {};
+  renderNatural('attrition_result', 'Dự đoán nghỉ việc', [
+    `Mức độ: ${d.level || d.risk_level || 'N/A'}`,
+    `Xác suất nghỉ việc: ${d.attrition_risk ?? d.probability ?? d.risk_score ?? 'N/A'}`,
+    d.recommendation ? `Khuyến nghị: ${d.recommendation}` : ''
+  ], d.model || d.source || 'ml');
+}
+</script>
+{% endblock %}

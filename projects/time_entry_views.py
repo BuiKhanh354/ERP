@@ -7,6 +7,7 @@ from django.views.generic import CreateView, ListView
 from django.views import View
 from django.http import JsonResponse
 from django.utils import timezone
+from django.db.models import Q
 from datetime import timedelta
 from decimal import Decimal
 
@@ -53,7 +54,7 @@ class TimeEntryCreateView(LoginRequiredMixin, CreateView):
         # Chỉ cho phép chọn tasks được gán cho nhân viên này
         if hasattr(user, 'employee'):
             kwargs['employee'] = user.employee
-            kwargs['tasks'] = Task.objects.filter(assigned_to=user.employee)
+            kwargs['tasks'] = Task.objects.filter(Q(assigned_to=user.employee) | Q(assignees=user.employee)).distinct()
         else:
             kwargs['tasks'] = Task.objects.none()
         
@@ -71,7 +72,7 @@ class TimeEntryCreateView(LoginRequiredMixin, CreateView):
         
         # Kiểm tra task có được gán cho nhân viên này không
         task = form.instance.task
-        if task.assigned_to != user.employee:
+        if task.assigned_to != user.employee and not task.assignees.filter(id=user.employee.id).exists():
             messages.error(self.request, 'Bạn không có quyền ghi chép thời gian cho công việc này.')
             return self.form_invalid(form)
         
@@ -148,7 +149,7 @@ class QuickLogTimeEntryView(LoginRequiredMixin, View):
             employee = user.employee
             
             # Kiểm tra task có được gán cho nhân viên này không
-            if task.assigned_to != employee:
+            if task.assigned_to != employee and not task.assignees.filter(id=employee.id).exists():
                 return JsonResponse({'success': False, 'error': 'Bạn không có quyền ghi chép thời gian cho công việc này.'}, status=403)
             
             # Xử lý cả POST form data và JSON
@@ -222,7 +223,7 @@ class AutoLogTimeOnCompleteView(LoginRequiredMixin, View):
             employee = user.employee
             
             # Kiểm tra task có được gán cho nhân viên này không
-            if task.assigned_to != employee:
+            if task.assigned_to != employee and not task.assignees.filter(id=employee.id).exists():
                 return JsonResponse({'success': False, 'error': 'Bạn không có quyền thực hiện hành động này.'}, status=403)
             
             # Kiểm tra task đã có started_at chưa

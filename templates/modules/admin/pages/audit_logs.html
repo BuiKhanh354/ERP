@@ -10,7 +10,19 @@
 {% endblock %}
 
 {% block content %}
-<div class="log-stat"><strong>{{ total_logs }}</strong> bản ghi</div>
+<div class="log-stat">
+  <strong>{{ filtered_logs }}</strong> bản ghi{% if current_scope == 'ai' %} AI{% endif %}
+  <span class="ms-2 text-muted">(Tổng hệ thống: {{ total_logs }} | AI: {{ ai_logs }})</span>
+</div>
+
+<div class="mb-2 d-flex gap-2">
+  <a href="{% url 'admin_module:audit_logs' %}" class="btn btn-sm {% if current_scope != 'ai' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+    Tất cả nhật ký
+  </a>
+  <a href="{% url 'admin_module:audit_logs' %}?scope=ai" class="btn btn-sm {% if current_scope == 'ai' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+    AI Logs
+  </a>
+</div>
 
 <div class="log-toolbar">
   <div class="search-box">
@@ -18,6 +30,7 @@
     <form method="get">
       <input type="text" name="q" value="{{ search_query }}" placeholder="Tìm kiếm trong nhật ký..." autocomplete="off">
       {% if current_action %}<input type="hidden" name="action" value="{{ current_action }}">{% endif %}
+      {% if current_scope %}<input type="hidden" name="scope" value="{{ current_scope }}">{% endif %}
     </form>
   </div>
   <select class="form-select" style="width:auto; min-width:140px;" onchange="applyFilter(this.value)">
@@ -66,12 +79,12 @@
     {% if is_paginated %}
     <div class="d-flex justify-content-center p-3">
       <nav><ul class="pagination pagination-sm mb-0">
-        {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_action %}&action={{ current_action }}{% endif %}">‹</a></li>{% endif %}
+        {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_action %}&action={{ current_action }}{% endif %}{% if current_scope %}&scope={{ current_scope }}{% endif %}">‹</a></li>{% endif %}
         {% for num in page_obj.paginator.page_range %}
           {% if num == page_obj.number %}<li class="page-item active"><span class="page-link">{{ num }}</span></li>
-          {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}<li class="page-item"><a class="page-link" href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_action %}&action={{ current_action }}{% endif %}">{{ num }}</a></li>{% endif %}
+          {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}<li class="page-item"><a class="page-link" href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_action %}&action={{ current_action }}{% endif %}{% if current_scope %}&scope={{ current_scope }}{% endif %}">{{ num }}</a></li>{% endif %}
         {% endfor %}
-        {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_action %}&action={{ current_action }}{% endif %}">›</a></li>{% endif %}
+        {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_action %}&action={{ current_action }}{% endif %}{% if current_scope %}&scope={{ current_scope }}{% endif %}">›</a></li>{% endif %}
       </ul></nav>
     </div>
     {% endif %}

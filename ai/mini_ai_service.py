@@ -149,6 +149,103 @@ def get_last_ollama_error() -> str | None:
     return LAST_OLLAMA_ERROR
 
 
+def _clean_vietnamese_report(text: str) -> str:
+    raw = (text or "").strip()
+    if not raw:
+        return ""
+    # Remove common "thinking" leakage prefixes from local LLMs.
+    blocked_markers = [
+        "okay, let's",
+        "first,",
+        "i need to",
+        "the user wants",
+        "context provided",
+        "let me structure",
+        "nguồn:",
+        "source:",
+    ]
+    lines = [ln.strip(" -\t") for ln in raw.splitlines() if ln.strip()]
+    kept: list[str] = []
+    for ln in lines:
+        low = ln.lower()
+        if any(m in low for m in blocked_markers):
+            continue
+        kept.append(ln)
+    cleaned = " ".join(kept).strip()
+    # Keep concise report size for UI/readability.
+    if len(cleaned) > 1200:
+        cleaned = cleaned[:1200].rstrip() + "..."
+    return cleaned
+
+
+def _looks_english_heavy(text: str) -> bool:
+    t = (text or "").lower()
+    markers = [
+        "project",
+        "summary",
+        "risk level",
+        "overall",
+        "next step",
+        "from the context",
+        "we need to",
+        "the project",
+        "from the context",
+        "first sentence",
+        "second sentence",
+        "we are given",
+        "let's tackle",
+    ]
+    hits = sum(1 for m in markers if m in t)
+    return hits >= 2
+
+
+def _build_project_summary_vi(context: dict[str, Any]) -> str:
+    project_name = context["project"]["name"]
+    progress = context["project"]["progress"]
+    total = context["tasks"]["total"]
+    done = context["tasks"]["done"]
+    overdue = context["tasks"]["overdue"]
+    estimated_budget = context["project"]["estimated_budget"]
+    actual_budget = context["project"]["actual_budget"]
+    expense_total = context["finance"]["expense_total"]
+    return (
+        f"Dự án {project_name} hiện đạt khoảng {progress}% tiến độ, với {done}/{total} công việc đã hoàn thành. "
+        f"Ngân sách kế hoạch là {estimated_budget:.0f}, ngân sách thực tế đang ghi nhận {actual_budget:.0f} và tổng chi phí hiện tại là {expense_total:.2f}. "
+        f"Rủi ro chính tập trung ở tiến độ do có {overdue} công việc trễ hạn cần xử lý sớm. "
+        "Đề xuất tiếp theo: ưu tiên nhóm task trễ hạn, rà soát lại deadline và cập nhật kế hoạch thực thi theo ngày."
+    )
+
+
+def _build_project_risk_report_vi(
+    project_name: str,
+    progress: float,
+    task_count: int,
+    overdue_task_count: int,
+    budget_risk: bool,
+    deadline_risk: bool,
+) -> str:
+    level = "THẤP"
+    if overdue_task_count > 0 or deadline_risk:
+        level = "TRUNG BÌNH"
+    if overdue_task_count >= 2 or (deadline_risk and progress < 60):
+        level = "CAO"
+    sentence_1 = f"Dự án {project_name} hiện có mức rủi ro tổng quan {level}, tiến độ đạt {round(progress, 2)}%."
+    sentence_2 = f"Hệ thống ghi nhận {overdue_task_count}/{task_count} công việc đang trễ hạn."
+    sentence_3 = (
+        "Rủi ro ngân sách đang xuất hiện do chi phí thực tế vượt kế hoạch."
+        if budget_risk
+        else "Rủi ro ngân sách hiện chưa đáng lo ngại."
+    )
+    sentence_4 = (
+        "Rủi ro tiến độ cao vì mốc thời gian gần kề nhưng tiến độ chưa đạt mục tiêu."
+        if deadline_risk
+        else "Rủi ro tiến độ đang trong ngưỡng kiểm soát."
+    )
+    sentence_5 = "Hành động ưu tiên 1: xử lý ngay các task trễ hạn ảnh hưởng trực tiếp đến mốc bàn giao."
+    sentence_6 = "Hành động ưu tiên 2: cập nhật lại kế hoạch nguồn lực và kiểm tra tiến độ hằng ngày trong tuần tới."
+    return " ".join([sentence_1, sentence_2, sentence_3, sentence_4, sentence_5, sentence_6])
+
+
 @lru_cache(maxsize=1)
 def load_attrition_model():
     if not ATTRITION_MODEL_PATH.exists():
@@ -276,12 +373,21 @@ def recommend_resources(
     required_skills: list[str] | None = None,
     hours_needed: float = 40,
 ) -> dict[str, Any]:
+    try:
+        if project_id in ("", "null", "None"):
+            project_id = None
+        elif project_id is not None:
+            project_id = int(project_id)
+    except (TypeError, ValueError):
+        project_id = None
+
     project = None
     if project_id:
         project = Project.objects.filter(id=project_id).first()
 
     departments = {item.lower() for item in _normalize_text_items(_coerce_list(required_departments))}
-    skills = {item.lower() for item in _normalize_text_items(_coerce_list(required_skills))}
+    # Theo yeu cau tinh gon: bo loc ky nang, uu tien nang suat + dung han.
+    skills = set()
 
     active_employees = Employee.objects.filter(is_active=True).select_related("department")
     allocation_rows = (
@@ -298,13 +404,25 @@ def recommend_resources(
         department_name = (employee.department.name if employee.department else "").lower()
         position_name = (employee.position or "").lower()
 
-        dept_score = 1.0 if departments and department_name in departments else 0.5 if departments else 0.3
-        skill_score = 1.0 if skills and any(skill in position_name or skill in department_name for skill in skills) else 0.4 if skills else 0.3
+        dept_score = 1.0 if departments and department_name in departments else 0.6 if departments else 0.4
+        # Nang suat va dung han dua tren KPI + warning + delay score.
+        kpi_current = float(employee.kpi_current or 100.0)
+        warning_count = float(employee.warning_count or 0.0)
+        delay_score = float(employee.total_delay_score or 0.0)
+        productivity_score = min(1.0, max(0.0, kpi_current / 100.0))
+        ontime_score = max(0.0, 1.0 - min(1.0, (warning_count * 0.12) + (delay_score / 200.0)))
         workload_score = availability
         rate = _to_float(employee.hourly_rate)
         cost_score = 1.0 / (1.0 + rate) if rate else 1.0
 
-        score = round((dept_score * 0.35) + (skill_score * 0.35) + (workload_score * 0.2) + (cost_score * 0.1), 4)
+        score = round(
+            (productivity_score * 0.4) +
+            (ontime_score * 0.3) +
+            (workload_score * 0.2) +
+            (dept_score * 0.05) +
+            (cost_score * 0.05),
+            4,
+        )
         estimated_cost = round(rate * _to_float(hours_needed), 2)
 
         suggestions.append(
@@ -314,9 +432,11 @@ def recommend_resources(
                 "department": employee.department.name if employee.department else None,
                 "current_load": round(current_load, 2),
                 "availability": round(availability, 2),
+                "kpi_current": round(kpi_current, 2),
+                "warning_count": int(warning_count),
                 "score": score,
                 "estimated_cost": estimated_cost,
-                "reason": "Matches department/skills and has enough availability.",
+                "reason": "Nang suat tot, lich su dung han on, va con kha nang nhan viec.",
             }
         )
 
@@ -389,7 +509,7 @@ def detect_project_risks(project_id: int) -> dict[str, Any]:
             }
         )
 
-    return {
+    base_result = {
         "project_id": project.id,
         "project_name": project.name,
         "project_progress": round(progress, 2),
@@ -400,7 +520,49 @@ def detect_project_risks(project_id: int) -> dict[str, Any]:
             "budget_risk": budget_risk,
             "deadline_risk": deadline_risk,
         },
+        "source": "rule-based",
     }
+
+    context = {
+        "project_name": project.name,
+        "project_status": project.status,
+        "project_priority": project.priority,
+        "project_progress": round(progress, 2),
+        "summary": base_result["summary"],
+        "top_risks": risks[:5],
+    }
+    system_prompt = (
+        "Ban la chuyen gia quan tri rui ro du an ERP. "
+        "Tra loi bang tieng Viet ro rang, ngan gon, thuc te."
+    )
+    user_prompt = (
+        "Hay viet bao cao rui ro du an trong 4-6 cau: "
+        "neu muc do tong quan, cac nguyen nhan chinh, va 2 hanh dong uu tien tiep theo."
+    )
+    ai_text = _ollama_chat(system_prompt, user_prompt, context, force_json=False, num_predict=220)
+    if ai_text:
+        cleaned = _clean_vietnamese_report(ai_text)
+        if cleaned:
+            base_result["risk"] = cleaned
+            base_result["source"] = "ollama"
+            return base_result
+
+    # Deterministic direct report (no thinking/debug text).
+    base_result["risk"] = _build_project_risk_report_vi(
+        project_name=project.name,
+        progress=progress,
+        task_count=base_result["summary"]["task_count"],
+        overdue_task_count=base_result["summary"]["overdue_task_count"],
+        budget_risk=base_result["summary"]["budget_risk"],
+        deadline_risk=base_result["summary"]["deadline_risk"],
+    )
+    if ai_text:
+        base_result["source"] = "ollama"
+
+    # Fallback when local LLM is unavailable.
+    if not ai_text:
+        base_result["source"] = "rule-based"
+    return base_result
 
 
 def summarize_project(project_id: int) -> dict[str, Any]:
@@ -430,20 +592,21 @@ def summarize_project(project_id: int) -> dict[str, Any]:
         },
     }
 
-    system_prompt = "You are a concise ERP project analyst. Return a short, practical project summary."
+    system_prompt = (
+        "Ban la chuyen gia phan tich du an ERP. "
+        "Chi tra loi bang tieng Viet, ngan gon, ro rang, khong suy luan noi bo."
+    )
     user_prompt = (
-        f"Summarize project {project.name} in 2-4 sentences. Mention progress, budget, risks, and one concrete next step."
+        f"Tom tat du an {project.name} trong 3-4 cau, gom: tien do, ngan sach, rui ro, "
+        "va 1 hanh dong cu the tiep theo."
     )
     ollama_text = _ollama_chat(system_prompt, user_prompt, context)
     if ollama_text:
-        return {"summary": ollama_text, "context": context, "source": "ollama"}
+        cleaned = _clean_vietnamese_report(ollama_text)
+        if cleaned and not _looks_english_heavy(cleaned):
+            return {"summary": cleaned, "context": context, "source": "ollama"}
 
-    fallback = (
-        f"Project {project.name} is at {context['project']['progress']}% progress. "
-        f"It has {context['tasks']['done']}/{context['tasks']['total']} tasks done and "
-        f"{context['tasks']['overdue']} overdue tasks. "
-        f"Total expense is {context['finance']['expense_total']:.2f}."
-    )
+    fallback = _build_project_summary_vi(context)
     return {"summary": fallback, "context": context, "source": "fallback"}
 
 

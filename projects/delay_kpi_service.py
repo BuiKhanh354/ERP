@@ -350,3 +350,35 @@ class DelayKPIService:
         if role_name:
             qs = qs.filter(user__user_roles__role__name__iexact=role_name).distinct()
         return qs.order_by("-at_risk", "kpi_current", "last_name", "first_name")
+
+    @classmethod
+    def estimate_employee_delay_risk(cls, employee: Employee) -> Dict[str, object]:
+        """
+        Estimate employee delay risk score (0-100) for dashboard.
+        This is a lightweight heuristic layer (rule-based) for quick operational decisions.
+        """
+        kpi = float(employee.kpi_current or 100)
+        warning_count = int(employee.warning_count or 0)
+        total_delay_score = float(employee.total_delay_score or 0)
+        penalty_level = int(employee.penalty_level or 0)
+
+        score = 0.0
+        # Lower KPI -> higher delay risk
+        score += max(0.0, (100.0 - kpi) * 0.6)
+        # Warning history and accumulated delay impact
+        score += min(25.0, warning_count * 5.0)
+        score += min(20.0, total_delay_score * 0.25)
+        score += min(15.0, penalty_level * 5.0)
+
+        score = max(0.0, min(100.0, score))
+        if score >= 70:
+            level = "HIGH"
+        elif score >= 40:
+            level = "MEDIUM"
+        else:
+            level = "LOW"
+
+        return {
+            "score": round(score, 2),
+            "level": level,
+        }

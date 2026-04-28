@@ -319,12 +319,18 @@ class AdminAuditLogListView(PermissionRequiredMixin, ListView):
         if action:
             qs = qs.filter(action_type=action)
 
+        scope = self.request.GET.get('scope', '').strip().lower()
+        if scope == 'ai':
+            qs = qs.filter(table_name='ai_usage')
+
         return qs
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['search_query'] = self.request.GET.get('q', '')
         ctx['current_action'] = self.request.GET.get('action', '')
+        ctx['current_scope'] = self.request.GET.get('scope', '').strip().lower()
         ctx['total_logs'] = AuditLog.objects.count()
+        ctx['ai_logs'] = AuditLog.objects.filter(table_name='ai_usage').count()
+        ctx['filtered_logs'] = self.get_queryset().count()
         return ctx
-
