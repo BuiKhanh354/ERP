@@ -57,6 +57,23 @@ def user_can_approve_tasks(user):
 
 def build_task_risk_assessment(task):
     """Rule-based risk scoring for task delay (minimal AI, no training)."""
+    normalized_status = str(task.status or '').lower()
+    is_completed = (
+        normalized_status in {'done', 'completed'}
+        or int(task.progress_percent or 0) >= 100
+        or bool(getattr(task, 'completed_at', None))
+        or str(getattr(task, 'assignment_status', '')).lower() == 'completed'
+    )
+    if is_completed:
+        return {
+            'risk_score': 0,
+            'risk_level': 'low',
+            'days_to_due': 0,
+            'reasons': ['Task đã hoàn thành, không còn rủi ro trễ hạn.'],
+            'suggestions': ['Đóng task và chuyển nguồn lực sang công việc đang mở.'],
+            'recommendation': 'Task đã hoàn thành. Khuyến nghị xác nhận nghiệm thu và kết thúc theo quy trình.',
+        }
+
     score = 0
     reasons = []
     suggestions = []
@@ -290,6 +307,19 @@ def build_task_risk_assessment_ml_or_fallback(task):
             reasons=reasons,
             suggestions=suggestions,
         )
+        normalized_status = str(task.status or '').lower()
+        is_completed = (
+            normalized_status in {'done', 'completed'}
+            or int(task.progress_percent or 0) >= 100
+            or bool(getattr(task, 'completed_at', None))
+            or str(getattr(task, 'assignment_status', '')).lower() == 'completed'
+        )
+        if is_completed:
+            score = 0
+            risk_level = "low"
+            reasons = ["Task đã hoàn thành, không còn rủi ro trễ hạn."]
+            suggestions = ["Đóng task và chuyển nguồn lực sang công việc đang mở."]
+            recommendation = "Task đã hoàn thành. Khuyến nghị xác nhận nghiệm thu và kết thúc theo quy trình."
         return {
             "risk_score": score,
             "risk_level": risk_level,

@@ -660,3 +660,101 @@ def build_chat_context(
                 "position": employee.position,
             }
     return context
+
+
+def _json_to_business_vietnamese(data: Any) -> str:
+    if isinstance(data, dict):
+        for key in ("answer", "summary", "message", "result", "insight", "analysis"):
+            val = data.get(key)
+            if isinstance(val, str) and val.strip():
+                return val.strip()
+        lines = []
+        for k, v in data.items():
+            if v in (None, "", [], {}):
+                continue
+            vv = _json_to_business_vietnamese(v) if isinstance(v, (dict, list)) else str(v)
+            if vv:
+                lines.append(f"{k}: {vv}")
+        return ("Tong hop nhanh: " + "; ".join(lines[:6]) + ".") if lines else ""
+    if isinstance(data, list):
+        items = []
+        for item in data[:8]:
+            txt = _json_to_business_vietnamese(item) if isinstance(item, (dict, list)) else str(item)
+            if txt:
+                items.append(txt)
+        return ("De xuat: " + "; ".join(items) + ".") if items else ""
+    if isinstance(data, str):
+        return data.strip()
+    return str(data)
+
+
+def _normalize_chat_answer_vi(text: str) -> str:
+    raw = (text or "").strip()
+    if not raw:
+        return ""
+
+    candidate = raw
+    if candidate.startswith("```"):
+        candidate = candidate.strip("`").strip()
+        if candidate.lower().startswith("json"):
+            candidate = candidate[4:].strip()
+    try:
+        parsed = json.loads(candidate)
+        natural = _json_to_business_vietnamese(parsed)
+        if natural:
+            raw = natural
+    except Exception:
+        pass
+
+    blocked_markers = [
+        "okay, let's",
+        "let's tackle",
+        "the user wants",
+        "first,",
+        "i need to",
+        "from the context",
+        "we are given",
+        "json:",
+        "source:",
+        "nguon:",
+    ]
+    lines = [ln.strip(" -\t") for ln in raw.splitlines() if ln.strip()]
+    kept = []
+    for ln in lines:
+        low = ln.lower()
+        if any(m in low for m in blocked_markers):
+            continue
+        kept.append(ln)
+    cleaned = " ".join(kept).strip()
+    if not cleaned or _looks_english_heavy(cleaned):
+        return ""
+    return cleaned
+
+
+def answer_chat(message: str, role: str | None = None, context: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Override chat answer: Vietnamese business tone, strip thinking, normalize JSON to natural text."""
+    system_prompt = (
+        "Ban la tro ly AI cho he thong ERP doanh nghiep. "
+        "Bat buoc tra loi bang tieng Viet tu nhien, phong cach chuyen nghiep doanh nghiep, "
+        "ngan gon, ro rang, de hanh dong. "
+        "Khong duoc tra ve suy luan noi bo, khong markdown, khong JSON."
+    )
+    user_prompt = message.strip()
+    if _is_time_question(user_prompt):
+        now = timezone.localtime()
+        answer = now.strftime("Hien tai la %H:%M:%S, ngay %d/%m/%Y.")
+        return {"answer": answer, "source": "rule_based_time", "context": context or {}}
+
+    content = _ollama_chat(system_prompt, user_prompt, context)
+    if content:
+        normalized = _normalize_chat_answer_vi(content)
+        if normalized:
+            return {"answer": normalized, "source": "ollama", "context": context or {}}
+
+    clean_message = message.strip()
+    fallback = (
+        "Hien tai AI chua tra ve noi dung phu hop de dung truc tiep. "
+        f"Yeu cau cua ban: \"{clean_message}\". "
+        "Vui long bo sung ma du an/phong ban/thoi gian de toi tra loi chinh xac theo ngu canh doanh nghiep."
+    )
+    return {"answer": fallback, "source": "fallback", "context": context or {}}
